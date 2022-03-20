@@ -12,12 +12,6 @@ shinyUI(
                tabPanel("Home"),
                tabPanel("Map",
 
-                        # tags$head(
-                        #     # Include our custom CSS
-                        #     includeCSS("styles.css"),
-                        #     includeScript("gomap.js")
-                        # ),
-
                         leafletOutput("map", height = "calc(100vh - 80px)", width = "100%")
                         ),
                tabPanel("Data"),
