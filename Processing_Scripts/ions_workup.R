@@ -1,29 +1,7 @@
-########################### #
-########################### #
+## Quick n dirty workup for ions data for EC1 workshop
 
-## EXCHANGE EC1
-## PROCESS IONS DATA
-
-# This script will import cations and anions data
-# Cations = c("Lithium", "Sodium", "Ammonium", "Potassium", "Magnesium", "Calcium")
-# Anions = c("Nitrite", "Nitrate")
-
-# The input data are in shitty, non-tidy format, with multi-line headers and multiple chunks of data per dataframe.  
-# Use this script to assign the ions and turn it into tidy format, and then process and clean the dataframe
-
-# KFP, 2022-02-20
-
-########################### #
-########################### #
-
-# Step 1. load packages
-library(tidyverse)
-
-# Step 2. function to import and tidy files
-
-# this function will do the initial work to make the dataframe tidy
-# input parameters include (a) the dataframe being cleaned and (b) the ions in question.
-# NOTE: You must include ALL the ions reported in the file
+require(pacman)
+p_load(tidyverse, readxl, stringr)
 
 assign_ions = function(FILEPATH, PATTERN, IONS){
   
@@ -90,24 +68,33 @@ assign_ions = function(FILEPATH, PATTERN, IONS){
   data_new_processed
   
 }
+  
+sites = read_csv("data/EC1_sitelocations.csv") %>% 
+  rename("site_location" = `Site Location`)
+
+anions_raw = assign_ions("/Users/regi350/OneDrive - PNNL/Documents/projects/compass/exchange/data/ions/", PATTERN = "Anion", IONS = all_ions)
+cations_raw = assign_ions("/Users/regi350/OneDrive - PNNL/Documents/projects/compass/exchange/data/ions/", PATTERN = "Cation", IONS = all_ions)
 
 
-#
-# Step 3. Run the function ------------------------------------------------
+anions <- anions_raw %>% filter(grepl("K[0-9]{3}", Name)) %>% 
+  mutate(Kit_ID = str_remove(Name, "EC1_")) %>% 
+  inner_join(., sites, by = "Kit_ID") %>% 
+  drop_na()
 
-# this is the general format to run the function:
-# assign_ions(FILEPATH = , # folder/location where all the files are stored
-#             PATTERN = , # the pattern used to ID the target files, 
-#                         # e.g. "Anion_UV" for nitrite/nitrite, "Cation", or just ".xls" for all .xls files
-#             IONS = ) # list of ions present in the file
-#                      # this could be c("Nitrite", "Nitrate"), etc. or just use `all_ions` below for the full list
+cations <- cations_raw %>% filter(grepl("K[0-9]{3}", Name)) %>% 
+  mutate(Kit_ID = str_remove(Name, "EC1_")) %>% 
+  inner_join(., sites, by = "Kit_ID") %>% 
+  drop_na()
 
-all_ions = c("Lithium", "Sodium", "Ammonium", "Potassium", "Magnesium", "Calcium", "Nitrite", "Nitrate")
+theme_set(theme_bw())
 
-data_anions_processed = assign_ions(FILEPATH = "data_ions", 
-                                    PATTERN = "Anion",
-                                    IONS = all_ions)
 
-data_cations_processed = assign_ions(FILEPATH = "data_ions", 
-                                    PATTERN = "Cation",
-                                    IONS = all_ions)
+ggplot(cations, aes(site_location, Amount)) + 
+  geom_boxplot(outlier.alpha = 0) + 
+  geom_jitter(width = 0.1, alpha = 0.8) +
+  facet_wrap(~Ion, nrow = 1) + 
+  grattantheme::watermark("Preliminary", fontsize = 40)
+  
+write_csv(anions, "data/220223_initial_anions.csv")
+  
+  
