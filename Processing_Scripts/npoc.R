@@ -1,18 +1,16 @@
 ## This script imports raw data for NPOC and TDN measured using a Shimadzu TOC-L
-## at PNNL MCRL and exports clean, Level 1 QC'ed data. 
-## Data are read in from Google Sheets.
+## at PNNL MCRL and exports clean, Level 0B QC'ed data. 
+## Data are read in from Google Drive
 ## 
-## Created: 2022-01-15 (Updated 2022-03-24)
+## Created: 2022-01-15 (Updated 2022-03-30 with OO)
 ## Peter Regier
 ##
 # #############
 # #############
 
-# 220202 - need to add in LODs (from Sammi), then get blank values for each
-# run (average across the full run, don't use condblanks), then test if 
-# blanks are higher than LOD, and if they are, blank-correct. This should all
-# be done in a single function probably. Next up is flagging, and not sure
-# what we need to flag for, but maybe something related to LOD?
+### QUESTION for team: We are setting blanks to 0 when the blank is less than LOD
+### Does that make sense? Setting blanks to 0 when they are not? 
+
 
 # 1. Setup ---------------------------------------------------------------------
 
@@ -35,11 +33,11 @@ lod_tn <- 0.014
 # 2. Import data ---------------------------------------------------------------
 
 ## First, authorize drive access
-drive_auth()
+googledrive::drive_auth()
 
 ## Takes forever to find, looks through all GDrive files - would like to figure
-## out a better alternative....
-file_names <- drive_find(pattern = "_Summary_")
+## out a better alternative...
+file_names <- googledrive::drive_find(pattern = "_Summary_")
 
 ## Download the files from drive then read in one by one to a list
 file_list <- list() # Initialize a list to fill with the for loop
@@ -96,46 +94,30 @@ blank_correct <- function(file){
 blanks <- bind_rows(lapply(file_list, calculate_blanks)) %>%
   mutate(npoc_blank_raw = as.numeric(npoc_blank_raw), 
          tn_blank_raw = as.numeric(tn_blank_raw)) %>% 
-  mutate(npoc_blank = ifelse(npoc_blank_raw > lod_npoc, npoc_blank_raw, 0), 
+  mutate(npoc_blank = ifelse(npoc_blank_raw > lod_npoc, npoc_blank_raw, 0),
          tn_blank = ifelse(tn_blank_raw > lod_tn, tn_blank_raw, 0))
-  
-df <- lapply(file_list, pull_ec1_data) %>% 
+
+df_raw <- lapply(file_list, pull_ec1_data) %>% 
   lapply(., blank_correct) %>% 
   bind_rows()
 
-write_csv(df, "data/220217_npoc_provisional.csv")
+
+# 5. Clean data ----------------------------------------------------------------
+
+clean_data <- function(data) {
+  data %>% 
+    ## First, round each parameter to proper significant figures
+    mutate(npoc_mgl = round(npoc_mgl, 2), 
+           tn_mgl = round(tn_mgl, 3)) %>% 
+    ## Second, add flags for outside LOD
+    mutate(f_npoc = npoc_mgl < lod_npoc | npoc_mgl > 30, #per cal curve upper limit
+           f_tn = tn_mgl < lod_tn | tn_mgl > 3) #per cal curve upper limit
+}
+
+df <- clean_data(df_raw)
 
 
-### Pick up here, figure out how to blank-correct - this also needs to take into
-### account the readme (probably) to figure out which of the TNs actually need
-### to be scraped because they're sus
+# 6. Write data ----------------------------------------------------------------
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-## CondBlank = initial blanks
-## STD_ are standards for curve - can ignore
-## 
-
-## First: blank-correct each chunk of samples with blank run AFTER samples
-## Second: need to use CKSTD to set data quality
-
-
-## Goals before Workshop 2.2
-## 1. Blank-correct
-## 2. Merge with metdata and plot boxplots by region
-
-
-
-
+write_csv(df, "Data/EC1_NPOC_TN_L0B.csv")
 
