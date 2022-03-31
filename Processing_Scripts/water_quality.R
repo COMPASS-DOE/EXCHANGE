@@ -62,11 +62,11 @@ clean_data <- function(data) {
 }
 
 titrator <- clean_data(titrator_data) %>% 
-  drop_na()
+  drop_na() # drop NA columns
 
 
 # 4. Write L0B data to Google Drive ---------------------------------------------
-write_csv(titrator, "data/EC1_Water_WaterQuality_L0B.csv")
+write_csv(titrator, "Data/EC1_Water_WaterQuality_L0B.csv")
 
 
 
