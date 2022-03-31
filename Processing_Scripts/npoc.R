@@ -39,6 +39,8 @@ googledrive::drive_auth()
 ## out a better alternative...
 file_names <- googledrive::drive_find(pattern = "_Summary_")
 
+file_names2 <- googledrive::drive_get(pattern = "~/1.1 EXCHANGE/raw_data/npoc/")
+
 ## Download the files from drive then read in one by one to a list
 file_list <- list() # Initialize a list to fill with the for loop
 for(i in 1:nrow(file_names)){
@@ -95,7 +97,9 @@ blanks <- bind_rows(lapply(file_list, calculate_blanks)) %>%
   mutate(npoc_blank_raw = as.numeric(npoc_blank_raw), 
          tn_blank_raw = as.numeric(tn_blank_raw)) %>% 
   mutate(npoc_blank = ifelse(npoc_blank_raw > lod_npoc, npoc_blank_raw, 0),
-         tn_blank = ifelse(tn_blank_raw > lod_tn, tn_blank_raw, 0))
+         tn_blank = ifelse(tn_blank_raw > lod_tn, tn_blank_raw, 0), 
+         f_npoc_blank = ifelse(npoc_blank == 0, "Below LOD", FALSE),
+         f_tn_blank = ifelse(tn_blank == 0, "Below LOD", FALSE))
 
 df_raw <- lapply(file_list, pull_ec1_data) %>% 
   lapply(., blank_correct) %>% 
@@ -111,7 +115,8 @@ clean_data <- function(data) {
            tn_mgl = round(tn_mgl, 3)) %>% 
     ## Second, add flags for outside LOD
     mutate(f_npoc = npoc_mgl < lod_npoc | npoc_mgl > 30, #per cal curve upper limit
-           f_tn = tn_mgl < lod_tn | tn_mgl > 3) #per cal curve upper limit
+           f_tn = tn_mgl < lod_tn | tn_mgl > 3) %>% 
+    left_join(., blanks %>% select(date, f_npoc_blank, f_tn_blank), by = "date")  #per cal curve upper limit
 }
 
 df <- clean_data(df_raw)
