@@ -25,7 +25,8 @@ pacman::p_load(cowsay,
                readr,
                tidyr,
                googlesheets4, # read_sheet 
-               googledrive) # drive_upload
+               googledrive,
+               stringr) # drive_upload
 
 ## Welcome
 say("Welcome to EXCHANGE!", by = "random")
@@ -41,6 +42,7 @@ f1_max <- 100
 ## Define analyte
 var <- "TC/TN"
 
+# Create function to use in lapply that reads in a google sheet 
 read_tctn <- function(x) {
   df <- read_sheet(ss = x, range = gsheet_tab, skip = 2)
 }
@@ -61,9 +63,13 @@ lapply(gsheet_files$id, read_tctn) %>%
 cat("Processing", var, "data...")
 
 data_raw %>% 
-  rename(rename any weirdly named columns) %>% 
-  mutate(create any new columns needed (eg calculations)) %>% 
-  dplyr::select(columns needed) -> data_processed
+  rename(Instrument_ID = "...1", Sample_ID = "...3",
+         Nitrogen_Weight_perc = "Weight\n[%]...9",
+         Carbon_Weight_perc = "Weight\n[%]...16") %>% 
+  select(Instrument_ID, Sample_ID, Nitrogen_Weight_perc, Carbon_Weight_perc) %>% 
+  filter(str_detect(Instrument_ID, "^EC1"))
+
+-> data_processed
 
 #
 # 4. Apply QC flags ------------------------------------------------------------
