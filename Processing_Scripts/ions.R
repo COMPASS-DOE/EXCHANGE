@@ -92,6 +92,30 @@ assign_ions = function(FILEPATH, PATTERN, IONS){
   
 }
 
+check_cal_curve_values = function(){
+  
+  ## (side code) the lower end of cal curves is generally NA. 
+  ## check if samples have values below the non-NA cal curves.
+  
+  # first, pull out all the standards
+  data_standards = 
+    data_ions_processed %>% 
+    filter(grepl("A-", Name) | grepl("C-", Name)) %>% 
+    filter(!grepl("CK", Name)) %>%
+    filter(!is.na(Amount)) %>% 
+    group_by(Ion, date_run) %>% 
+    dplyr::summarise(amount_min = min(Amount))
+  
+  data_samples = 
+    data_ions_processed %>% 
+    filter(grepl("EC1_", Name))  %>% 
+    dplyr::select(Name, Ion, date_run, Amount) %>% 
+    left_join(data_standards) %>% 
+    mutate(less_than_cal = Amount < amount_min)
+}
+
+
+
 
 #
 # Step 3. Run the function ------------------------------------------------
