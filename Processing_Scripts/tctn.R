@@ -42,7 +42,7 @@ f1_max <- 100
 var <- "TC/TN"
 
 read_tctn <- function(x) {
-  read_sheet(ss = x, range = gsheet_tab)
+  df <- read_sheet(ss = x, range = gsheet_tab, skip = 2)
 }
 
 #
@@ -51,7 +51,7 @@ cat("Importing", var, "data...")
 
 ## read in raw data
 all_files <- drive_ls(path = folder_path, pattern = "2022")
-gsheet_files <- all_files[endsWith(files, "2022"),2]
+gsheet_files <- all_files[endsWith(all_files$name, "2022"),2]
 
 lapply(gsheet_files$id, read_tctn) %>% 
   bind_rows() -> data_raw
@@ -60,10 +60,10 @@ lapply(gsheet_files$id, read_tctn) %>%
 # 3. Process data --------------------------------------------------------------
 cat("Processing", var, "data...")
 
-data_processed <- data_raw %>% 
+data_raw %>% 
   rename(rename any weirdly named columns) %>% 
   mutate(create any new columns needed (eg calculations)) %>% 
-  dplyr::select(columns needed)
+  dplyr::select(columns needed) -> data_processed
 
 #
 # 4. Apply QC flags ------------------------------------------------------------
