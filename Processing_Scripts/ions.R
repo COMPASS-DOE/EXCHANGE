@@ -16,10 +16,10 @@
 ########################### #
 ########################### #
 
-# Step 1. load packages
+# Step 1. load packages ----
 library(tidyverse)
 
-# Step 2. function to import and tidy files
+# Step 2. function to import and tidy files ----
 
 # this function will do the initial work to make the dataframe tidy
 # input parameters include (a) the dataframe being cleaned and (b) the ions in question.
@@ -32,7 +32,7 @@ assign_ions = function(FILEPATH, PATTERN, IONS){
   # pull a list of file names in the target folder with the target pattern
   # then read all files and combine
   filePaths <- list.files(path = FILEPATH, pattern = PATTERN, full.names = TRUE)
-  # filePaths <- list.files(path = FILEPATH, pattern = c("Anion", ".xls"), full.names = TRUE)
+  # filePaths <- list.files(path = FILEPATH, pattern = c(".xls"), full.names = TRUE)
   
   dat <- do.call(rbind, lapply(filePaths, function(path) {
     # then add a new column `source` to denote the file name
@@ -85,7 +85,8 @@ assign_ions = function(FILEPATH, PATTERN, IONS){
     mutate_at(vars(-Name, -Ion, -source), as.numeric) %>% 
     mutate(date_run = str_extract(source, "[0-9]{8}"),
            date_run = lubridate::as_date(date_run)) %>% 
-    dplyr::select(Name, Amount, Ion, date_run)
+    dplyr::select(Name, Amount, Ion, date_run) %>% 
+    force()
   
   data_new_processed
   
@@ -102,12 +103,14 @@ assign_ions = function(FILEPATH, PATTERN, IONS){
 #             IONS = ) # list of ions present in the file
 #                      # this could be c("Nitrite", "Nitrate"), etc. or just use `all_ions` below for the full list
 
-all_ions = c("Lithium", "Sodium", "Ammonium", "Potassium", "Magnesium", "Calcium", "Nitrite", "Nitrate")
+all_ions = c("Lithium", "Sodium", "Ammonium", "Potassium", "Magnesium", "Calcium", "Nitrite", "Nitrate",
+             "Chloride", "Bromide", "Sulfate", "Phosphate", "Fluoride")
 
-data_anions_processed = assign_ions(FILEPATH = "data_ions", 
-                                    PATTERN = "Anion",
+data_ions_assigned = assign_ions(FILEPATH = "data/ions/ions data without dilution correction", 
+                                    PATTERN = ".xls",
                                     IONS = all_ions)
 
-data_cations_processed = assign_ions(FILEPATH = "data_ions", 
-                                    PATTERN = "Cation",
-                                    IONS = all_ions)
+
+
+
+
