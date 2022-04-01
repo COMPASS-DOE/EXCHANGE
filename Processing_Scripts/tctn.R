@@ -3,7 +3,7 @@
 ## COMPASS project (https://compass.pnnl.gov/). 
 ##
 ## This script imports raw data for Total Carbon and Total Nitrogen measured using
-## [insert relevant instrument and method details] at MCRL
+## an Elemental Analyzer at MCRL
 ## and exports clean, Level 1 QC'ed data.
 ## Data are read in from the COMPASS Google Drive.
 ## 
@@ -23,7 +23,7 @@ pacman::p_load(cowsay,
                ggplot2,
                dplyr,
                readr,
-               tidyr
+               tidyr,
                googlesheets4, # read_sheet 
                googledrive) # drive_upload
 
@@ -31,21 +31,30 @@ pacman::p_load(cowsay,
 say("Welcome to EXCHANGE!", by = "random")
 
 ## URL for data
-data_path = "https://drive.google.com/drive/u/2/folders/1OVhQADClTIcfMtbJenoWfCD8fnODx_it" 
+folder_path <- "https://drive.google.com/drive/u/2/folders/1OVhQADClTIcfMtbJenoWfCD8fnODx_it" 
+gsheet_tab <- "Summary Table"
 
 ## Define constants
-f1_min = 0
-f2_max = 100
+f1_min <- 0
+f1_max <- 100
 
 ## Define analyte
 var <- "TC/TN"
+
+read_tctn <- function(x) {
+  read_sheet(ss = x, range = gsheet_tab)
+}
 
 #
 # 2. Import data ---------------------------------------------------------------
 cat("Importing", var, "data...")
 
 ## read in raw data
-data_raw <- read_sheet("") 
+all_files <- drive_ls(path = folder_path, pattern = "2022")
+gsheet_files <- all_files[endsWith(files, "2022"),2]
+
+lapply(gsheet_files$id, read_tctn) %>% 
+  bind_rows() -> data_raw
 
 #
 # 3. Process data --------------------------------------------------------------
