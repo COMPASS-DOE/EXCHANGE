@@ -114,6 +114,30 @@ check_cal_curve_values = function(){
     mutate(less_than_cal = Amount < amount_min)
 }
 
+do_corrections = function(dat, README_PATH){
+  
+  # 1. blank corrections
+  samples_and_blanks = 
+    data_ions_assigned %>% 
+    filter(grepl("EC1_", Name) | grepl("Blank", Name)) %>% 
+    filter(!Name %in% c("Blank1", "Blank2", "Blank3", "Blank4")) %>% 
+    filter(!grepl("CondBlank", Name)) %>% 
+    # remove NA amounts
+    filter(!is.na(Amount)) %>% 
+    # assign sample or blank
+    mutate(sample_type = case_when(grepl("Blank", Name) ~ "Blank",
+                                   grepl("EC1_", Name) ~ "Sample")) 
+  
+  blank_mean = 
+    samples_and_blanks %>% 
+    filter(sample_type == "Blank") %>% 
+    group_by(Ion, date_run) %>% 
+    dplyr::summarise(blank_mean = mean(Amount))
+    
+  
+  
+  
+}
 
 
 
