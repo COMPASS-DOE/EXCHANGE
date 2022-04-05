@@ -142,6 +142,40 @@ do_corrections = function(dat, README_PATH){
     mutate(Amount_bl_corrected = Amount - blank_mean)
   
   #
+  # 2. dilution correction ----
+  options(scipen = 50)
+  
+  # read and combine README files
+  
+  # pull a list of file names in the target folder with the target pattern
+  # then read all files and combine
+  filePaths <- list.files(path = README_PATH, pattern = ".xlsx", full.names = TRUE)
+  
+  dat <- do.call(rbind, lapply(filePaths, function(path) {
+    # then add a new column `source` to denote the file name
+    df <- readxl::read_xlsx(path)
+    df[["source"]] <- rep(path, nrow(df))
+    df}))
+  
+  dilutions = 
+    dat %>% 
+    rename(Name = `Sample Name`) %>% 
+    mutate(date_run = str_extract(source, "[0-9]{8}"),
+           date_run = lubridate::as_date(date_run)) %>% 
+    dplyr::select(date_run, Name, Action, Dilution) %>% 
+    force()
+  
+  
+  samples_dilution_corrected = 
+    samples_blank_corrected %>% 
+    left_join(dilutions, by = c("Name", "date_run")) %>% 
+    filter(!Action %in% "Omit") %>% 
+    mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
+    mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected)) %>% 
+    dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected)
+  
+  samples_dilution_corrected
+  
 }
 
 
