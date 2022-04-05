@@ -116,7 +116,7 @@ check_cal_curve_values = function(){
 
 do_corrections = function(dat, README_PATH){
   
-  # 1. blank corrections
+  # 1. blank corrections ----
   samples_and_blanks = 
     data_ions_assigned %>% 
     filter(grepl("EC1_", Name) | grepl("Blank", Name)) %>% 
@@ -134,9 +134,14 @@ do_corrections = function(dat, README_PATH){
     group_by(Ion, date_run) %>% 
     dplyr::summarise(blank_mean = mean(Amount))
     
+  samples_blank_corrected = 
+    samples_and_blanks %>% 
+    filter(sample_type == "Sample") %>% 
+    left_join(blank_mean, by = c("Ion", "date_run")) %>% 
+    replace(is.na(.), 0) %>% 
+    mutate(Amount_bl_corrected = Amount - blank_mean)
   
-  
-  
+  #
 }
 
 
@@ -159,6 +164,6 @@ data_ions_assigned = assign_ions(FILEPATH = "data/ions/ions data without dilutio
                                     IONS = all_ions)
 
 
-
-
+data_ions_corrected = do_corrections(dat = data_ions_assigned,
+                                     README_PATH = "data/ions/ions_readme")
 
