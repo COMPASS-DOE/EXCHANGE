@@ -1,61 +1,90 @@
-############ DELETE THIS HEADER FROM INSTRUMENT SCRIPTS ########################
+############ DELETE THIS HEADER FROM INSTRUMENT SCRIPTS ###################### #
 ## This script is a template to standardize the import and processing workflow
 ## for data streams associated with the EXCHANGE EC1 campaign, and not functional 
 ## code. Once we find a drive home for R scripts and QC'ed data, we shouldn't 
-## need any local dependencies
-############ DELETE THIS HEADER FROM INSTRUMENT SCRIPTS ########################
+## need any local dependencies.
+
+## All variables for EXCHANGE datasets need to have units appended. Please 
+## follow 
+############ DELETE THIS HEADER FROM INSTRUMENT SCRIPTS ###################### #
 
 
+## This is a data processing script for EXCHANGE, a sub-project of THE DOE-funded 
+## COMPASS project (https://compass.pnnl.gov/). 
+##
 ## This script imports raw data for [insert parameters of interest] measured using
 ## [insert relevant instrument and method details] at [insert location, eg. MCRL].
-## and exports clean, Level 1 QC'ed data. [add additional relevant details]. 
-## Data are read in from Google Sheets.
+## and exports clean, Level 0B QC'ed data. [add additional relevant details]. 
+## Data are read in from the COMPASS Google Drive.
 ## 
-## Parameters imported, their lower/upper limits of detection, and sig figs
-## 
-## Created: 2022-01-05
-## Peter Regier
+## Created: YYYY-MM-DD
+## [Your name here!]
 ##
-# #############
-# #############
+# ############# #
+# ############# #
 
-
+#
 # 1. Setup ---------------------------------------------------------------------
+cat("Setup")
 
 # load packages
 require(pacman)
 pacman::p_load(tidyverse, 
-       googlesheets4, # read_sheet 
-       googledrive) # drive_upload
+               cowplot,
+               grattantheme, 
+               googlesheets4, # read_sheet 
+               googledrive) # drive_upload
+
+## set ggplot theme
+theme_set(theme_bw())
+
+## Welcome
+say("Welcome to EXCHANGE!", by = "random")
 
 ## URL for data
-data_path = "xxxx"
+loi_path = "https://docs.google.com/spreadsheets/d/1Osig5zxzW3l9z_1Bb0zNW2tfTdJ60hsh78qMvjgclQE/edit#gid=0"
 
+## Define constants
+a_min = int
+a_max = int
+
+## Define analyte
+var <- "npoc"
+
+#
 # 2. Import data ---------------------------------------------------------------
+cat("Importing", var, "data...")
 
 ## read in raw data
-data_raw <- read_sheet("") %>% 
+data_raw <- read_sheet("") 
+
+#
+# 3. Process data --------------------------------------------------------------
+cat("Processing", var, "data...")
+
+data_processed <- data_raw %>% 
   rename(rename any weirdly named columns) %>% 
   mutate(create any new columns needed (eg calculations)) %>% 
   dplyr::select(columns needed)
 
+#
+# 4. Apply QC flags ------------------------------------------------------------
+cat("Applying flags to", var, "data...")
 
-# 3. QC data -------------------------------------------------------------------
-
-clean_data <- function(data) {
+data_qc <- function(data) {
   data %>% 
-    filter(f_a = a < a_min | a > a_max) %>% 
-    filter(etc)
+    mutate(a = round(a, n_sig_figs)) %>% 
+    mutate(f_a = a < a_min | a > a_max) 
 }
 
-data_clean <- clean_data(data_raw)
+data_clean <- data_qc(data_processed)
 
-## clean up workspace to leave only the final dataframe
-rm(list=setdiff(ls(), "x"))
+#
+# 5. Write cleaned data to drive -----------------------------------------------
 
-
-# 4. Write cleaned data to drive -----------------------------------------------
-
+## We should add Sys.date or hardcode date so we know when the L0B was born
+## The file written out should be named following 
+## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
 drive_upload(media = data_clean, path = data_path)
 
 
