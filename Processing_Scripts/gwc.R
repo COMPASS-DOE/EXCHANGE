@@ -31,9 +31,8 @@ say("Welcome to EXCHANGE!", by = "random")
 ## URL for data
 gwc_path = "https://docs.google.com/spreadsheets/d/1Osig5zxzW3l9z_1Bb0zNW2tfTdJ60hsh78qMvjgclQE/edit#gid=0"
 
-## Define constants
+## Define constants (we are not defining a maximum value for GWC)
 gwc_min = 0
-gwc_max = 10000
 
 ## Define analyte
 var <- "gwc"
@@ -64,7 +63,7 @@ cat("Applying flags to", var, "data...")
 clean_data <- function(data) {
   data %>% 
     mutate(gwc_perc = round(gwc_perc, 0)) %>% 
-    mutate(f_gwc = gwc_perc < gwc_min | gwc_perc > gwc_max) 
+    mutate(f_gwc = gwc_perc < gwc_min) 
 }
 
 gwc <- clean_data(gwc_processed)
