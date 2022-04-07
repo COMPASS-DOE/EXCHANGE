@@ -14,7 +14,9 @@
 ##
 ## This script imports raw data for [insert parameters of interest] measured using
 ## [insert relevant instrument and method details] at [insert location, eg. MCRL].
+
 ## and exports clean, Level 0B QC'ed data. [add additional relevant details]. 
+
 ## Data are read in from the COMPASS Google Drive.
 ## 
 ## Created: YYYY-MM-DD
@@ -29,20 +31,18 @@ cat("Setup")
 
 # load packages
 require(pacman)
-pacman::p_load(tidyverse, 
-               cowplot,
-               grattantheme, 
+
+pacman::p_load(cowsay,
+               tidyverse, 
                googlesheets4, # read_sheet 
                googledrive) # drive_upload
-
-## set ggplot theme
-theme_set(theme_bw())
 
 ## Welcome
 say("Welcome to EXCHANGE!", by = "random")
 
 ## URL for data
-loi_path = "https://docs.google.com/spreadsheets/d/1Osig5zxzW3l9z_1Bb0zNW2tfTdJ60hsh78qMvjgclQE/edit#gid=0"
+
+data_path = "xxxx" 
 
 ## Define constants
 a_min = int
