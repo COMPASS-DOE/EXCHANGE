@@ -26,7 +26,8 @@ pacman::p_load(cowsay,
                tidyr,
                googlesheets4, # read_sheet 
                googledrive,
-               stringr) # drive_upload
+               stringr,
+               lubridate) # drive_upload
 
 ## Welcome
 say("Welcome to EXCHANGE!", by = "random")
@@ -34,6 +35,7 @@ say("Welcome to EXCHANGE!", by = "random")
 ## URL for data
 folder_path <- "https://drive.google.com/drive/u/2/folders/1OVhQADClTIcfMtbJenoWfCD8fnODx_it" 
 gsheet_tab <- "Summary Table"
+naming_key_path <- "https://docs.google.com/spreadsheets/d/1IuGt6izCwXKJvg2Vr8Y_jtHAO_RZvaSBvdD-vp7_BSw/edit?usp=sharing"
 
 ## Define constants
 f1_min <- 0
@@ -51,6 +53,10 @@ read_tctn <- function(x) {
 # 2. Import data ---------------------------------------------------------------
 cat("Importing", var, "data...")
 
+# Read in naming key
+read_sheet(ss = naming_key_path, range = "Sheet1") %>% 
+  select(`Reassigned Sample ID`, `Original Instrument ID`) -> key
+
 ## read in raw data
 all_files <- drive_ls(path = folder_path, pattern = "2022")
 gsheet_files <- all_files[endsWith(all_files$name, "2022"),2]
@@ -67,9 +73,18 @@ data_raw %>%
          Nitrogen_Weight_perc = "Weight\n[%]...9",
          Carbon_Weight_perc = "Weight\n[%]...16") %>% 
   select(Instrument_ID, Sample_ID, Nitrogen_Weight_perc, Carbon_Weight_perc) %>% 
-  filter(str_detect(Instrument_ID, "^EC1"))
+  filter(str_detect(Instrument_ID, "^EC1")) %>% # filter out blanks
+  left_join(key, by = c("Instrument_ID" = "Original Instrument ID")) %>% 
+  separate('Reassigned Sample ID', into = c("Campaign", "Kit_ID","Transect_Location", 
+                                            "Acidification", "Set", "Run"), sep = "_") %>% 
+  mutate(Transect_Location = case_when(Transect_Location == "WET" ~ "Wetland",                                                                               Transect_Location == "TRANS" ~ "Transition"),
+         Acidification = case_when(Acidification == "UnAc" ~ FALSE)) %>% 
+  separate(Instrument_ID, into = c("one", "two", "three", "Month", "Day"), sep = "_") %>% 
+  mutate(Year = "2022", Date_Ran = make_date(day = Day, month = Month, year = Year)) %>% 
+  select(Campaign, Kit_ID, Transect_Location, Nitrogen_Weight_perc, Carbon_Weight_perc,
+         Acidification, Date_Ran, Set, Run) -> data_formatted
 
--> data_processed
+# -> data_processed
 
 #
 # 4. Apply QC flags ------------------------------------------------------------
