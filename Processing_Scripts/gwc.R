@@ -63,14 +63,17 @@ cat("Applying flags to", var, "data...")
 clean_data <- function(data) {
   data %>% 
     mutate(gwc_perc = round(gwc_perc, 0)) %>% 
-    mutate(f_gwc = gwc_perc < gwc_min) 
+    mutate(gwc_flag = ifelse(gwc_perc < gwc_min, "TRUE", NA)) 
 }
 
-gwc <- clean_data(gwc_processed)
+gwc <- clean_data(gwc_processed) %>% 
+  filter(!is.na(gwc_perc))
+  
 
 #
 # 5. Write cleaned data to drive -----------------------------------------------
 
+write_csv(gwc, "Data/Processed/EC1_GWC_L0B.csv")
 ## We should add Sys.date or hardcode date so we know when the L0B was born
 ## The file written out should be named following 
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
