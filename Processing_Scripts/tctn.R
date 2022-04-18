@@ -73,6 +73,7 @@ data_raw %>%
          Nitrogen_Weight_perc = "Weight\n[%]...9",
          Carbon_Weight_perc = "Weight\n[%]...16") %>% 
   select(Instrument_ID, Sample_ID, Nitrogen_Weight_perc, Carbon_Weight_perc) %>% 
+  pivot_longer() %>% 
   filter(str_detect(Instrument_ID, "^EC1")) %>% # filter out blanks
   left_join(key, by = c("Instrument_ID" = "Original Instrument ID")) %>% 
   separate('Reassigned Sample ID', into = c("Campaign", "Kit_ID","Transect_Location", 
@@ -82,9 +83,8 @@ data_raw %>%
   separate(Instrument_ID, into = c("one", "two", "three", "Month", "Day"), sep = "_") %>% 
   mutate(Year = "2022", Date_Ran = make_date(day = Day, month = Month, year = Year)) %>% 
   select(Campaign, Kit_ID, Transect_Location, Nitrogen_Weight_perc, Carbon_Weight_perc,
-         Acidification, Date_Ran, Set, Run) -> data_formatted
+         Acidification, Date_Ran, Set, Run) -> data_processed
 
-# -> data_processed
 
 #
 # 4. Apply QC flags ------------------------------------------------------------
@@ -92,8 +92,8 @@ cat("Applying flags to", var, "data...")
 
 data_qc <- function(data) {
   data %>% 
-    mutate(a = round(a, n_sig_figs)) %>% 
-    mutate(f_a = a < a_min | a > a_max) 
+    mutate(a = round(a, n_sig_figs),
+           f_1 = ifelse())
 }
 
 data_clean <- data_qc(data_processed)
