@@ -26,26 +26,35 @@ bd_path = "https://docs.google.com/spreadsheets/d/1R00De3XmShwcaVdSuqeO-IaL_sdF2
 
 # 2. Import data ---------------------------------------------------------------
 
+## Read in GWC data for correcting bulk density calculations 
+gwc <- read_csv("Data/Processed/EC1_GWC_L0B.csv")
+
 ## import bulk density data (non-hyprop)
+bd_raw <- read_sheet(bd_path) 
+
+## Calculate bulk density using GWC to calculate dry weight
 ## two 2.5" ring lids weigh 16.9g, with 5cm diameter and 5.1cm height. Thus, the 
-## volume is pi * (d/2)^2 * headspace_cm
-bd <- read_sheet(bd_path) %>% 
+## volume is pi * (d/2)^2 * headspace_cm. Dry weight is calculated from GWC 
+## based on the formula of (field_moist / ((GWC / 100) + 1)) from KP
+bd <- bd_raw %>% 
   mutate(kit_id = str_match(sample_id, "K0\\d\\d")[,1], 
          site = str_to_title(str_match(sample_id, "[:alpha:]{6,10}")), 
-         wt_soil_g = wt_ring_soil_lids_g - (wt_ring_g + 17), 
+         wt_soil_fm_g = wt_ring_soil_lids_g - (wt_ring_g + 17), 
          ring_diameter = ifelse(wt_ring_g > 150, 8, 5), 
          total_volume = ifelse(wt_ring_g > 150, 250, 100), 
          headspace_volume = pi * (ring_diameter/2)^2 * height_headspace_cm, 
-         volume_soil_ml = total_volume - headspace_volume, 
-         bulk_density_g_ml = wt_soil_g / volume_soil_ml) %>% 
-  dplyr::select(kit_id, site, bulk_density_g_ml)
+         volume_soil_cm3 = total_volume - headspace_volume) %>% 
+  left_join(gwc, by = c("kit_id", "site")) %>% 
+  mutate(wt_soil_dry_g = wt_soil_fm_g / ((gwc_perc / 100) + 1),
+         bulk_density_g_cm3 = wt_soil_dry_g / volume_soil_cm3) %>% 
+  dplyr::select(kit_id, site, bulk_density_g_cm3)
 
 
 # 3. QC data -------------------------------------------------------------------
 
 clean_data <- function(data) {
   data %>% 
-    filter(bulk_density_g_ml > 0 & bulk_density_g_ml < 10)
+    mutate(bulk_density_flag = ifelse(bulk_density_g_cm3 > 0 | bulk_density_g_cm3 < 2, "TRUE", NA))
 }
 
 bulk_density <- clean_data(bd)
@@ -54,5 +63,5 @@ bulk_density <- clean_data(bd)
 # 4. Write out dataset ---------------------------------------------------------
 
 ## Update with EC1 nomenclature when data are complete
-write_csv(bulk_density, "Data/bulk_density_provisional.csv")
+write_csv(bulk_density, "Data/Processed/EC1_BulkDensity_LOB_20220418.csv")
 
