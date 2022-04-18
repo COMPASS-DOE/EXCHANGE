@@ -73,7 +73,7 @@ gwc <- clean_data(gwc_processed) %>%
 #
 # 5. Write cleaned data to drive -----------------------------------------------
 
-write_csv(gwc, "Data/Processed/EC1_GWC_L0B.csv")
+write_csv(gwc, "Data/Processed/EC1_GWC_L0B_20220418.csv")
 ## We should add Sys.date or hardcode date so we know when the L0B was born
 ## The file written out should be named following 
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
