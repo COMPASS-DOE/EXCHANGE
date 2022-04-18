@@ -66,8 +66,6 @@ titrator <- clean_data(titrator_data) %>%
 
 
 # 4. Write L0B data to Google Drive ---------------------------------------------
-write_csv(titrator, "Data/EC1_Water_WaterQuality_L0B.csv")
-
-
+write_csv(titrator, "Data/Processed/EC1_Water_WaterQuality_L0B_20220418.csv")
 
 
