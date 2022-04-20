@@ -140,3 +140,32 @@ save(Why.u.NA, file="Mystery_NAs_slope.rda")
 MP <- readxl::read_excel("/Users/myer056/OneDrive - PNNL/Data Generation and Files/Raw_Instrument_Data/IC-6000 MCRL/Data for LOD calculations/Maintenance_Dates_IC.xlsx")
 
 MP.distinct <- MP %>% distinct(Date) %>% rename(Date.Added = Date) %>% mutate(Date.Ended = lead(Date.Added))
+
+
+
+
+# KP's CLEAN CODE ---------------------------------------------------------
+library(tidyverse)
+
+load("Data/LODs/Prelim_all_LODs_byrun.rda")
+maintenance_dates = readxl::read_xlsx("Data/LODs/Maintenance_Dates_IC.xlsx")
+
+dates = 
+  maintenance_dates %>%
+  distinct(Date) %>% # remove duplicates
+  add_row(Date = as.Date("2020-10-01")) %>% # add a "first date for the runs"
+  add_row(Date = as.Date(Sys.Date())) %>% # set current date as the "final date for runs"
+  arrange(Date) %>% 
+  mutate(Beginning = Date,
+         Ending = lead(Beginning)) %>% # create columns denoting date range
+  drop_na() %>% 
+  rownames_to_column("group") # assign a group to each date range, easiest to just use row numbers
+
+data_bins = 
+  data_m_sadl %>% 
+  dplyr::select(Analyte, Date_Run, LOD.run)
+
+lod_dates = 
+  merge(data_bins, dates) %>% # this will merge all rows in file1 with all rows in file2
+  subset(Date_Run >= Beginning & Date_Run <= Ending) # keep only rows where dates fall within the range
+
