@@ -14,7 +14,8 @@
 
 # load packages
 require(pacman)
-pacman::p_load(tidyverse, 
+pacman::p_load(cowsay,
+               tidyverse, 
                googlesheets4, # read_sheet 
                googledrive) # drive_upload
 
@@ -27,7 +28,7 @@ bd_path = "https://docs.google.com/spreadsheets/d/1R00De3XmShwcaVdSuqeO-IaL_sdF2
 # 2. Import data ---------------------------------------------------------------
 
 ## Read in GWC data for correcting bulk density calculations 
-gwc <- read_csv("Data/Processed/EC1_GWC_L0B.csv")
+gwc <- read_csv("Data/Processed/EC1_GWC_L0B_20220418.csv")
 
 ## import bulk density data (non-hyprop)
 bd_raw <- read_sheet(bd_path) 

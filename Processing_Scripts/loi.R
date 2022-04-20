@@ -19,7 +19,8 @@ cat("Setup")
 
 # load packages
 require(pacman)
-pacman::p_load(tidyverse, 
+pacman::p_load(cowsay, 
+               tidyverse, 
                cowplot,
                grattantheme, 
                googlesheets4, # read_sheet 
@@ -71,6 +72,8 @@ loi <- clean_data(loi_processed)
 
 #
 # 5. Write cleaned data to drive -----------------------------------------------
+
+write_csv(loi, "Data/Processed/EC1_LOI_L0B_20220419.csv")
 
 ## We should add Sys.date or hardcode date so we know when the L0B was born
 ## The file written out should be named following 

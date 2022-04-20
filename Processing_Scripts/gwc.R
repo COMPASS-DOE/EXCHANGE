@@ -19,7 +19,8 @@ cat("Setup")
 
 # load packages
 require(pacman)
-pacman::p_load(tidyverse, 
+pacman::p_load(cowsay, 
+               tidyverse, 
                cowplot,
                grattantheme, 
                googlesheets4, # read_sheet 
@@ -68,7 +69,6 @@ clean_data <- function(data) {
 
 gwc <- clean_data(gwc_processed) %>% 
   filter(!is.na(gwc_perc))
-  
 
 #
 # 5. Write cleaned data to drive -----------------------------------------------
