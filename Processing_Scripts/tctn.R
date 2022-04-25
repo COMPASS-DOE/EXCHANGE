@@ -73,7 +73,6 @@ data_raw %>%
          Nitrogen_Weight_perc = "Weight\n[%]...9",
          Carbon_Weight_perc = "Weight\n[%]...16") %>% 
   select(Instrument_ID, Sample_ID, Nitrogen_Weight_perc, Carbon_Weight_perc) %>% 
-  pivot_longer() %>% 
   filter(str_detect(Instrument_ID, "^EC1")) %>% # filter out blanks
   left_join(key, by = c("Instrument_ID" = "Original Instrument ID")) %>% 
   separate('Reassigned Sample ID', into = c("Campaign", "Kit_ID","Transect_Location", 
@@ -92,8 +91,9 @@ cat("Applying flags to", var, "data...")
 
 data_qc <- function(data) {
   data %>% 
-    mutate(a = round(a, n_sig_figs),
-           f_1 = ifelse())
+    mutate(  #a = round(a, n_sig_figs),
+           f_1_N = ifelse(Nitrogen_Weight_perc < f1_min | Nitrogen_Weight_perc > f1_max, T, F),
+           f_1_C = ifelse(Carbon_Weight_perc < f1_min | Carbon_Weight_perc > f1_max, T, F))
 }
 
 data_clean <- data_qc(data_processed)
