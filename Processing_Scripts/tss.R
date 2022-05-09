@@ -1,28 +1,17 @@
-############ DELETE THIS HEADER FROM INSTRUMENT SCRIPTS ###################### #
-## This script is a template to standardize the import and processing workflow
-## for data streams associated with the EXCHANGE EC1 campaign, and not functional 
-## code. Once we find a drive home for R scripts and QC'ed data, we shouldn't 
-## need any local dependencies.
-
-## All variables for EXCHANGE datasets need to have units appended. Please 
-## follow 
-############ DELETE THIS HEADER FROM INSTRUMENT SCRIPTS ###################### #
-
 
 ## This is a data processing script for EXCHANGE, a sub-project of THE DOE-funded 
 ## COMPASS project (https://compass.pnnl.gov/). 
 ##
-## This script imports raw data for [insert parameters of interest] measured using
-## [insert relevant instrument and method details] at [insert location, eg. MCRL].
-## and exports clean, Level 1 QC'ed data. [add additional relevant details]. 
+## This script imports raw data for Total Suspended Solids measured using
+## a filtration apparatus at MCRL
+## and exports clean, Level 1 QC'ed data.
 ## Data are read in from the COMPASS Google Drive.
 ## 
-## Created: YYYY-MM-DD
-## [Your name here!]
+## Created: 2022-04-25
+## Stephanie Pennington
 ##
 # ############# #
 # ############# #
-
 #
 # 1. Setup ---------------------------------------------------------------------
 cat("Setup")
@@ -30,15 +19,19 @@ cat("Setup")
 # load packages
 require(pacman)
 pacman::p_load(cowsay,
-               tidyverse, 
+               ggplot2,
+               dplyr,
+               readr,
+               tidyr,
                googlesheets4, # read_sheet 
-               googledrive) # drive_upload
+               lubridate) # drive_upload
 
 ## Welcome
 say("Welcome to EXCHANGE!", by = "random")
 
 ## URL for data
-data_path = "xxxx" 
+data_path = "https://docs.google.com/spreadsheets/d/13MBZYTh3K8bsog27UZOx2mXUGflXMukapq7Zfsl1ooM/edit#gid=768038889" 
+gsheet_tab <- "Sheet1"
 
 ## Define constants
 a_min = int
@@ -52,16 +45,19 @@ var <- "TSS"
 cat("Importing", var, "data...")
 
 ## read in raw data
-data_raw <- read_sheet("") 
+data_raw <- read_sheet(ss = data_path, range = gsheet_tab, skip = 5)
 
 #
 # 3. Process data --------------------------------------------------------------
 cat("Processing", var, "data...")
 
-data_processed <- data_raw %>% 
-  rename(rename any weirdly named columns) %>% 
-  mutate(create any new columns needed (eg calculations)) %>% 
-  dplyr::select(columns needed)
+data_raw %>% 
+  drop_na(`Kit #`) %>% # remove blank rows used for visual separation
+  rename(Date_Received = `Date received`, Date_Filtered = `Date filtered`,
+         Kit_ID = `Kit #`) %>% 
+  group_by(Kit_ID) %>% 
+
+
 
 #
 # 4. Apply QC flags ------------------------------------------------------------
