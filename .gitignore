@@ -39,7 +39,7 @@ vignettes/*.pdf
 .Renviron
 
 # Data folders for processing
-Data/
+*/Data/*
 
 # Mac stuff
 .DS_Store
