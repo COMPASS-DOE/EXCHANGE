@@ -29,25 +29,17 @@ theme_set(theme_bw())
 lod_npoc <- 0.076
 lod_tn <- 0.014
 
+## Set GDrive URL for NPOC raw data files
+directory = "https://drive.google.com/drive/folders/1Mkg5UCEzt9ifKCGyr-Kn9a3LL8XuGzBa"
 
-# 2. Import data ---------------------------------------------------------------
+# 2. Functions -----------------------------------------------------------------
 
-## First, authorize drive access
-googledrive::drive_auth()
-
-## Takes forever to find, looks through all GDrive files - would like to figure
-## out a better alternative...
-file_names <- googledrive::drive_find(pattern = "_Summary_")
-
-file_names2 <- googledrive::drive_get(pattern = "~/1.1 EXCHANGE/raw_data/npoc/")
-
-## Download the files from drive then read in one by one to a list
-file_list <- list() # Initialize a list to fill with the for loop
-for(i in 1:nrow(file_names)){
-  path <- drive_download(file_names$name[i], overwrite = T) # this downloads files
-  # to your local environment (based on project I think)
-  date <- substr(file_names$name[i], 1, 8) # scrape the data from the file
-  file_list[[i]] <- read_delim(paste0("./", path$path), skip = 10, delim = "\t") %>% 
+## Create a function to read in data
+read_data <- function(data){
+  # First, scrape date from filename
+  date <- substr(data, 1, 8)
+  # Second, read in data
+  read_delim(file = data, skip = 10, delim = "\t") %>% 
     rename(sample_name = `Sample Name`, 
            npoc_raw = `Result(NPOC)`, 
            tn_raw = `Result(TN)`) %>% 
@@ -56,73 +48,80 @@ for(i in 1:nrow(file_names)){
 }
 
 
-# 3. Set up functions ----------------------------------------------------------
+# 3. Import data ---------------------------------------------------------------
 
-## This function calculates blanks for each run as the mean
-calculate_blanks <- function(file){ 
-  x <- file %>% filter(grepl("Blank", sample_name))
-  date <- first(x$date)
-  npoc_blank = round(mean(x$npoc_raw[!is.na(x$npoc_raw)]), 2)
-  tn_blank = round(mean(x$tn_raw[!is.na(x$tn_raw)]), 3)
-  
-  return(c(date = date, 
-           npoc_blank_raw = npoc_blank, 
-           tn_blank_raw = tn_blank))
+## Create a list of files to download
+files <- drive_ls(directory) %>% 
+  filter(grepl("_Summary_", name))
+
+## Download files to local (don't worry, we'll delete em in a sec)
+lapply(files$name, drive_download, overwrite = TRUE)
+
+# 3. Import data ---------------------------------------------------------------
+
+## Read in data, filter to EC1 samples, and add sample name
+npoc_raw <- files$name %>% 
+  map(read_data) %>% 
+  bind_rows() 
+
+## Clean up local (delete downloaded files)
+file.remove(c(files$name))
+
+
+# 4. Calculate blanks and add to data ------------------------------------------
+
+blanks <- npoc_raw %>% 
+  filter(grepl("^Blank", sample_name)) %>% 
+  group_by(date) %>% 
+  summarize(npoc_blank_raw = round(mean(npoc_raw[!is.na(npoc_raw)]), 2), 
+         tn_blank_raw = round(mean(tn_raw[!is.na(tn_raw)]), 2)) %>% 
+  mutate(npoc_blank = ifelse(npoc_blank_raw > lod_npoc, npoc_blank_raw, 0), 
+         tn_blank = ifelse(tn_blank_raw > lod_tn, tn_blank_raw, 0)) %>% 
+  select(date, npoc_blank, tn_blank)
+
+
+# 5. Add blanks data -----------------------------------------------------------
+
+npoc_blank_corrected <- npoc_raw %>% 
+  filter(grepl("EC1_K", sample_name)) %>% # filter to EC1 samples only
+  mutate(campaign = "EC1", 
+         kit_id = substr(sample_name, 5, 9), 
+         transect_location = "water") %>% 
+  inner_join(blanks, by = "date") %>% 
+  mutate(npoc_mgl = npoc_raw - npoc_blank, 
+         tn_mgl = tn_raw - tn_blank)
+
+
+# 6. Clean data ----------------------------------------------------------------
+
+## Helper function to calculate mean if numeric, otherwise first (needed to 
+## preserve dates, which are different for duplicated kits)
+mean_if_numeric <- function(x){
+  ifelse(is.numeric(x), mean(x, na.rm = TRUE), first(x))
 }
 
-## This function pulls only EC1 files to keep
-pull_ec1_data <- function(file){
-  file %>% filter(grepl("EC1_K", sample_name)) %>% 
-    mutate(sample_name = substr(sample_name, 5, 9))
-}
+## The last step before finalizing is taking care of pesky duplicates from reruns
+npoc_duplicates_removed <- npoc_blank_corrected %>% 
+  select(campaign, transect_location, kit_id, date, npoc_mgl, tn_mgl, npoc_blank, tn_blank) %>% 
+  group_by(kit_id) %>% 
+  summarize(across(everything(), .f = mean_if_numeric))
 
-## This function blank-corrects NPOC and TN
-blank_correct <- function(file){
-    date = first(file$date)
-    npoc_blank = blanks$npoc_blank[which(blanks$date == date)]
-    tn_blank = blanks$tn_blank[which(blanks$date == date)]
-    
-    file %>% 
-      mutate(npoc_blank = npoc_blank, 
-             tn_blank = tn_blank, 
-             npoc_mgl = npoc_raw - npoc_blank, 
-             tn_mgl = tn_raw - tn_blank)
-}
+npoc <- npoc_duplicates_removed %>% 
+  ## First, round each parameter to proper significant figures
+  mutate(npoc_mgl = round(npoc_mgl, 2), 
+         tn_mgl = round(tn_mgl, 3)) %>% 
+  ## Second, add flags for outside LOD
+  mutate(npoc_mgl_flag = ifelse(npoc_mgl < lod_npoc | npoc_mgl > 30, "TRUE", NA), #per cal curve upper limit
+         tn_mgl_flag = ifelse(tn_mgl < lod_tn | tn_mgl > 3, "TRUE", NA), 
+         npoc_blank_flag = ifelse(npoc_blank == 0, "Below LOD", NA), 
+         tn_blank_flag = ifelse(tn_blank == 0, "Below LOD", NA)) %>% 
+  select(date, campaign, kit_id, transect_location, npoc_mgl, tn_mgl, npoc_blank, tn_blank, contains("_flag")) # clean up unneeded
 
 
-# 4. Blank-correct the data ----------------------------------------------------
+# 7. Write data ----------------------------------------------------------------
+date_updated <- "20220509"
 
-## Create a final blanks dataset
-blanks <- bind_rows(lapply(file_list, calculate_blanks)) %>%
-  mutate(npoc_blank_raw = as.numeric(npoc_blank_raw), 
-         tn_blank_raw = as.numeric(tn_blank_raw)) %>% 
-  mutate(npoc_blank = ifelse(npoc_blank_raw > lod_npoc, npoc_blank_raw, 0),
-         tn_blank = ifelse(tn_blank_raw > lod_tn, tn_blank_raw, 0), 
-         f_npoc_blank = ifelse(npoc_blank == 0, "Below LOD", FALSE),
-         f_tn_blank = ifelse(tn_blank == 0, "Below LOD", FALSE))
-
-df_raw <- lapply(file_list, pull_ec1_data) %>% 
-  lapply(., blank_correct) %>% 
-  bind_rows()
+write_csv(npoc, paste0("Data/Processed/EC1_NPOC_L0B_", date_updated, ".csv"))
 
 
-# 5. Clean data ----------------------------------------------------------------
-
-clean_data <- function(data) {
-  data %>% 
-    ## First, round each parameter to proper significant figures
-    mutate(npoc_mgl = round(npoc_mgl, 2), 
-           tn_mgl = round(tn_mgl, 3)) %>% 
-    ## Second, add flags for outside LOD
-    mutate(f_npoc = npoc_mgl < lod_npoc | npoc_mgl > 30, #per cal curve upper limit
-           f_tn = tn_mgl < lod_tn | tn_mgl > 3) %>% 
-    left_join(., blanks %>% select(date, f_npoc_blank, f_tn_blank), by = "date")  #per cal curve upper limit
-}
-
-df <- clean_data(df_raw)
-
-
-# 6. Write data ----------------------------------------------------------------
-
-write_csv(df, "Data/EC1_NPOC_TN_L0B.csv")
 

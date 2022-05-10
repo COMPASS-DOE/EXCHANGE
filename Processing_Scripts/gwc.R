@@ -52,10 +52,11 @@ cat("Processing", var, "data...")
 ## The formula for GWC is [(wt_crucible + wt_moist) - (wt_crucible + wt_dry)] / 
 ## [(crucible + dry) - (crucible)]
 gwc_processed <- gwc_raw %>% 
-  mutate(kit_id = str_match(sample_id, "K0\\d\\d")[,1], 
-         site = str_to_title(str_match(sample_id, "[:alpha:]{6,10}")), 
+  mutate(campaign = "EC1",
+         kit_id = str_match(sample_id, "K0\\d\\d")[,1], 
+         transect_location = str_to_title(str_match(sample_id, "[:alpha:]{6,10}")), 
          gwc_perc = ((wt_crucible_moist_g - wt_crucible_dry_g) / (wt_crucible_dry_g - wt_crucible_g))* 100) %>% 
-  dplyr::select(kit_id, site, gwc_perc)
+  dplyr::select(campaign, kit_id, transect_location, gwc_perc)
 
 #
 # 4. Apply QC flags ------------------------------------------------------------
@@ -64,7 +65,7 @@ cat("Applying flags to", var, "data...")
 clean_data <- function(data) {
   data %>% 
     mutate(gwc_perc = round(gwc_perc, 0)) %>% 
-    mutate(gwc_flag = ifelse(gwc_perc < gwc_min, "TRUE", NA)) 
+    mutate(flag_gwc_perc = ifelse(gwc_perc < gwc_min, "TRUE", NA)) 
 }
 
 gwc <- clean_data(gwc_processed) %>% 
@@ -73,10 +74,11 @@ gwc <- clean_data(gwc_processed) %>%
 #
 # 5. Write cleaned data to drive -----------------------------------------------
 
-write_csv(gwc, "Data/Processed/EC1_GWC_L0B_20220418.csv")
-## We should add Sys.date or hardcode date so we know when the L0B was born
-## The file written out should be named following 
-## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
-#drive_upload(media = data_clean, path = data_path)
+date_updated <- "20220509"
+
+write_csv(gwc, paste0("Data/Processed/EC1_GWC_L0B_", date_updated, ".csv"))
+
+
+
 
 

@@ -27,42 +27,46 @@ bd_path = "https://docs.google.com/spreadsheets/d/1R00De3XmShwcaVdSuqeO-IaL_sdF2
 
 # 2. Import data ---------------------------------------------------------------
 
-## Read in GWC data for correcting bulk density calculations 
-gwc <- read_csv("Data/Processed/EC1_GWC_L0B_20220418.csv")
+## Read in GWC data for correcting bulk density calculations
+
+gwc_path <- list.files(path = "Data/Processed", pattern = "GWC")
+gwc <- read_csv(paste0("Data/Processed/", gwc_path))
 
 ## import bulk density data (non-hyprop)
-bd_raw <- read_sheet(bd_path) 
+bulk_density_raw <- read_sheet(bd_path) 
 
 ## Calculate bulk density using GWC to calculate dry weight
 ## two 2.5" ring lids weigh 16.9g, with 5cm diameter and 5.1cm height. Thus, the 
 ## volume is pi * (d/2)^2 * headspace_cm. Dry weight is calculated from GWC 
 ## based on the formula of (field_moist / ((GWC / 100) + 1)) from KP
-bd <- bd_raw %>% 
-  mutate(kit_id = str_match(sample_id, "K0\\d\\d")[,1], 
-         site = str_to_title(str_match(sample_id, "[:alpha:]{6,10}")), 
+bulk_density_processed <- bulk_density_raw %>% 
+  mutate(campaign = "EC1",
+         kit_id = str_match(sample_id, "K0\\d\\d")[,1], 
+         transect_location = str_to_title(str_match(sample_id, "[:alpha:]{6,10}")), 
          wt_soil_fm_g = wt_ring_soil_lids_g - (wt_ring_g + 17), 
          ring_diameter = ifelse(wt_ring_g > 150, 8, 5), 
          total_volume = ifelse(wt_ring_g > 150, 250, 100), 
          headspace_volume = pi * (ring_diameter/2)^2 * height_headspace_cm, 
          volume_soil_cm3 = total_volume - headspace_volume) %>% 
-  left_join(gwc, by = c("kit_id", "site")) %>% 
+  left_join(gwc %>% select(-campaign), by = c("kit_id", "transect_location")) %>% 
   mutate(wt_soil_dry_g = wt_soil_fm_g / ((gwc_perc / 100) + 1),
          bulk_density_g_cm3 = wt_soil_dry_g / volume_soil_cm3) %>% 
-  dplyr::select(kit_id, site, bulk_density_g_cm3)
+  dplyr::select(campaign, kit_id, transect_location, bulk_density_g_cm3)
 
 
 # 3. QC data -------------------------------------------------------------------
 
 clean_data <- function(data) {
   data %>% 
-    mutate(bulk_density_flag = ifelse(bulk_density_g_cm3 > 0 | bulk_density_g_cm3 < 2, "TRUE", NA))
+    mutate(bulk_density_g_cm3_flag = ifelse(bulk_density_g_cm3 < 0 | bulk_density_g_cm3 > 2, "TRUE", NA))
 }
 
-bulk_density <- clean_data(bd)
+bulk_density <- clean_data(bulk_density_processed)
 
 
 # 4. Write out dataset ---------------------------------------------------------
+date_updated <- "20220509"
 
-## Update with EC1 nomenclature when data are complete
-write_csv(bulk_density, "Data/Processed/EC1_BulkDensity_LOB_20220418.csv")
+write_csv(bulk_density, paste0("Data/Processed/EC1_BulkDensity_L0B_", date_updated, ".csv"))
+
 
