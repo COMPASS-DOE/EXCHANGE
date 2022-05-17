@@ -1,6 +1,6 @@
 ################# IC LOD Workup Script ##################
 ### By Opal & Allison 
-## Last Updated: Apr 2022
+## Last Updated: May 2022
 
 #Steps: 
 # 1.	Develop a script to calculate the slope of the standard curve for each ion – slope is the signal response 
@@ -28,8 +28,8 @@ z <- 3
 library(tidyverse)
 setuser <- "/Users/myer056/OneDrive - PNNL/"
 
-Blankfile <- read.csv("/Users/myer056/OneDrive - PNNL/Data Generation and Files/Raw_Instrument_Data/IC-6000 MCRL/Data for LOD calculations/Blank_Output_complete_2022-04-01.csv")
-Blankfile <- Blankfile %>% mutate(Date_Run = as.character(Date_Run), Date_Run = lubridate::as_date(Date_Run, format = "%Y%m%d"))
+Blankfile <- read.csv("/Users/myer056/OneDrive - PNNL/Data Generation and Files/Raw_Instrument_Data/IC-6000 MCRL/Data for LOD calculations/Blank_Output_complete_2022-05-04.csv")
+Blankfile <- Blankfile %>% mutate(Date_Run.1 = as.character(Date_Run), Date_Run = lubridate::as_date(Date_Run.1, format = "%Y%m%d")) %>% select(-Date_Run.1)
 
 Sreag.avg <- aggregate(Area ~ Analyte + Date_Run, data = Blankfile, mean)
 σreag.sd <- aggregate(Area ~ Analyte + Date_Run, data = Blankfile, sd)
@@ -51,8 +51,10 @@ assign_ions = function(FILEPATH, PATTERN, IONS){
   # pull a list of file names in the target folder with the target pattern
   # then read all files and combine
   filePaths <- list.files(path = FILEPATH, pattern = PATTERN, full.names = TRUE)
-  # filePaths <- list.files(path = FILEPATH, pattern = c(".xls"), full.names = TRUE)
+   #filePaths <- list.files(path= "/Users/myer056/OneDrive - PNNL/Data Generation and Files/Raw_Instrument_Data/IC-6000 MCRL/Data for LOD calculations/Slopes", pattern = c("RC2"), full.names = TRUE)
+   #IONS = all_ions
   
+  #to troubleshoot: dplyr::bind_rows binds all rows, you can see which ones are not matching
   dat <- do.call(rbind, lapply(filePaths, function(path) {
     # then add a new column `source` to denote the file name
     df <- readxl::read_xls(path, skip = 7)
@@ -68,12 +70,12 @@ assign_ions = function(FILEPATH, PATTERN, IONS){
   label_rows_df = 
     label_rows %>% 
     as_tibble() %>%
-    rename(Row_number = value) %>% 
+    dplyr::rename(Row_number = value)  %>%
     mutate(label = TRUE, 
-           Row_number = as.character(Row_number))
+          Row_number = as.character(Row_number))
   
   # now join this to the dataframe
-    dat %>% 
+  data_new <-  dat %>% 
     tibble::rownames_to_column("Row_number") %>% 
    right_join(label_rows_df) %>% 
    # mutate(Ion = case_when(label ~ Slope)) %>% 
@@ -101,8 +103,8 @@ assign_ions = function(FILEPATH, PATTERN, IONS){
     data_new %>% 
     #filter(!is.na(`No.`)) %>% 
     mutate_at(vars(-'Peak Name', -source, -Cal.Type, -Points, -Offset, -Slope, -Curve, -Coeff.Det., -Eval.Type), as.numeric) %>% 
-    mutate(Date_Run = str_extract(source, "[0-9]{8}"),
-           Date_Run = lubridate::as_date(Date_Run)) %>% 
+    mutate(Date_Run.1 = str_extract(source, "[0-9]{8}"),
+           Date_Run = lubridate::as_date(Date_Run.1)) %>% 
     dplyr::select('Peak Name', Slope, Date_Run) %>% 
     force()
   
@@ -110,50 +112,37 @@ assign_ions = function(FILEPATH, PATTERN, IONS){
   
 }
 
-#Slopefile <- readxl::read_excel("/Users/myer056/OneDrive - PNNL/Data Generation and Files/Raw_Instrument_Data/IC-6000 MCRL/Data for LOD calculations/20211110_Cation_CD_2_Slope_SBR_RC2_RC2_H46-63.xls", skip =7)
-#Need to look at KP code for bringing in the files in a readable way for multiple analytes
-#SADL_cal$SADL / as.numeric(Slopefile[6,'Slope'])
 #output from slope file needs to be Analyte, Slope, Date
 
 
 all_ions = c("Lithium", "Sodium", "Ammonium", "Potassium", "Magnesium", "Calcium", "Nitrite", "Nitrate",
              "Chloride", "Bromide", "Sulfate", "Phosphate", "Fluoride")
 
+### NEED TO CHANGE FOR CAMPAIGN SPECIFIC CALCULATIONS! IF YOU WANT ALL THEN CHANGE PATTERN TO .xls
+
 m.run = assign_ions(FILEPATH = "/Users/myer056/OneDrive - PNNL/Data Generation and Files/Raw_Instrument_Data/IC-6000 MCRL/Data for LOD calculations/Slopes", 
-                                 PATTERN = ".xls",
+                                 PATTERN = "COMPASS",
                                  IONS = all_ions)
 
 colnames(m.run)[colnames(m.run) == 'Peak Name'] <- 'Analyte'
 
 
-LOD.run = SADL_cal / m.run 
+#LOD.run = SADL_cal / m.run 
 
 data_m_sadl <- dplyr::left_join(SADL_cal,m.run, by=c("Analyte","Date_Run"))
-data_m_sadl <- data_m_sadl %>% mutate(LOD.run = SADL / as.numeric(Slope))
-save(data_m_sadl, file="Prelim_all_LODs_byrun.rda")
-
-Why.u.NA <- subset(data_m_sadl,is.na(Slope))
-save(Why.u.NA, file="Mystery_NAs_slope.rda")
+data_m_sadl <- data_m_sadl %>% filter(!is.na(Slope)) %>% 
+  mutate(LOD.run = SADL / as.numeric(Slope))
+save(data_m_sadl, file="Prelim_all_LODs_byrun_RC2.rda")
 
 #Maintenance Periods# 
-#not sure why this isnt working....#
-MP <- readxl::read_excel("/Users/myer056/OneDrive - PNNL/Data Generation and Files/Raw_Instrument_Data/IC-6000 MCRL/Data for LOD calculations/Maintenance_Dates_IC.xlsx")
 
-MP.distinct <- MP %>% distinct(Date) %>% rename(Date.Added = Date) %>% mutate(Date.Ended = lead(Date.Added))
-
-
-
-
-# KP's CLEAN CODE ---------------------------------------------------------
-library(tidyverse)
-
-load("Data/LODs/Prelim_all_LODs_byrun.rda")
-maintenance_dates = readxl::read_xlsx("Data/LODs/Maintenance_Dates_IC.xlsx")
+maintenance_dates <- readxl::read_excel("/Users/myer056/OneDrive - PNNL/Data Generation and Files/Raw_Instrument_Data/IC-6000 MCRL/Data for LOD calculations/Maintenance_Dates_IC.xlsx")
 
 dates = 
   maintenance_dates %>%
   distinct(Date) %>% # remove duplicates
   add_row(Date = as.Date("2020-10-01")) %>% # add a "first date for the runs"
+  #add_row(Date=as.Date("2022-02-20")) %>%
   add_row(Date = as.Date(Sys.Date())) %>% # set current date as the "final date for runs"
   arrange(Date) %>% 
   mutate(Beginning = Date,
@@ -167,5 +156,50 @@ data_bins =
 
 lod_dates = 
   merge(data_bins, dates) %>% # this will merge all rows in file1 with all rows in file2
-  subset(Date_Run >= Beginning & Date_Run <= Ending) # keep only rows where dates fall within the range
+  subset(Date_Run >= Beginning & Date_Run <= Ending)  # keep only rows where dates fall within the range
 
+lod_final.1 = aggregate(LOD.run ~ Analyte + Beginning + Ending, data=lod_dates, mean)
+
+#### Get into format to work with next part of the code###
+#column names as Analyte, Date_start_YYYYMMDD, Date_end_YYYYMMDD, LOD_ppm#
+
+##need to turn dates into numeric strings YYYMMDD###
+
+lod_final = lod_final.1 %>%  
+  dplyr::rename(LOD_ppm = LOD.run) %>% 
+  mutate(Date_start_YYYYMMDD =  as.numeric(gsub("-", "", Beginning))) %>% 
+  mutate(Date_end_YYYYMMDD =  as.numeric(gsub("-", "", Ending))) %>%
+  dplyr::select(-Beginning, -Ending)
+
+View(lod_final)
+
+pnnl.user = "myer056"
+# set working directories
+# Main path is where the raw data will be stored
+#For PC Users:#
+#home.path = paste0("C:/Users/",pnnl.user,"/OneDrive - PNNL/Documents - Core Richland and Sequim Lab-Field Team/Data Generation and Files/")
+#lod.path = paste0(home.path,"Raw_Instrument_Data/IC-6000 MCRL/Data for LOD calculations/")
+
+#for Mac Users:#
+home.path = paste0("/Users/",pnnl.user,"/OneDrive - PNNL/Documents/")
+lod.path = paste0(home.path,"/GitHub/EXCHANGE/Data/LODs")
+
+instrument.path = paste0(home.path,"/GitHub/EXCHANGE/Data/LODs")
+
+
+write.csv(lod_final, paste0(instrument.path,"LODs_2020_Oct_2022_April_COMPASS_Only.csv"), row.names = FALSE)
+
+
+#### Troubleshooting #####
+
+Why.u.NA <- subset(data_m_sadl,is.na(Slope))
+View(Why.u.NA)
+save(Why.u.NA, file="Mystery_NAs_slope.rda")
+
+
+high <- lod_dates %>% filter(LOD.run > .5)
+View(high)
+write.csv(high, "/Users/myer056/OneDrive - PNNL/Ion Chromatography MSL5-219/LOD_Workup/TroubleLODs_greaterthan0.5ppm.csv")
+
+test <- ggplot()+
+  geom_point(aes(x= Analyte, y= LOD.run, color=Date_Run), data=data_m_sadl)
