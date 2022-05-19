@@ -27,8 +27,9 @@ z <- 3
 #### Calculate Blank Signal Average & Standard Deviation ####
 library(tidyverse)
 setuser <- "/Users/myer056/OneDrive - PNNL/"
+setwd(paste0(setuser,"/Documents/GitHub/EXCHANGE/Data/LODs/"))
 
-Blankfile <- read.csv("/Users/myer056/OneDrive - PNNL/Data Generation and Files/Raw_Instrument_Data/IC-6000 MCRL/Data for LOD calculations/Blank_Output_complete_2022-05-04.csv")
+Blankfile <- read.csv(paste0(setuser,"/Data Generation and Files/Raw_Instrument_Data/IC-6000 MCRL/Data for LOD calculations/Blank_Output_complete_2022-05-04.csv"))
 Blankfile <- Blankfile %>% mutate(Date_Run.1 = as.character(Date_Run), Date_Run = lubridate::as_date(Date_Run.1, format = "%Y%m%d")) %>% select(-Date_Run.1)
 
 Sreag.avg <- aggregate(Area ~ Analyte + Date_Run, data = Blankfile, mean)
@@ -132,11 +133,12 @@ colnames(m.run)[colnames(m.run) == 'Peak Name'] <- 'Analyte'
 data_m_sadl <- dplyr::left_join(SADL_cal,m.run, by=c("Analyte","Date_Run"))
 data_m_sadl <- data_m_sadl %>% filter(!is.na(Slope)) %>% 
   mutate(LOD.run = SADL / as.numeric(Slope))
-save(data_m_sadl, file="Prelim_all_LODs_byrun_RC2.rda")
+
+save(data_m_sadl, file="Prelim_all_LODs_byrun_COMPASS.rda")
 
 #Maintenance Periods# 
 
-maintenance_dates <- readxl::read_excel("/Users/myer056/OneDrive - PNNL/Data Generation and Files/Raw_Instrument_Data/IC-6000 MCRL/Data for LOD calculations/Maintenance_Dates_IC.xlsx")
+maintenance_dates <- readxl::read_excel(paste0(setuser,"/Documents/GitHub/EXCHANGE/Data/LODs/Maintenance_Dates_IC.xlsx"))
 
 dates = 
   maintenance_dates %>%
@@ -160,16 +162,8 @@ lod_dates =
 
 lod_final.1 = aggregate(LOD.run ~ Analyte + Beginning + Ending, data=lod_dates, mean)
 
-#### Get into format to work with next part of the code###
-#column names as Analyte, Date_start_YYYYMMDD, Date_end_YYYYMMDD, LOD_ppm#
-
-##need to turn dates into numeric strings YYYMMDD###
-
 lod_final = lod_final.1 %>%  
-  dplyr::rename(LOD_ppm = LOD.run) %>% 
-  mutate(Date_start_YYYYMMDD =  as.numeric(gsub("-", "", Beginning))) %>% 
-  mutate(Date_end_YYYYMMDD =  as.numeric(gsub("-", "", Ending))) %>%
-  dplyr::select(-Beginning, -Ending)
+  dplyr::rename(LOD_ppm = LOD.run) 
 
 View(lod_final)
 
@@ -184,10 +178,10 @@ pnnl.user = "myer056"
 home.path = paste0("/Users/",pnnl.user,"/OneDrive - PNNL/Documents/")
 lod.path = paste0(home.path,"/GitHub/EXCHANGE/Data/LODs")
 
-instrument.path = paste0(home.path,"/GitHub/EXCHANGE/Data/LODs")
+instrument.path = paste0(home.path,"/GitHub/EXCHANGE/Data/LODs/")
 
 
-write.csv(lod_final, paste0(instrument.path,"LODs_2020_Oct_2022_April_COMPASS_Only.csv"), row.names = FALSE)
+write.csv(lod_final, paste0(instrument.path,"ions_LODs_2020_Oct_2022_April_COMPASS_Only.csv"), row.names = FALSE)
 
 
 #### Troubleshooting #####
