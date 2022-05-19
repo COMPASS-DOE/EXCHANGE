@@ -1,49 +1,81 @@
-########################### #
-########################### #
+## EXCHANGE-IONS
+## This is a data processing script for EXCHANGE, a sub-project of THE DOE-funded 
+## COMPASS project (https://compass.pnnl.gov/). 
+##
+## This script imports raw data for ions measured using
+## [insert relevant instrument and method details] at MCRL.
+## and exports clean, Level 1 QCd data. [add additional relevant details]. 
+## Data are read in from the COMPASS Google Drive.
+## 
+## Created: 2022-02-20
+## Kaizad F. Patel
+##
+# ############# #
+# ############# #
 
-## EXCHANGE EC1
-## PROCESS IONS DATA
+# 1. Setup ---------------------------------------------------------------------
+cat("Setup")
 
-# This script will import cations and anions data
-# Cations = c("Lithium", "Sodium", "Ammonium", "Potassium", "Magnesium", "Calcium")
-# Anions = c("Nitrite", "Nitrate")
+# load packages
+require(pacman)
+pacman::p_load(cowsay,
+               tidyverse
+               #googlesheets4, # read_sheet 
+               #googledrive # drive_upload
+)
 
-# The input data are in shitty, non-tidy format, with multi-line headers and multiple chunks of data per dataframe.  
-# Use this script to assign the ions and turn it into tidy format, and then process and clean the dataframe
+## Welcome
+say("Welcome to EXCHANGE!", by = "random")
 
-# KFP, 2022-02-20
+## URL for data
+# data_path = "xxxx" 
 
-########################### #
-########################### #
+## Define analyte
+var <- "ions"
 
-# Step 1. load packages ----
-library(tidyverse)
 
-# Step 2. function to import and tidy files ----
 
-# this function will do the initial work to make the dataframe tidy
-# input parameters include (a) the dataframe being cleaned and (b) the ions in question.
-# NOTE: You must include ALL the ions reported in the file
+# 2. Import data ----------------------------------------------------------
 
-assign_ions = function(FILEPATH, PATTERN, IONS){
-  
-  # a. read and combine files ----
+cat("Importing", var, "data...")
+
+import_data = function(FILEPATH){
   
   # pull a list of file names in the target folder with the target pattern
   # then read all files and combine
-  filePaths <- list.files(path = FILEPATH, pattern = PATTERN, full.names = TRUE)
-  # filePaths <- list.files(path = FILEPATH, pattern = c(".xls"), full.names = TRUE)
   
-  dat <- do.call(rbind, lapply(filePaths, function(path) {
-    # then add a new column `source` to denote the file name
-    df <- readxl::read_xls(path, skip = 2)
-    df[["source"]] <- rep(path, nrow(df))
-    df}))
+  filePaths <- list.files(path = FILEPATH, pattern = ".xls", full.names = TRUE)
   
-  # b. start processing the ions data ----
+  # dat <- 
+    do.call(rbind, lapply(filePaths, function(path){
+      # then add a new column `source` to denote the file name
+      df <- readxl::read_excel(path, skip = 2)
+      df[["source"]] <- rep(path, nrow(df))
+      df}))
+  
+}
+
+# Now, run this function
+raw_data <- import_data(FILEPATH = "data/ions/ions_data_without_dilution_correction")
+
+#
+# 3. Process data ---------------------------------------------------------
+
+# `process_data`: this function will assign ions and tidy the dataframe
+# input parameters are (a) the dataframe being cleaned and (b) the ions in question.
+
+# `do_corrections`: this function will apply blank and dilution corrections
+# input parameters are (a) the processed_data df and the path for readme files, which contain data for dilutions, etc.
+
+process_data = function(raw_data, IONS){
+  
+  # The input data are in shitty, non-tidy format, with multi-line headers and multiple chunks of data per dataframe.  
+  # This function assigns the ions and turns it into tidy format, then cleans/processes the dataframe
+  
+  # a. assign ions ----
   
   # identify the rows that contain ions names
-  label_rows = which(grepl(paste(IONS, collapse = "|"), dat$Time))
+  label_rows = which(grepl(paste(IONS, collapse = "|"), raw_data$Time))
   
   # make this a dataframe/tibble
   label_rows_df = 
@@ -55,7 +87,7 @@ assign_ions = function(FILEPATH, PATTERN, IONS){
   
   # now join this to the dataframe
   data_new = 
-    dat %>% 
+    raw_data %>% 
     rownames_to_column("Row_number") %>% 
     left_join(label_rows_df) %>% 
     mutate(Ion = case_when(label ~ Amount)) %>% 
@@ -66,8 +98,13 @@ assign_ions = function(FILEPATH, PATTERN, IONS){
     fill(Ion) %>% 
     dplyr::select(-Row_number, -label)
   
+  # the dataframe now has all the ions assigned to each row
+  # but it is still horribly untidy
+  
+  # b. clean the dataframe -----
   # create header by collapsing the header + first row
-  new_header = data_new %>% 
+  new_header = 
+    data_new %>% 
     colnames() %>% 
     paste0(data_new[1,]) %>% 
     str_remove_all("NA")
@@ -83,6 +120,7 @@ assign_ions = function(FILEPATH, PATTERN, IONS){
     data_new %>% 
     filter(!is.na(`No.`)) %>% 
     mutate_at(vars(-Name, -Ion, -source), as.numeric) %>% 
+    # pull the date run from the long `source` column
     mutate(date_run = str_extract(source, "[0-9]{8}"),
            date_run = lubridate::as_date(date_run)) %>% 
     dplyr::select(Name, Amount, Ion, date_run) %>% 
@@ -92,33 +130,11 @@ assign_ions = function(FILEPATH, PATTERN, IONS){
   
 }
 
-check_cal_curve_values = function(){
-  
-  ## (side code) the lower end of cal curves is generally NA. 
-  ## check if samples have values below the non-NA cal curves.
-  
-  # first, pull out all the standards
-  data_standards = 
-    data_ions_processed %>% 
-    filter(grepl("A-", Name) | grepl("C-", Name)) %>% 
-    filter(!grepl("CK", Name)) %>%
-    filter(!is.na(Amount)) %>% 
-    group_by(Ion, date_run) %>% 
-    dplyr::summarise(amount_min = min(Amount))
-  
-  data_samples = 
-    data_ions_processed %>% 
-    filter(grepl("EC1_", Name))  %>% 
-    dplyr::select(Name, Ion, date_run, Amount) %>% 
-    left_join(data_standards) %>% 
-    mutate(less_than_cal = Amount < amount_min)
-}
-
-do_corrections = function(dat, README_PATH){
+do_corrections = function(data_ions_processed, README_PATH){
   
   # 1. blank corrections ----
   samples_and_blanks = 
-    data_ions_assigned %>% 
+    data_ions_processed %>% 
     filter(grepl("EC1_", Name) | grepl("Blank", Name)) %>% 
     filter(!Name %in% c("Blank1", "Blank2", "Blank3", "Blank4")) %>% 
     filter(!grepl("CondBlank", Name)) %>% 
@@ -180,7 +196,60 @@ do_corrections = function(dat, README_PATH){
 
 
 
+# Now, run these functions
+# set ions of interest
+all_ions = c("Lithium", "Sodium", "Ammonium", "Potassium", "Magnesium", "Calcium", "Nitrite", "Nitrate",
+             "Chloride", "Bromide", "Sulfate", "Phosphate", "Fluoride")
+
+data_ions_processed = process_data(raw_data, IONS = all_ions)
+data_ions_corrected = do_corrections(data_ions_processed, README_PATH = "data/ions/ions_readme")
+
+
 #
+# 3b. other functions -----------------------------------------------------
+
+check_cal_curve_values = function(){
+  
+  ## (side code) the lower end of cal curves is generally NA. 
+  ## check if samples have values below the non-NA cal curves.
+  
+  # first, pull out all the standards
+  data_standards = 
+    data_ions_processed %>% 
+    filter(grepl("A-", Name) | grepl("C-", Name)) %>% 
+    filter(!grepl("CK", Name)) %>%
+    filter(!is.na(Amount)) %>% 
+    group_by(Ion, date_run) %>% 
+    dplyr::summarise(amount_min = min(Amount))
+  
+  data_samples = 
+    data_ions_processed %>% 
+    filter(grepl("EC1_", Name))  %>% 
+    dplyr::select(Name, Ion, date_run, Amount) %>% 
+    left_join(data_standards) %>% 
+    mutate(less_than_cal = Amount < amount_min)
+}
+
+
+#
+
+
+# 4. Apply QC flags ------------------------------------------------------------
+
+apply_qc_flags = function(data_ions_corrected, QC_DATA){
+  
+  
+  
+}
+
+#
+# 5. Export cleaned data --------------------------------------------------
+data_ions_corrected %>% write.csv("Data/Processed/ions_2022-05-19.csv", row.names = FALSE)
+
+
+############################### #
+############################### #
+# OLD CODE ----------------------------------------------------------------
 # Step 3. Run the function ------------------------------------------------
 
 # this is the general format to run the function:
@@ -193,7 +262,7 @@ do_corrections = function(dat, README_PATH){
 all_ions = c("Lithium", "Sodium", "Ammonium", "Potassium", "Magnesium", "Calcium", "Nitrite", "Nitrate",
              "Chloride", "Bromide", "Sulfate", "Phosphate", "Fluoride")
 
-data_ions_assigned = assign_ions(FILEPATH = "data/ions/ions data without dilution correction", 
+data_ions_assigned = assign_ions(FILEPATH = "data/ions/ions_data_without_dilution_correction", 
                                     PATTERN = ".xls",
                                     IONS = all_ions)
 
