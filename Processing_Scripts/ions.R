@@ -124,6 +124,7 @@ process_data = function(raw_data, IONS){
     mutate(date_run = str_extract(source, "[0-9]{8}"),
            date_run = lubridate::as_date(date_run)) %>% 
     dplyr::select(Name, Amount, Ion, date_run) %>% 
+    mutate(Ion = str_remove_all(Ion, "_UV")) %>% 
     force()
   
   data_new_processed
