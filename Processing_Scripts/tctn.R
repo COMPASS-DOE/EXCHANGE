@@ -98,14 +98,14 @@ data_raw %>%
          total_carbon_perc = "Weight\n[%]...16",
          total_carbon_mg = "Weight\n[mg]...15") %>% 
   select(instrument_id, sample_id, total_nitrogen_perc, total_nitrogen_mg,
-         total_carbon_perc, total_carbon_perc) %>% 
+         total_carbon_perc, total_carbon_mg) %>% 
   filter(str_detect(instrument_id, "^EC1")) %>% # filter out blanks
   left_join(key, by = c("instrument_id" = "Original Instrument ID")) %>% 
-  separate('Reassigned Sample ID', into = c("campaign", "kit_id","transect_position", 
+  separate('Reassigned Sample ID', into = c("campaign", "kit_id","transect_location", 
                                             "acidification", "set", "run"), sep = "_") %>% 
-  mutate(transect_position = case_when(transect_position == "WET" ~ "Wetland",
-                                       transect_position == "TRANS" ~ "Transition",
-                                       transect_position == "UPL" ~ "Upland"),
+  mutate(transect_location = case_when(transect_location == "WET" ~ "Wetland",
+                                       transect_location == "TRANS" ~ "Transition",
+                                       transect_location == "UPL" ~ "Upland"),
          acidification = case_when(acidification == "UnAc" ~ FALSE)) %>% 
   separate(instrument_id, into = c("one", "two", "three", "Month", "Day"), sep = "_") %>% 
   mutate(Year = "2022", date_ran = make_date(day = Day, month = Month, year = Year)) %>% 
@@ -126,7 +126,7 @@ data_qc <- function(data) {
 }
 
 data_qc(data_processed) %>% 
-  select(campaign, kit_id, transect_position, total_nitrogen_perc, total_nitrogen_mg, 
+  select(campaign, kit_id, transect_location, total_nitrogen_perc, total_nitrogen_mg, 
          total_carbon_perc, total_carbon_perc, acidification, date_ran, set, run) -> data_clean
 
 #
