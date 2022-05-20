@@ -35,7 +35,9 @@ say("Welcome to EXCHANGE!", by = "random")
 ## URL for data
 folder_path <- "https://drive.google.com/drive/u/2/folders/1OVhQADClTIcfMtbJenoWfCD8fnODx_it" 
 gsheet_tab <- "Summary Table"
-naming_key_path <- "https://docs.google.com/spreadsheets/d/1IuGt6izCwXKJvg2Vr8Y_jtHAO_RZvaSBvdD-vp7_BSw/edit?usp=sharing"
+naming_key_path <- "https://docs.google.com/spreadsheets/d/15o0bZ79WIOHlxZlaUxSv7pLYzuH39yP-d3GCE_gfk4c/edit#gid=363825852"
+lod_path <- "https://docs.google.com/spreadsheets/d/14r_bVSGGxgM7f1ENuBFKC5t6UzP_uRgJQ2SPDMKOSoE/edit#gid=225278968"
+
 
 ## Define constants
 f1_min <- 0
@@ -46,7 +48,8 @@ var <- "TC/TN"
 
 # Create function to use in lapply that reads in a google sheet 
 read_tctn <- function(x) {
-  df <- read_sheet(ss = x, range = gsheet_tab, skip = 2)
+  df <- read_sheet(ss = x, range = gsheet_tab, skip = 2, 
+                   col_types = "ccccccccccccccccccc")
 }
 
 #
@@ -56,6 +59,10 @@ cat("Importing", var, "data...")
 # Read in naming key
 read_sheet(ss = naming_key_path, range = "Sheet1") %>% 
   select(`Reassigned Sample ID`, `Original Instrument ID`) -> key
+
+# Read in LOD blanks
+lod <- read_sheet(ss = lod_path, range = gsheet_tab, skip = 2, 
+           col_types = "ccccccccccccccccccc")
 
 ## read in raw data
 all_files <- drive_ls(path = folder_path, pattern = "2022")
@@ -68,22 +75,41 @@ lapply(gsheet_files$id, read_tctn) %>%
 # 3. Process data --------------------------------------------------------------
 cat("Processing", var, "data...")
 
-data_raw %>% 
-  rename(Instrument_ID = "...1", Sample_ID = "...3",
-         Nitrogen_Weight_perc = "Weight\n[%]...9",
-         Carbon_Weight_perc = "Weight\n[%]...16") %>% 
-  select(Instrument_ID, Sample_ID, Nitrogen_Weight_perc, Carbon_Weight_perc) %>% 
-  filter(str_detect(Instrument_ID, "^EC1")) %>% # filter out blanks
-  left_join(key, by = c("Instrument_ID" = "Original Instrument ID")) %>% 
-  separate('Reassigned Sample ID', into = c("Campaign", "Kit_ID","Transect_Location", 
-                                            "Acidification", "Set", "Run"), sep = "_") %>% 
-  mutate(Transect_Location = case_when(Transect_Location == "WET" ~ "Wetland",                                                                               Transect_Location == "TRANS" ~ "Transition"),
-         Acidification = case_when(Acidification == "UnAc" ~ FALSE)) %>% 
-  separate(Instrument_ID, into = c("one", "two", "three", "Month", "Day"), sep = "_") %>% 
-  mutate(Year = "2022", Date_Ran = make_date(day = Day, month = Month, year = Year)) %>% 
-  select(Campaign, Kit_ID, Transect_Location, Nitrogen_Weight_perc, Carbon_Weight_perc,
-         Acidification, Date_Ran, Set, Run) -> data_processed
+# Process LOD data
+lod %>% 
+  rename(instrument_id = "...1", sample_id = "...3",
+               total_nitrogen_mg = "Weight\n[mg]...8",
+               total_carbon_mg = "Weight\n[mg]...15") %>% 
+  left_join(key, by = c("instrument_id" = "Original Instrument ID")) %>% 
+  separate(sample_id, into = c("type", "weight", "run"), sep = "_") %>% 
+  select(type, weight, run, total_nitrogen_mg, total_carbon_mg) %>% 
+  filter(weight == "0.1", type == "ACN") %>% 
+  mutate(total_nitrogen_mg = as.numeric(total_nitrogen_mg),
+         total_carbon_mg = as.numeric(total_carbon_mg)) %>% 
+  summarise(lod_tn_average = mean(total_nitrogen_mg),
+            lod_tn_sd = sd(total_nitrogen_mg),
+            lod_tc_average = mean(total_carbon_mg),
+            lod_tc_sd = sd(total_carbon_mg)) -> lod_processed
 
+data_raw %>% 
+  rename(instrument_id = "...1", sample_id = "...3",
+         total_nitrogen_perc = "Weight\n[%]...9",
+         total_nitrogen_mg = "Weight\n[mg]...8",
+         total_carbon_perc = "Weight\n[%]...16",
+         total_carbon_mg = "Weight\n[mg]...15") %>% 
+  select(instrument_id, sample_id, total_nitrogen_perc, total_nitrogen_mg,
+         total_carbon_perc, total_carbon_perc) %>% 
+  filter(str_detect(instrument_id, "^EC1")) %>% # filter out blanks
+  left_join(key, by = c("instrument_id" = "Original Instrument ID")) %>% 
+  separate('Reassigned Sample ID', into = c("campaign", "kit_id","transect_position", 
+                                            "acidification", "set", "run"), sep = "_") %>% 
+  mutate(transect_position = case_when(transect_position == "WET" ~ "Wetland",
+                                       transect_position == "TRANS" ~ "Transition",
+                                       transect_position == "UPL" ~ "Upland"),
+         acidification = case_when(acidification == "UnAc" ~ FALSE)) %>% 
+  separate(instrument_id, into = c("one", "two", "three", "Month", "Day"), sep = "_") %>% 
+  mutate(Year = "2022", date_ran = make_date(day = Day, month = Month, year = Year)) %>% 
+  bind_cols(lod_processed) -> data_processed
 
 #
 # 4. Apply QC flags ------------------------------------------------------------
@@ -92,11 +118,16 @@ cat("Applying flags to", var, "data...")
 data_qc <- function(data) {
   data %>% 
     mutate(  #a = round(a, n_sig_figs),
-           f_1_N = ifelse(Nitrogen_Weight_perc < f1_min | Nitrogen_Weight_perc > f1_max, T, F),
-           f_1_C = ifelse(Carbon_Weight_perc < f1_min | Carbon_Weight_perc > f1_max, T, F))
+           tn_flag_1 = ifelse(total_nitrogen_perc < f1_min | total_nitrogen_perc > f1_max, T, F),
+           tc_flag_1 = ifelse(total_carbon_perc < f1_min | total_carbon_perc > f1_max, T, F),
+           tn_flag_2 = ifelse(total_nitrogen_mg < (lod_tn_sd * 3), T, F),
+           tc_flag_2 = ifelse(total_carbon_mg < (lod_tc_sd * 3), T, F)
+           )
 }
 
-data_clean <- data_qc(data_processed)
+data_qc(data_processed) %>% 
+  select(campaign, kit_id, transect_position, total_nitrogen_perc, total_nitrogen_mg, 
+         total_carbon_perc, total_carbon_perc, acidification, date_ran, set, run) -> data_clean
 
 #
 # 5. Write cleaned data to drive -----------------------------------------------
