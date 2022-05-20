@@ -61,14 +61,15 @@ data_raw %>%
   drop_na(`Kit #`) %>% # remove blank rows used for visual separation
   rename(date_received = `Date received`, date_filtered = `Date filtered`,
          kit_id = `Kit #`) %>% 
-  mutate(filter_mass_g = `Top filter + foil dry weight (g)` - `Top filter + foil tare weight (g)`,
-         bottom_filter_g = `Bottom filter + foil dry weight (g)` - `Bottom filter + foil tare weight (g)`) %>% 
+  mutate(filter_mass_g = `Top filter + foil dry weight (g)` - `Top filter + foil tare weight (g)`#,
+         #bottom_filter_g = `Bottom filter + foil dry weight (g)` - `Bottom filter + foil tare weight (g)`
+         ) %>% 
   group_by(kit_id, IGSN) %>% 
   mutate(sample_weight_g = first(`Sample wt pre filtration (g)`) - last(`Sample wt post filtration (g)`)) %>% 
-  summarise(total_filter_mass_g = sum(filter_mass_g), 
-            total_bottom_filter_g = sum(bottom_filter_g),
+  summarise(total_filter_mass_g = sum(filter_mass_g, na.rm = TRUE), 
+            #total_bottom_filter_g = sum(bottom_filter_g, na.rm = TRUE),
             sample_weight_g = first(sample_weight_g),
-            n = n()) -> processed_interim
+            filters_used = n()) -> processed_interim
 
 processed_interim %>% 
   filter(grepl("Blank", kit_id)) %>% 
@@ -78,15 +79,17 @@ processed_interim %>%
 processed_interim %>% 
   filter(!grepl("Blank", kit_id)) %>% 
   bind_cols(blank_avg_g) %>% 
-  mutate(total_filter_mass_g = ifelse(total_bottom_filter_g > 0, 
-                                      total_filter_mass_g - total_bottom_filter_g,
-                                      total_filter_mass_g)) -> x 
+#  mutate(total_filter_mass_g = ifelse(total_bottom_filter_g > 0, 
+#                                      total_filter_mass_g - total_bottom_filter_g,
+#                                      total_filter_mass_g)) %>% 
   left_join(titrator, by = "kit_id") %>% 
-  mutate(transect_position = "Water",
-         SA = gsw_SA_from_SP(spcond_mscm, 0, longitude = -123.046, latitude = 48.078),
-         CT= gsw_CT_from_t(SA, temperature_c, 0),
+  mutate(campaign = "EC1",
+         transect_location = "Water",
+         SP = gsw_SP_from_C(C = spcond_mscm, t = 18.5, p = 0),
+         SA = gsw_SA_from_SP(SP, 0, longitude = -123.046, latitude = 48.078),
+         CT= gsw_CT_from_t(SA, t = 18.5, 0),
          density_water = gsw_rho(SA, CT, 0),
-         volume_filtered_ml = sample_weight_g * density_water,
+         volume_filtered_ml = sample_weight_g / (density_water / 1000),
          tss_mg_perl = ((total_filter_mass_g / volume_filtered_ml) * 1000 * 1000) - blank_avg_g) -> data_processed
  
 #
@@ -95,15 +98,14 @@ cat("Applying flags to", var, "data...")
 
 data_qc <- function(data) {
   data %>% 
-    mutate(flag_1 = ifelse(n > 1, T, F),
-           flag_2 = ifelse(total_filter_mass_g < 0, T, F),
-           flag_3 = ifelse(total_bottom_filter_g > 0, T, F),
-           flag_4 = ifelse(tss_mg_perl < f4_min | tss_mg_perl > f4_max, T, F)) 
+    mutate(flag_1 = ifelse(total_filter_mass_g < 0, T, F),
+           #flag_3 = ifelse(total_bottom_filter_g > 0, T, F),
+           flag_2 = ifelse(tss_mg_perl < f4_min | tss_mg_perl > f4_max, T, F)) 
 }
 
 data_qc(data_processed) %>% 
-  select(kit_id, transect_position, total_filter_mass_g, tss_mg_perl, volume_filtered_ml,
-         flag_1, flag_2, flag_3, flag_4) -> data_clean 
+  select(campaign, kit_id, transect_location, tss_mg_perl, total_filter_mass_g, volume_filtered_ml, filters_used,
+         flag_1, flag_2) -> data_clean 
 
 #
 # 5. Write cleaned data to drive -----------------------------------------------
@@ -111,5 +113,6 @@ data_qc(data_processed) %>%
 ## We should add Sys.date or hardcode date so we know when the L0B was born
 ## The file written out should be named following 
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
-drive_upload(media = data_clean, path = data_path)
+#drive_upload(media = data_clean, path = data_path)
 
+write_csv(data_clean, "~/Desktop/EC1_TCTN_L0B_20220520.csv")
