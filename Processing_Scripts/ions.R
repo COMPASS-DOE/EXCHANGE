@@ -58,6 +58,8 @@ import_data = function(FILEPATH){
 # Now, run this function
 raw_data <- import_data(FILEPATH = "data/ions/ions_data_without_dilution_correction")
 
+ions_lods = read.csv("data/LODs/ions_LODs_2020_Oct_2022_April_COMPASS_Only.csv")
+
 #
 # 3. Process data ---------------------------------------------------------
 
@@ -188,7 +190,8 @@ do_corrections = function(data_ions_processed, README_PATH){
     left_join(dilutions, by = c("Name", "date_run")) %>% 
     filter(!Action %in% "Omit") %>% 
     mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
-    mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected)) %>% 
+    mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
+           Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
     dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected)
   
   samples_dilution_corrected
@@ -239,13 +242,48 @@ check_cal_curve_values = function(){
 
 apply_qc_flags = function(data_ions_corrected, QC_DATA){
   
+  ions_lods_processed = 
+    QC_DATA %>% 
+    rename(Ion = Analyte) %>% 
+    mutate(Ion = str_remove_all(Ion, "_UV"))
+
+  data_ions_corrected %>% 
+    left_join(ions_lods_processed %>% dplyr::select(Ion, LOD_ppm)) %>% 
+    mutate(flag = case_when(Amount_bl_dil_corrected  < LOD_ppm ~ "below detect")) %>% 
+    rename(ppm = Amount_bl_dil_corrected) %>% 
+    dplyr::select(Name, date_run, Ion, ppm, flag)
+    
+}
+
+data_ions_qc = apply_qc_flags(data_ions_corrected, QC_DATA = ions_lods)
+
+#
+# 4b. final formatting ----------------------------------------------------
+
+format_df = function(data_ions_qc){
+  
+  data_ions_qc %>% 
+    mutate(ppm = as.character(ppm)) %>% 
+    pivot_longer(-c(Name, date_run, Ion)) %>% 
+    mutate(name2 = paste0(Ion, "_", name)) %>% 
+    dplyr::select(-Ion, -name) %>% 
+    pivot_wider(names_from = "name2", values_from = "value") %>% 
+    separate(Name, sep = "_", into = c("campaign", "kit_id")) %>% 
+    mutate(transect_location = "SurfaceWater") %>% 
+    dplyr::select(campaign, kit_id, transect_location, everything())
   
   
 }
 
+data_ions_final = format_df(data_ions_qc)
+
+
 #
 # 5. Export cleaned data --------------------------------------------------
-data_ions_corrected %>% write.csv("Data/Processed/ions_2022-05-19.csv", row.names = FALSE)
+data_ions_final %>% write.csv("Data/Processed/EC1_ions_L0B_2022-05-23.csv", row.names = FALSE, na = "")
+
+
+
 
 
 ############################### #
