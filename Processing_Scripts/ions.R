@@ -1,10 +1,22 @@
 ## EXCHANGE-IONS
-## This is a data processing script for EXCHANGE, a sub-project of THE DOE-funded 
+##
+## This is a data processing script for EXCHANGE, a sub-project of the DOE-funded 
 ## COMPASS project (https://compass.pnnl.gov/). 
 ##
-## This script imports raw data for ions measured using
-## [insert relevant instrument and method details] at MCRL.
-## and exports clean, Level 1 QCd data. [add additional relevant details]. 
+## This script imports raw data for ions, processes the data,
+## and exports clean, Level 1 QCd data.
+## 
+## Major cations and anions were all measured using ion chromatography 
+## and detected via conductivity, except for nitrate and nitrite, 
+## which were detected via UV absorbance 
+## (Wilson et al., 2011, https://doi.org/10.1093/chrsci/49.8.596) 
+## on ThermoFisher Dionex ICS-6000 HPIC DP System at MCRL.
+##
+
+## Ions measured include: "Lithium", "Sodium", "Ammonium", "Potassium", 
+## "Magnesium", "Calcium", "Nitrite", "Nitrate",
+## "Chloride", "Bromide", "Sulfate", "Phosphate", "Fluoride"
+##
 ## Data are read in from the COMPASS Google Drive.
 ## 
 ## Created: 2022-02-20
@@ -33,11 +45,13 @@ say("Welcome to EXCHANGE!", by = "random")
 ## Define analyte
 var <- "ions"
 
-
-
+#
 # 2. Import data ----------------------------------------------------------
 
 cat("Importing", var, "data...")
+
+# `import_data`: this function will import all xls files in the target directpry and combine them
+# input parameters are (a) FILEPATH, the target directory with the raw data files
 
 import_data = function(FILEPATH){
   
@@ -59,6 +73,7 @@ import_data = function(FILEPATH){
 # Now, run this function
 raw_data <- import_data(FILEPATH = "data/ions/ions_data_without_dilution_correction")
 
+# Import the Limits of Detection (LOD)
 ions_lods = read.csv("data/LODs/ions_LODs_2020_Oct_2022_April_COMPASS_Only.csv")
 
 #
@@ -241,6 +256,8 @@ check_cal_curve_values = function(){
 
 # 4. Apply QC flags ------------------------------------------------------------
 
+# `apply_qc_flags`: applying flags to data points below the Limit of Detection
+
 apply_qc_flags = function(data_ions_corrected, QC_DATA){
   
   ions_lods_processed = 
@@ -260,6 +277,8 @@ data_ions_qc = apply_qc_flags(data_ions_corrected, QC_DATA = ions_lods)
 
 #
 # 4b. final formatting ----------------------------------------------------
+
+# `format_df`: format the dataframe to a more legible format in wideform, with a flag column for each ion
 
 format_df = function(data_ions_qc){
   
@@ -281,5 +300,6 @@ data_ions_final = format_df(data_ions_qc)
 
 #
 # 5. Export cleaned data --------------------------------------------------
+
 data_ions_final %>% write.csv("Data/Processed/EC1_ions_L0B_2022-05-23.csv", row.names = FALSE, na = "")
 
