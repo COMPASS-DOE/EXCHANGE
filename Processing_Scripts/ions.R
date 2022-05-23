@@ -50,6 +50,7 @@ import_data = function(FILEPATH){
     do.call(rbind, lapply(filePaths, function(path){
       # then add a new column `source` to denote the file name
       df <- readxl::read_excel(path, skip = 2)
+    #  df <- read.delim(path, skip = 2)
       df[["source"]] <- rep(path, nrow(df))
       df}))
   
@@ -281,31 +282,4 @@ data_ions_final = format_df(data_ions_qc)
 #
 # 5. Export cleaned data --------------------------------------------------
 data_ions_final %>% write.csv("Data/Processed/EC1_ions_L0B_2022-05-23.csv", row.names = FALSE, na = "")
-
-
-
-
-
-############################### #
-############################### #
-# OLD CODE ----------------------------------------------------------------
-# Step 3. Run the function ------------------------------------------------
-
-# this is the general format to run the function:
-# assign_ions(FILEPATH = , # folder/location where all the files are stored
-#             PATTERN = , # the pattern used to ID the target files, 
-#                         # e.g. "Anion_UV" for nitrite/nitrite, "Cation", or just ".xls" for all .xls files
-#             IONS = ) # list of ions present in the file
-#                      # this could be c("Nitrite", "Nitrate"), etc. or just use `all_ions` below for the full list
-
-all_ions = c("Lithium", "Sodium", "Ammonium", "Potassium", "Magnesium", "Calcium", "Nitrite", "Nitrate",
-             "Chloride", "Bromide", "Sulfate", "Phosphate", "Fluoride")
-
-data_ions_assigned = assign_ions(FILEPATH = "data/ions/ions_data_without_dilution_correction", 
-                                    PATTERN = ".xls",
-                                    IONS = all_ions)
-
-
-data_ions_corrected = do_corrections(dat = data_ions_assigned,
-                                     README_PATH = "data/ions/ions_readme")
 
