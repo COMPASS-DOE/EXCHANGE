@@ -56,7 +56,7 @@ cdom_list_kitnames =
   pivot_longer(-c(Kit_ID, Date, Integration_Time, Dilution)) %>% 
   filter(!is.na(value)) %>% 
   pivot_wider() %>% 
-  rename(`Absorbance file name` = Absorbance,
+  rename(`Absorbance File Name` = Absorbance,
          `EEM file name` = EEM,
          `Dilution Factor *Decimal Format…e.g. 1 part sample and 1 part water = 0.50` = Dilution,
          ) %>% 
@@ -64,7 +64,8 @@ cdom_list_kitnames =
 
 samplelog_filled = 
   bind_rows(samplelog_empty, cdom_list_kitnames) %>% 
-  dplyr::select(Kit_ID, everything())
+  dplyr::select(Kit_ID, everything()) %>% 
+  arrange(Kit_ID)
 
 samplelog_filled %>% write.csv("data/CDOM_SampleLog.csv", row.names = FALSE, na = "")
 
