@@ -1,216 +1,37 @@
-"Kit_ID","index","Analysis","Date","Sample Description (60 Character Max) - Will display on final EEM figure","Sample ID","Analytical Replicate No","Integration Time","EEM file name","Absorbance File Name","Absorbance Pathlength","Dilution Factor *Decimal Format…e.g. 1 part sample and 1 part water = 0.50","DOC (mg/L)","filename","Integration_Time","Dilution","Absorbance","EEM"
-,,,"2021-10-14",,,,,,,,,,"2021- Processed Graph_ IFE_RM_NRM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-14-14-07-B1S1DI2 (01) - Abs Spectra Graphs.dat",,,"2021-10-14-14-14-07-B1S1DI2 (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-14-14-07-B1S1DI2ABS.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-14-14-07-B1S1DI2BEM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-14-14-07-B1S1DI2PEM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-14-14-07-B1S1DI2SEM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-14-14-07-B1S1DI2SYM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-14-30-18-B1S2SRM1c (01) - Abs Spectra Graphs.dat",,,"2021-10-14-14-30-18-B1S2SRM1c (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-14-30-18-B1S2SRM1cABS.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-14-30-18-B1S2SRM1cBEM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-14-30-18-B1S2SRM1cPEM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-14-30-18-B1S2SRM1cSEM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-14-30-18-B1S2SRM1cSYM.dat",,,,
-"K018",,,"2021-10-14",,,,,,,,,,"2021-10-14-14-40-51-B1S3K018 (01) - Abs Spectra Graphs.dat",,,"2021-10-14-14-40-51-B1S3K018 (01) - Abs Spectra Graphs.dat",
-"K018",,,"2021-10-14",,,,,,,,,,"2021-10-14-14-40-51-B1S3K018ABS.dat",,,,
-"K018",,,"2021-10-14",,,,,,,,,,"2021-10-14-14-40-51-B1S3K018BEM.dat",,,,
-"K018",,,"2021-10-14",,,,,,,,,,"2021-10-14-14-40-51-B1S3K018PEM.dat",,,,
-"K018",,,"2021-10-14",,,,,,,,,,"2021-10-14-14-40-51-B1S3K018SEM.dat",,,,
-"K018",,,"2021-10-14",,,,,,,,,,"2021-10-14-14-40-51-B1S3K018SYM.dat",,,,
-"K035",,,"2021-10-14",,,,,,,,,,"2021-10-14-14-52-16-B1S4K035ABS.dat",,,,
-"K035",,,"2021-10-14",,,,,,,,,,"2021-10-14-14-52-16-B1S4K035BEM.dat",,,,
-"K035",,,"2021-10-14",,,,,,,,,,"2021-10-14-14-52-16-B1S4K035PEM.dat",,,,
-"K035",,,"2021-10-14",,,,,,,,,,"2021-10-14-14-52-16-B1S4K035SEM.dat",,,,
-"K035",,,"2021-10-14",,,,,,,,,,"2021-10-14-14-52-16-B1S4K035SYM.dat",,,,
-"K019",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-03-11-B1S5K019ABS.dat",,,,
-"K019",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-03-11-B1S5K019BEM.dat",,,,
-"K019",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-03-11-B1S5K019PEM.dat",,,,
-"K019",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-03-11-B1S5K019SEM.dat",,,,
-"K019",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-03-11-B1S5K019SYM.dat",,,,
-"K016",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-13-47-B1S6K016ABS.dat",,,,
-"K016",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-13-47-B1S6K016BEM.dat",,,,
-"K016",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-13-47-B1S6K016PEM.dat",,,,
-"K016",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-13-47-B1S6K016SEM.dat",,,,
-"K016",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-13-47-B1S6K016SYM.dat",,,,
-"K047",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-24-22-B1S7K047ABS.dat",,,,
-"K047",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-24-22-B1S7K047BEM.dat",,,,
-"K047",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-24-22-B1S7K047PEM.dat",,,,
-"K047",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-24-22-B1S7K047SEM.dat",,,,
-"K047",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-24-22-B1S7K047SYM.dat",,,,
-"K039",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-35-02-B1S8K039ABS.dat",,,,
-"K039",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-35-02-B1S8K039BEM.dat",,,,
-"K039",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-35-02-B1S8K039PEM.dat",,,,
-"K039",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-35-02-B1S8K039SEM.dat",,,,
-"K039",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-35-02-B1S8K039SYM.dat",,,,
-"K053",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-45-33-B1S9K053ABS.dat",,,,
-"K053",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-45-33-B1S9K053BEM.dat",,,,
-"K053",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-45-33-B1S9K053PEM.dat",,,,
-"K053",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-45-33-B1S9K053SEM.dat",,,,
-"K053",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-45-33-B1S9K053SYM.dat",,,,
-"K025",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-56-02-B1S10K025ABS.dat",,,,
-"K025",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-56-02-B1S10K025BEM.dat",,,,
-"K025",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-56-02-B1S10K025PEM.dat",,,,
-"K025",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-56-02-B1S10K025SEM.dat",,,,
-"K025",,,"2021-10-14",,,,,,,,,,"2021-10-14-15-56-02-B1S10K025SYM.dat",,,,
-"K033",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-06-32-B1S11K033ABS.dat",,,,
-"K033",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-06-32-B1S11K033BEM.dat",,,,
-"K033",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-06-32-B1S11K033PEM.dat",,,,
-"K033",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-06-32-B1S11K033SEM.dat",,,,
-"K033",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-06-32-B1S11K033SYM.dat",,,,
-"K004",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-17-06-B1S12K004ABS.dat",,,,
-"K004",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-17-06-B1S12K004BEM.dat",,,,
-"K004",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-17-06-B1S12K004PEM.dat",,,,
-"K004",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-17-06-B1S12K004SEM.dat",,,,
-"K004",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-17-06-B1S12K004SYM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-16-27-40-B1S13SRM1dABS.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-16-27-40-B1S13SRM1dBEM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-16-27-40-B1S13SRM1dPEM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-16-27-40-B1S13SRM1dSEM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-16-27-40-B1S13SRM1dSYM.dat",,,,
-"K023",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-38-09-B1S14K023ABS.dat",,,,
-"K023",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-38-09-B1S14K023BEM.dat",,,,
-"K023",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-38-09-B1S14K023PEM.dat",,,,
-"K023",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-38-09-B1S14K023SEM.dat",,,,
-"K023",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-38-09-B1S14K023SYM.dat",,,,
-"K026",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-49-05-B1S15K026ABS.dat",,,,
-"K026",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-49-05-B1S15K026BEM.dat",,,,
-"K026",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-49-05-B1S15K026PEM.dat",,,,
-"K026",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-49-05-B1S15K026SEM.dat",,,,
-"K026",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-49-05-B1S15K026SYM.dat",,,,
-"K017",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-59-39-B1S16K017ABS.dat",,,,
-"K017",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-59-39-B1S16K017BEM.dat",,,,
-"K017",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-59-39-B1S16K017PEM.dat",,,,
-"K017",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-59-39-B1S16K017SEM.dat",,,,
-"K017",,,"2021-10-14",,,,,,,,,,"2021-10-14-16-59-39-B1S16K017SYM.dat",,,,
-"K015",,,"2021-10-14",,,,,,,,,,"2021-10-14-17-10-09-B1S17K015ABS.dat",,,,
-"K015",,,"2021-10-14",,,,,,,,,,"2021-10-14-17-10-09-B1S17K015BEM.dat",,,,
-"K015",,,"2021-10-14",,,,,,,,,,"2021-10-14-17-10-09-B1S17K015PEM.dat",,,,
-"K015",,,"2021-10-14",,,,,,,,,,"2021-10-14-17-10-09-B1S17K015SEM.dat",,,,
-"K015",,,"2021-10-14",,,,,,,,,,"2021-10-14-17-10-09-B1S17K015SYM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-17-20-47-B1S18DI3ABS.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-17-20-47-B1S18DI3BEM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-17-20-47-B1S18DI3PEM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-17-20-47-B1S18DI3SEM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-17-20-47-B1S18DI3SYM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"DIRS14Oct21 emission sample data.dat",,,,
-"K020",,,"2021-10-14",,,,,,,,,,"K0204s141021 (01) - Abs Spectra Graphs.dat","4s",,"K0204s141021 (01) - Abs Spectra Graphs.dat",
-"K020",,,"2021-10-14",,,,,,,,,,"K0204s141021 (01) - Processed Contour_ RM_IFE_NRM.dat","4s",,,
-"K020",,,"2021-10-14",,,,,,,,,,"K0204s141021 (01) - Processed Graph_ RM_IFE_NRM.dat","4s",,,"K0204s141021 (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K020",,,"2021-10-14",,,,,,,,,,"K0204s141021 (01) - Sample - Blank Contour Plot.dat","4s",,,
-"K020",,,"2021-10-14",,,,,,,,,,"K0204s141021 (01) - Sample - Blank Waterfall Plot.dat","4s",,,
-"K020",,,"2021-10-14",,,,,,,,,,"K0204s141021 (01) - Waterfall Plot Blank.dat","4s",,,
-"K020",,,"2021-10-14",,,,,,,,,,"K0204s141021 (01) - Waterfall Plot Sample.dat","4s",,,
-,,,"2021-10-14",,,,,,,,,,"2021- Processed Graph_ IFE_RM_NRM.dat",,,,
-,,,"2021-10-14",,,,,,,,,,"2021-10-14-14-30-18-B1S2SRM1c (01) - Abs Spectra Graphs.dat",,,"2021-10-14-14-30-18-B1S2SRM1c (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-14",,,,,,,,,,"SRM1sa141021 (01) - Abs Spectra Graphs.dat","1s",,"SRM1sa141021 (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-14",,,,,,,,,,"SRM1sa141021 (01) - Processed Graph_ RM_IFE_NRM.dat","1s",,,"SRM1sa141021 (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K012",,,"2021-10-18",,,,,,,,,,"K0123xdil2s (01) - Abs Spectra Graphs.dat","2s",3,"K0123xdil2s (01) - Abs Spectra Graphs.dat",
-"K012",,,"2021-10-18",,,,,,,,,,"K0123xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",3,,"K0123xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K013",,,"2021-10-18",,,,,,,,,,"K0132s (01) - Abs Spectra Graphs.dat","2s",,"K0132s (01) - Abs Spectra Graphs.dat",
-"K013",,,"2021-10-18",,,,,,,,,,"K0132s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0132s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K021",,,"2021-10-18",,,,,,,,,,"K0216xdil2s (01) - Abs Spectra Graphs.dat","2s",6,"K0216xdil2s (01) - Abs Spectra Graphs.dat",
-"K021",,,"2021-10-18",,,,,,,,,,"K0216xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",6,,"K0216xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K022",,,"2021-10-18",,,,,,,,,,"K0223xdil2s (01) - Abs Spectra Graphs.dat","2s",3,"K0223xdil2s (01) - Abs Spectra Graphs.dat",
-"K022",,,"2021-10-18",,,,,,,,,,"K0223xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",3,,"K0223xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K024",,,"2021-10-18",,,,,,,,,,"K0242s (01) - Abs Spectra Graphs.dat","2s",,"K0242s (01) - Abs Spectra Graphs.dat",
-"K024",,,"2021-10-18",,,,,,,,,,"K0242s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0242s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K030",,,"2021-10-18",,,,,,,,,,"K0301s (01) - Abs Spectra Graphs.dat","1s",,"K0301s (01) - Abs Spectra Graphs.dat",
-"K030",,,"2021-10-18",,,,,,,,,,"K0301s (01) - Processed Graph_ RM_IFE_NRM.dat","1s",,,"K0301s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K037",,,"2021-10-18",,,,,,,,,,"K0372s (01) - Abs Spectra Graphs.dat","2s",,"K0372s (01) - Abs Spectra Graphs.dat",
-"K037",,,"2021-10-18",,,,,,,,,,"K0372s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0372s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K038",,,"2021-10-18",,,,,,,,,,"K0382s (01) - Abs Spectra Graphs.dat","2s",,"K0382s (01) - Abs Spectra Graphs.dat",
-"K038",,,"2021-10-18",,,,,,,,,,"K0382s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0382s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K046",,,"2021-10-18",,,,,,,,,,"K0462s (01) - Abs Spectra Graphs.dat","2s",,"K0462s (01) - Abs Spectra Graphs.dat",
-"K046",,,"2021-10-18",,,,,,,,,,"K0462s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0462s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K050",,,"2021-10-18",,,,,,,,,,"K0502s (01) - Abs Spectra Graphs.dat","2s",,"K0502s (01) - Abs Spectra Graphs.dat",
-"K050",,,"2021-10-18",,,,,,,,,,"K0502s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0502s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-18",,,,,,,,,,"SRM1sa141021 (01) - Abs Spectra Graphs.dat","1s",,"SRM1sa141021 (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-18",,,,,,,,,,"SRM1sa141021 (01) - Processed Graph_ RM_IFE_NRM.dat","1s",,,"SRM1sa141021 (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-18",,,,,,,,,,"SRM1sb181021 (01) - Abs Spectra Graphs.dat","1s",,"SRM1sb181021 (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-18",,,,,,,,,,"SRM1sb181021 (01) - Processed Graph_ RM_IFE_NRM.dat","1s",,,"SRM1sb181021 (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-25",,,,,,,,,,"DIRS102521_Emission Sample Data.dat",,,,
-"K008",,,"2021-10-25",,,,,,,,,,"K0082s (01) - Abs Spectra Graphs.dat","2s",,"K0082s (01) - Abs Spectra Graphs.dat",
-"K008",,,"2021-10-25",,,,,,,,,,"K0082s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0082s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K009",,,"2021-10-25",,,,,,,,,,"K0092s (01) - Abs Spectra Graphs.dat","2s",,"K0092s (01) - Abs Spectra Graphs.dat",
-"K009",,,"2021-10-25",,,,,,,,,,"K0092s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0092s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K010",,,"2021-10-25",,,,,,,,,,"K0102s (01) - Abs Spectra Graphs.dat","2s",,"K0102s (01) - Abs Spectra Graphs.dat",
-"K010",,,"2021-10-25",,,,,,,,,,"K0102s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0102s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K011",,,"2021-10-25",,,,,,,,,,"K0112s (01) - Abs Spectra Graphs.dat","2s",,"K0112s (01) - Abs Spectra Graphs.dat",
-"K011",,,"2021-10-25",,,,,,,,,,"K0112s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0112s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K029",,,"2021-10-25",,,,,,,,,,"K0292s (01) - Abs Spectra Graphs.dat","2s",,"K0292s (01) - Abs Spectra Graphs.dat",
-"K029",,,"2021-10-25",,,,,,,,,,"K0292s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0292s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K036",,,"2021-10-25",,,,,,,,,,"K0362s (01) - Abs Spectra Graphs.dat","2s",,"K0362s (01) - Abs Spectra Graphs.dat",
-"K036",,,"2021-10-25",,,,,,,,,,"K0362s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0362s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K042",,,"2021-10-25",,,,,,,,,,"K0423xdil2s (01) - Abs Spectra Graphs.dat","2s",3,"K0423xdil2s (01) - Abs Spectra Graphs.dat",
-"K042",,,"2021-10-25",,,,,,,,,,"K0423xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",3,,"K0423xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K044",,,"2021-10-25",,,,,,,,,,"K0442s (01) - Abs Spectra Graphs.dat","2s",,"K0442s (01) - Abs Spectra Graphs.dat",
-"K044",,,"2021-10-25",,,,,,,,,,"K0442s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0442s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K048",,,"2021-10-25",,,,,,,,,,"K0482s (01) - Abs Spectra Graphs.dat","2s",,"K0482s (01) - Abs Spectra Graphs.dat",
-"K048",,,"2021-10-25",,,,,,,,,,"K0482s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0482s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K049",,,"2021-10-25",,,,,,,,,,"K0492s (01) - Abs Spectra Graphs.dat","2s",,"K0492s (01) - Abs Spectra Graphs.dat",
-"K049",,,"2021-10-25",,,,,,,,,,"K0492s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0492s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K051",,,"2021-10-25",,,,,,,,,,"K0512s (01) - Abs Spectra Graphs.dat","2s",,"K0512s (01) - Abs Spectra Graphs.dat",
-"K051",,,"2021-10-25",,,,,,,,,,"K0512s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0512s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K052",,,"2021-10-25",,,,,,,,,,"K0522s (01) - Abs Spectra Graphs.dat","2s",,"K0522s (01) - Abs Spectra Graphs.dat",
-"K052",,,"2021-10-25",,,,,,,,,,"K0522s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0522s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K054",,,"2021-10-25",,,,,,,,,,"K0542xdil2s (01) - Abs Spectra Graphs.dat","2s",2,"K0542xdil2s (01) - Abs Spectra Graphs.dat",
-"K054",,,"2021-10-25",,,,,,,,,,"K0542xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",2,,"K0542xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K055",,,"2021-10-25",,,,,,,,,,"K0552s (01) - Abs Spectra Graphs.dat","2s",,"K0552s (01) - Abs Spectra Graphs.dat",
-"K055",,,"2021-10-25",,,,,,,,,,"K0552s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0552s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K056",,,"2021-10-25",,,,,,,,,,"K0562xdil2s (01) - Abs Spectra Graphs.dat","2s",2,"K0562xdil2s (01) - Abs Spectra Graphs.dat",
-"K056",,,"2021-10-25",,,,,,,,,,"K0562xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",2,,"K0562xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K058",,,"2021-10-25",,,,,,,,,,"K0582s (01) - Abs Spectra Graphs.dat","2s",,"K0582s (01) - Abs Spectra Graphs.dat",
-"K058",,,"2021-10-25",,,,,,,,,,"K0582s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0582s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K061",,,"2021-10-25",,,,,,,,,,"K0612s (01) - Abs Spectra Graphs.dat","2s",,"K0612s (01) - Abs Spectra Graphs.dat",
-"K061",,,"2021-10-25",,,,,,,,,,"K0612s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0612s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K062",,,"2021-10-25",,,,,,,,,,"K0622s (01) - Abs Spectra Graphs.dat","2s",,"K0622s (01) - Abs Spectra Graphs.dat",
-"K062",,,"2021-10-25",,,,,,,,,,"K0622s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0622s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-25",,,,,,,,,,"SRMa25Oct211s (01) - Abs Spectra Graphs.dat","1s",,"SRMa25Oct211s (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-25",,,,,,,,,,"SRMa25Oct211s (01) - Processed Graph_ RM_IFE_NRM.dat","1s",,,"SRMa25Oct211s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-25",,,,,,,,,,"SRMb25Oct211s (01) - Abs Spectra Graphs.dat","1s",,"SRMb25Oct211s (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-25",,,,,,,,,,"SRMb25Oct211s (01) - Processed Graph_ RM_IFE_NRM.dat","1s",,,"SRMb25Oct211s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K034",,,"2021-10-26",,,,,,,,,,"K0342s (01) - Abs Spectra Graphs.dat","2s",,"K0342s (01) - Abs Spectra Graphs.dat",
-"K034",,,"2021-10-26",,,,,,,,,,"K0342s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0342s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K041",,,"2021-10-26",,,,,,,,,,"K0412s (01) - Abs Spectra Graphs.dat","2s",,"K0412s (01) - Abs Spectra Graphs.dat",
-"K041",,,"2021-10-26",,,,,,,,,,"K0412s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0412s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K059",,,"2021-10-26",,,,,,,,,,"K0592s (01) - Abs Spectra Graphs.dat","2s",,"K0592s (01) - Abs Spectra Graphs.dat",
-"K059",,,"2021-10-26",,,,,,,,,,"K0592s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0592s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-26",,,,,,,,,,"SRMa26Oct211s (01) - Abs Spectra Graphs.dat","1s",,"SRMa26Oct211s (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-26",,,,,,,,,,"SRMa26Oct211s (01) - Processed Graph_ RM_IFE_NRM.dat","1s",,,"SRMa26Oct211s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-26",,,,,,,,,,"T0101FWe3d2s (01) - Abs Spectra Graphs.dat","2s",,"T0101FWe3d2s (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-26",,,,,,,,,,"T0101FWe3d2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"T0101FWe3d2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-26",,,,,,,,,,"T0101SWe3d2s (01) - Abs Spectra Graphs.dat","2s",,"T0101SWe3d2s (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-26",,,,,,,,,,"T0101SWe3d2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"T0101SWe3d2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-26",,,,,,,,,,"T0102FW3d2s (01) - Abs Spectra Graphs.dat","2s",,"T0102FW3d2s (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-26",,,,,,,,,,"T0102FW3d2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"T0102FW3d2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-26",,,,,,,,,,"T0102FWe3d01s (01) - Abs Spectra Graphs.dat","1s",,"T0102FWe3d01s (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-26",,,,,,,,,,"T0102FWe3d01s (01) - Processed Graph_ RM_IFE_NRM.dat","1s",,,"T0102FWe3d01s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-26",,,,,,,,,,"T0102SWe2d2s (01) - Abs Spectra Graphs.dat","2s",,"T0102SWe2d2s (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-26",,,,,,,,,,"T0102SWe2d2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"T0102SWe2d2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-26",,,,,,,,,,"T0102SWe3d2s (01) - Abs Spectra Graphs.dat","2s",,"T0102SWe3d2s (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-26",,,,,,,,,,"T0102SWe3d2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"T0102SWe3d2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-26",,,,,,,,,,"T0103FWe3d2s (01) - Abs Spectra Graphs.dat","2s",,"T0103FWe3d2s (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-26",,,,,,,,,,"T0103FWe3d2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"T0103FWe3d2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-26",,,,,,,,,,"T0103SWe2d2s (01) - Abs Spectra Graphs.dat","2s",,"T0103SWe2d2s (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-26",,,,,,,,,,"T0103SWe2d2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"T0103SWe2d2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-26",,,,,,,,,,"TFWB24s (01) - Abs Spectra Graphs.dat","4s",,"TFWB24s (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-26",,,,,,,,,,"TFWB24s (01) - Processed Graph_ RM_IFE_NRM.dat","4s",,,"TFWB24s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-10-26",,,,,,,,,,"TSWB22s (01) - Abs Spectra Graphs.dat","2s",,"TSWB22s (01) - Abs Spectra Graphs.dat",
-,,,"2021-10-26",,,,,,,,,,"TSWB22s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"TSWB22s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K040",,,"2021-11-12",,,,,,,,,,"K0402s (01) - Abs Spectra Graphs.dat","2s",,"K0402s (01) - Abs Spectra Graphs.dat",
-"K040",,,"2021-11-12",,,,,,,,,,"K0402s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0402s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K043",,,"2021-11-12",,,,,,,,,,"K0432s (01) - Abs Spectra Graphs.dat","2s",,"K0432s (01) - Abs Spectra Graphs.dat",
-"K043",,,"2021-11-12",,,,,,,,,,"K0432s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0432s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K045",,,"2021-11-12",,,,,,,,,,"K0453xd2s (01) - Abs Spectra Graphs.dat","2s",3,"K0453xd2s (01) - Abs Spectra Graphs.dat",
-"K045",,,"2021-11-12",,,,,,,,,,"K0453xd2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",3,,"K0453xd2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-"K060",,,"2021-11-12",,,,,,,,,,"K0602s (01) - Abs Spectra Graphs.dat","2s",,"K0602s (01) - Abs Spectra Graphs.dat",
-"K060",,,"2021-11-12",,,,,,,,,,"K0602s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",,,"K0602s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-11-12",,,,,,,,,,"SRMa12Nov21 (01) - Abs Spectra Graphs.dat",,,"SRMa12Nov21 (01) - Abs Spectra Graphs.dat",
-,,,"2021-11-12",,,,,,,,,,"SRMa12Nov21 (01) - Processed Graph_ RM_IFE_NRM.dat",,,,"SRMa12Nov21 (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-11-12",,,,,,,,,,"SRMb12Nov21 (01) - Abs Spectra Graphs.dat",,,"SRMb12Nov21 (01) - Abs Spectra Graphs.dat",
-,,,"2021-11-12",,,,,,,,,,"SRMb12Nov21 (01) - Processed Graph_ RM_IFE_NRM.dat",,,,"SRMb12Nov21 (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-11-12",,,,,,,,,,"T20302FW2xd2s (01) - Abs Spectra Graphs.dat","2s",2,"T20302FW2xd2s (01) - Abs Spectra Graphs.dat",
-,,,"2021-11-12",,,,,,,,,,"T20302FW2xd2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",2,,"T20302FW2xd2s (01) - Processed Graph_ RM_IFE_NRM.dat"
-,,,"2021-11-12",,,,,,,,,,"T20303FW2xd2s (01) - Abs Spectra Graphs.dat","2s",2,"T20303FW2xd2s (01) - Abs Spectra Graphs.dat",
-,,,"2021-11-12",,,,,,,,,,"T20303FW2xd2s (01) - Processed Graph_ RM_IFE_NRM.dat","2s",2,,"T20303FW2xd2s (01) - Processed Graph_ RM_IFE_NRM.dat"
+"Kit_ID","index","Analysis","Date","Sample Description (60 Character Max) - Will display on final EEM figure","Sample ID","Analytical Replicate No","Integration Time","EEM file name","Absorbance File Name","Absorbance Pathlength","Dilution Factor *Decimal Format…e.g. 1 part sample and 1 part water = 0.50","DOC (mg/L)","Integration_Time","Absorbance file name"
+"K020",,,"2021-10-14",,,,,"K0204s141021 (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"4s","K0204s141021 (01) - Abs Spectra Graphs.dat"
+"K012",,,"2021-10-18",,,,,"K0123xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat",,,"3",,"2s","K0123xdil2s (01) - Abs Spectra Graphs.dat"
+"K013",,,"2021-10-18",,,,,"K0132s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0132s (01) - Abs Spectra Graphs.dat"
+"K021",,,"2021-10-18",,,,,"K0216xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat",,,"6",,"2s","K0216xdil2s (01) - Abs Spectra Graphs.dat"
+"K022",,,"2021-10-18",,,,,"K0223xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat",,,"3",,"2s","K0223xdil2s (01) - Abs Spectra Graphs.dat"
+"K024",,,"2021-10-18",,,,,"K0242s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0242s (01) - Abs Spectra Graphs.dat"
+"K030",,,"2021-10-18",,,,,"K0301s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"1s","K0301s (01) - Abs Spectra Graphs.dat"
+"K037",,,"2021-10-18",,,,,"K0372s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0372s (01) - Abs Spectra Graphs.dat"
+"K038",,,"2021-10-18",,,,,"K0382s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0382s (01) - Abs Spectra Graphs.dat"
+"K046",,,"2021-10-18",,,,,"K0462s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0462s (01) - Abs Spectra Graphs.dat"
+"K050",,,"2021-10-18",,,,,"K0502s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0502s (01) - Abs Spectra Graphs.dat"
+"K008",,,"2021-10-25",,,,,"K0082s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0082s (01) - Abs Spectra Graphs.dat"
+"K009",,,"2021-10-25",,,,,"K0092s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0092s (01) - Abs Spectra Graphs.dat"
+"K010",,,"2021-10-25",,,,,"K0102s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0102s (01) - Abs Spectra Graphs.dat"
+"K011",,,"2021-10-25",,,,,"K0112s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0112s (01) - Abs Spectra Graphs.dat"
+"K029",,,"2021-10-25",,,,,"K0292s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0292s (01) - Abs Spectra Graphs.dat"
+"K036",,,"2021-10-25",,,,,"K0362s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0362s (01) - Abs Spectra Graphs.dat"
+"K042",,,"2021-10-25",,,,,"K0423xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat",,,"3",,"2s","K0423xdil2s (01) - Abs Spectra Graphs.dat"
+"K044",,,"2021-10-25",,,,,"K0442s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0442s (01) - Abs Spectra Graphs.dat"
+"K048",,,"2021-10-25",,,,,"K0482s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0482s (01) - Abs Spectra Graphs.dat"
+"K049",,,"2021-10-25",,,,,"K0492s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0492s (01) - Abs Spectra Graphs.dat"
+"K051",,,"2021-10-25",,,,,"K0512s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0512s (01) - Abs Spectra Graphs.dat"
+"K052",,,"2021-10-25",,,,,"K0522s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0522s (01) - Abs Spectra Graphs.dat"
+"K054",,,"2021-10-25",,,,,"K0542xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat",,,"2",,"2s","K0542xdil2s (01) - Abs Spectra Graphs.dat"
+"K055",,,"2021-10-25",,,,,"K0552s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0552s (01) - Abs Spectra Graphs.dat"
+"K056",,,"2021-10-25",,,,,"K0562xdil2s (01) - Processed Graph_ RM_IFE_NRM.dat",,,"2",,"2s","K0562xdil2s (01) - Abs Spectra Graphs.dat"
+"K058",,,"2021-10-25",,,,,"K0582s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0582s (01) - Abs Spectra Graphs.dat"
+"K061",,,"2021-10-25",,,,,"K0612s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0612s (01) - Abs Spectra Graphs.dat"
+"K062",,,"2021-10-25",,,,,"K0622s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0622s (01) - Abs Spectra Graphs.dat"
+"K034",,,"2021-10-26",,,,,"K0342s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0342s (01) - Abs Spectra Graphs.dat"
+"K041",,,"2021-10-26",,,,,"K0412s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0412s (01) - Abs Spectra Graphs.dat"
+"K059",,,"2021-10-26",,,,,"K0592s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0592s (01) - Abs Spectra Graphs.dat"
+"K040",,,"2021-11-12",,,,,"K0402s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0402s (01) - Abs Spectra Graphs.dat"
+"K043",,,"2021-11-12",,,,,"K0432s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0432s (01) - Abs Spectra Graphs.dat"
+"K045",,,"2021-11-12",,,,,"K0453xd2s (01) - Processed Graph_ RM_IFE_NRM.dat",,,"3",,"2s","K0453xd2s (01) - Abs Spectra Graphs.dat"
+"K060",,,"2021-11-12",,,,,"K0602s (01) - Processed Graph_ RM_IFE_NRM.dat",,,,,"2s","K0602s (01) - Abs Spectra Graphs.dat"

@@ -63,7 +63,7 @@ cdom_list_kitnames =
   mutate_all(as.character) 
 
 samplelog_filled = 
-  bind_rows(samplelog_empty, cdom_list_2) %>% 
+  bind_rows(samplelog_empty, cdom_list_kitnames) %>% 
   dplyr::select(Kit_ID, everything())
 
 samplelog_filled %>% write.csv("data/CDOM_SampleLog.csv", row.names = FALSE, na = "")
