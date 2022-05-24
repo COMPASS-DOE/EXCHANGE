@@ -67,7 +67,23 @@ samplelog_filled =
   dplyr::select(Kit_ID, everything()) %>% 
   arrange(Kit_ID)
 
-samplelog_filled %>% write.csv("data/CDOM_SampleLog.csv", row.names = FALSE, na = "")
+#
+# import DOC data ----
+doc_data = read.csv("Data/Processed/EC1_NPOC_L0B_20220509_copyKFP.csv", na = "NA")
+doc_data_subset = 
+  doc_data %>% 
+  dplyr::select(kit_id, npoc_mgl) %>% 
+  rename(`DOC (mg/L)` = npoc_mgl,
+         Kit_ID = kit_id)
+
+samplelog_filled2 = 
+  samplelog_filled %>% 
+  dplyr::select(-`DOC (mg/L)`) %>% 
+  left_join(doc_data_subset)
+#
+# export ----
+
+samplelog_filled2 %>% write.csv("data/CDOM_SampleLog.csv", row.names = FALSE, na = "")
 
 ## 2022-05-23 KFP NOTE: this formats the list only when file names have the `K000`, `0s`, `0xdil` format
 ## the other files will be done next.
