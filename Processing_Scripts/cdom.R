@@ -79,7 +79,8 @@ doc_data_subset =
 samplelog_filled2 = 
   samplelog_filled %>% 
   dplyr::select(-`DOC (mg/L)`) %>% 
-  left_join(doc_data_subset)
+  left_join(doc_data_subset) %>% 
+  mutate(`Sample Description (60 Character Max) - Will display on final EEM figure` = Kit_ID)
 #
 # export ----
 
