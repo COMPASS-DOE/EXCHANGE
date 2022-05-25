@@ -1,7 +1,7 @@
 %% Section 1: Important things to change prior to running the code
 
 %Put any important Notes about the runs that are relevant here
-special_notes='Dilution corrections and DOC normalization to 1 mg/L for all data and EEM contours. Exported from MatLab on May 15, 2022.'
+special_notes='Dilution corrections and DOC normalization to 1 mg/L for all data and EEM contours. Exported from MatLab on May 23, 2022.'
 
 %Set Parameters for manual plotting
 nrows = 1;
@@ -17,19 +17,19 @@ figuretitle = true %Will put a title at the top of the EEM based on the Sample D
 DOCconcentration = true
 
 %Demo - put a copy of the demo dataset in a writeable folder, e.g.
-demopath='/Users/myer056/OneDrive - PNNL/EEMs_EXCHANGE_Fall2021'; %edit for correct file destination
+demopath='/Users/myer056/OneDrive - PNNL/Documents/GitHub/EXCHANGE/EEMs_EXCHANGE_Fall2021'; %edit for correct file destination
 
 
 %% Section 2: Reading in EEMs and Absorbance Files
 cd([demopath '/EEMs'])
-filetype=3;ext = 'dat';RangeIn='A4..GJ253';headers=[0 1];display_opt=0;outdat=1;
+filetype=3;ext = 'dat';RangeIn='A4..GJ253';headers=[0 1];display_opt=0;outdat=2;
 [X,Emmat,Exmat,filelist_eem,outdata]=readineems(filetype,ext,RangeIn,headers,display_opt,outdat);
 Ex=Exmat(1,:); %Since all files have the same excitation wavelengths
 Em=Emmat(:,1); %Since all files have the same emission wavelengths
 
 
 cd([demopath '/Absorbance'])
-filetype='Abs';ext = 'dat_1_10';RangeIn='A4..J194';display_opt=0;outdat=1;
+filetype='Abs';ext = 'dat_1_10';RangeIn='A4..J194';display_opt=0;outdat=2;
 [S_abs,W_abs,wave_abs,filelist_abs]=readinscans(filetype,ext,RangeIn,display_opt,outdat);
 
 %% Section 3: Reading in Sample Log
