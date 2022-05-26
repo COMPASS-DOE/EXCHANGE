@@ -19,6 +19,7 @@ pacman::p_load(cowsay,
                googlesheets4, # read_sheet 
                googledrive) # drive_upload
 
+## set plot theme
 theme_set(theme_bw())
 
 ## URL for bulk density data
