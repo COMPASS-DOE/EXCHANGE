@@ -115,4 +115,4 @@ data_qc(data_processed) %>%
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
 #drive_upload(media = data_clean, path = data_path)
 
-write_csv(data_clean, "~/Desktop/EC1_TCTN_L0B_20220520.csv")
+write_csv(data_clean, "Data/EC1_TSS_L0B_20220527.csv")
