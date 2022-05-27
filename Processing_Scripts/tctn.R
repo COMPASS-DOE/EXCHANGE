@@ -49,7 +49,7 @@ var <- "TC/TN"
 # Create function to use in lapply that reads in a google sheet 
 read_tctn <- function(x) {
   df <- read_sheet(ss = x, range = gsheet_tab, skip = 2, 
-                   col_types = "ccccccccccccccccccc")
+                   col_types = "ccccccccccccccccccc", na = c("N/A", "NA"))
 }
 
 #
@@ -109,7 +109,24 @@ data_raw %>%
          acidification = case_when(acidification == "UnAc" ~ FALSE)) %>% 
   separate(instrument_id, into = c("one", "two", "three", "Month", "Day"), sep = "_") %>% 
   mutate(Year = "2022", date_ran = make_date(day = Day, month = Month, year = Year)) %>% 
-  bind_cols(lod_processed) -> data_processed
+  bind_cols(lod_processed) -> data_intermediate
+
+data_intermediate %>% 
+  group_by(kit_id, transect_location, set) %>% 
+  summarise(total_nitrogen_perc = mean(as.numeric(total_nitrogen_perc)),
+         total_carbon_perc = mean(as.numeric(total_carbon_perc)),
+         total_nitrogen_mg = mean(as.numeric(total_nitrogen_mg)),
+         total_carbon_mg = mean(as.numeric(total_carbon_mg)),
+         total_nitrogen_perc_min = min(total_nitrogen_perc),
+         total_carbon_perc_min = min(total_carbon_perc),
+         total_nitrogen_perc_max = max(total_nitrogen_perc),
+         total_carbon_perc_max = max(total_carbon_perc)) -> means_mins
+
+data_intermediate %>% 
+  distinct(kit_id, transect_location, .keep_all = TRUE) %>% 
+  select(campaign, kit_id, transect_location, set, acidification, lod_tc_average, 
+         lod_tc_sd, lod_tn_average, lod_tn_sd, date_ran) %>% 
+  right_join(means_mins, by = c("kit_id", "transect_location", "set")) -> data_processed
 
 #
 # 4. Apply QC flags ------------------------------------------------------------
@@ -121,13 +138,43 @@ data_qc <- function(data) {
            tn_flag_1 = ifelse(total_nitrogen_perc < f1_min | total_nitrogen_perc > f1_max, T, F),
            tc_flag_1 = ifelse(total_carbon_perc < f1_min | total_carbon_perc > f1_max, T, F),
            tn_flag_2 = ifelse(total_nitrogen_mg < (lod_tn_sd * 3), T, F),
-           tc_flag_2 = ifelse(total_carbon_mg < (lod_tc_sd * 3), T, F)
+           tc_flag_2 = ifelse(total_carbon_mg < (lod_tc_sd * 3), T, F),
+           tn_flag_3 = ifelse(total_nitrogen_perc_min < (0.5 * total_nitrogen_perc) |
+                              total_nitrogen_perc_max > (0.5 * total_nitrogen_perc), T, F),
+           tc_flag_3 = ifelse(total_carbon_perc_min < (0.5 * total_carbon_perc) |
+                              total_carbon_perc_max > (0.5 * total_carbon_perc), T, F)
            )
 }
 
-data_qc(data_processed) %>% 
-  select(campaign, kit_id, transect_location, total_nitrogen_perc, total_nitrogen_mg, 
-         total_carbon_perc, total_carbon_perc, acidification, date_ran, set, run) -> data_clean
+data_qc <- data_qc(data_processed)
+
+data_qc %>% 
+  pivot_longer(cols = starts_with("tn"), names_to = "tn_flag",
+               values_to = "tn_vals") %>% 
+  filter(tn_vals == TRUE) %>% select(-tn_vals) %>%  
+  group_by(kit_id, transect_location) %>%
+  mutate(tn_flag = case_when(tn_flag == "tn_flag_1" ~ "outside range",
+                             tn_flag == "tn_flag_2" ~ "below detect",
+                             tn_flag == "tn_flag_3" ~ "rep outlier")) %>% 
+  summarise(tn_flag = toString(tn_flag)) -> tn_flags
+  
+
+data_qc %>% 
+  pivot_longer(cols = starts_with("tc"), names_to = "tc_flag",
+               values_to = "tc_vals") %>% 
+  filter(tc_vals == TRUE) %>% select(-tc_vals) %>% 
+  group_by(kit_id, transect_location) %>%
+    mutate(tc_flag = case_when(tc_flag == "tc_flag_1" ~ "outside range",
+                               tc_flag == "tc_flag_2" ~ "below detect",
+                               tc_flag == "tc_flag_3" ~ "rep outlier")) %>% 
+    summarise(tc_flag = toString(tc_flag)) %>% 
+    left_join(tn_flags, by = c("kit_id", "transect_location")) -> flags
+  
+  
+  data_qc %>% 
+    left_join(flags, by = c("kit_id", "transect_location")) %>% 
+    select(campaign, kit_id, transect_location, acidification, total_nitrogen_perc, 
+         total_carbon_perc, tn_flag, tc_flag) -> data_clean
 
 #
 # 5. Write cleaned data to drive -----------------------------------------------
@@ -135,6 +182,7 @@ data_qc(data_processed) %>%
 ## We should add Sys.date or hardcode date so we know when the L0B was born
 ## The file written out should be named following 
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
-drive_upload(media = data_clean, path = data_path)
+#drive_upload(media = data_clean, path = data_path)
 
+write_csv(data_clean, "Data/EC1_TSS_L0B_20220527.csv")
 
