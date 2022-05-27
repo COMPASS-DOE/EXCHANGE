@@ -8,6 +8,7 @@ pacman::p_load(elevatr, dplyr, readr, tidyr)
 # Read in metadata
 metadata <- read_csv("~/Downloads/EXCHANGE Metadata Form (Responses) - Collection Metadata (1).csv")
 sites <- read_csv("~/Downloads/EC1_sitelocations.csv")
+read_csv("~/Downloads/EXCHANGE Metadata Form (Responses) - SoilSeries.csv") -> soil
 
 # Isolate lat/lons
 metadata %>% 
@@ -39,7 +40,14 @@ elev_df %>%
   pivot_wider(names_from = Transect_Location, values_from = elevation,
               names_glue = "{Transect_Location}_Elevation_m") -> elev_long
 
+soil %>%
+  select(Kit_ID, Transect_location, Soilweb_Map_Unit_Name) %>% 
+  pivot_wider(names_from = Transect_location, values_from = Soilweb_Map_Unit_Name,
+              names_glue = "{Transect_location}_Soil_Type") -> soil_long
+
 metadata %>% 
-  select(-ends_with("Elevation_m")) %>% 
-  left_join(elev_long, by = "Kit_ID")
+  select(-ends_with("Elevation_m"), -contains("Soil_Type")) %>% 
+  left_join(elev_long, by = "Kit_ID") %>% 
+  left_join(soil_long, by = "Kit_ID") %>% 
+  write_csv("~/Desktop/EC1_CollectionMetadata_Joined.csv")
 
