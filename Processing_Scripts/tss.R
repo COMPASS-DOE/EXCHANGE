@@ -98,14 +98,23 @@ cat("Applying flags to", var, "data...")
 
 data_qc <- function(data) {
   data %>% 
-    mutate(flag_1 = ifelse(total_filter_mass_g < 0, T, F),
+    mutate(`negative filter mass` = ifelse(total_filter_mass_g < 0, T, F),
            #flag_3 = ifelse(total_bottom_filter_g > 0, T, F),
-           flag_2 = ifelse(tss_mg_perl < f4_min | tss_mg_perl > f4_max, T, F)) 
+           `outside range` = ifelse(tss_mg_perl < f4_min | tss_mg_perl > f4_max, T, F)
+           ) 
 }
 
 data_qc(data_processed) %>% 
-  select(campaign, kit_id, transect_location, tss_mg_perl, total_filter_mass_g, volume_filtered_ml, filters_used,
-         flag_1, flag_2) -> data_clean 
+  pivot_longer(cols = c(`negative filter mass`,`outside range`), names_to = "tss_flag",
+               values_to = "vals") %>% 
+  filter(vals == TRUE) %>% select(-vals) %>% 
+  group_by(kit_id, transect_location) %>% 
+  summarise(tss_flag = toString(tss_flag)) -> flags
+
+data_processed %>% 
+  left_join(flags, by = c("kit_id", "transect_location")) %>% 
+  select(campaign, kit_id, transect_location, tss_mg_perl, total_filter_mass_g, 
+         volume_filtered_ml, filters_used, tss_flag) -> data_clean 
 
 #
 # 5. Write cleaned data to drive -----------------------------------------------
