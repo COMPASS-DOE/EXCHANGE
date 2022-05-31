@@ -57,8 +57,6 @@ files <- drive_ls(directory) %>%
 ## Download files to local (don't worry, we'll delete em in a sec)
 lapply(files$name, drive_download, overwrite = TRUE)
 
-# 3. Import data ---------------------------------------------------------------
-
 ## Read in data, filter to EC1 samples, and add sample name
 npoc_raw <- files$name %>% 
   map(read_data) %>% 
@@ -133,14 +131,14 @@ tn_flags <- npoc_raw_flags %>%
   group_by(kit_id) %>% 
   summarize(tn_flag = toString(tn_flag))
 
-npoc_raw_flags %>% 
+npoc <- npoc_raw_flags %>% 
   left_join(npoc_flags, by = "kit_id") %>% 
   left_join(tn_flags, by = "kit_id") %>% 
   select(date, campaign, kit_id, transect_location, npoc_mgl, tn_mgl, contains("_flag"))
 
 
 # 7. Write data ----------------------------------------------------------------
-date_updated <- "20220524"
+date_updated <- "20220531"
 
 write_csv(npoc, paste0("Data/Processed/EC1_NPOC_TN_L0B_", date_updated, ".csv"))
 
