@@ -302,5 +302,5 @@ data_ions_final = format_df(data_ions_qc)
 #
 # 5. Export cleaned data --------------------------------------------------
 
-data_ions_final %>% write.csv("Data/Processed/EC1_ions_L0B_2022-05-31.csv", row.names = FALSE)
+data_ions_final %>% write.csv("Data/Processed/EC1_Water_Ions_L0B_2022-05-31.csv", row.names = FALSE)
 
