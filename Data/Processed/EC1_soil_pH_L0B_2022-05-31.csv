@@ -1,4 +1,4 @@
-"Kit_ID","Transect_location","date_run","pH","pH_flag","Specific_Conductance_uS_cm","Specific_Conductance_flag"
+"kit_id","transect_location","date_run","ph","ph_flag","specific_conductance_us_cm","specific_conductance_flag"
 "K001","upland",2022-05-19,6.47,,43.4,
 "K004","upland",2022-05-19,6.21,,63.7,
 "K007","upland",2022-05-19,5.9,,115,

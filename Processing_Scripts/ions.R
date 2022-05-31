@@ -289,8 +289,9 @@ format_df = function(data_ions_qc){
     dplyr::select(-Ion, -name) %>% 
     pivot_wider(names_from = "name2", values_from = "value") %>% 
     separate(Name, sep = "_", into = c("campaign", "kit_id")) %>% 
-    mutate(transect_location = "SurfaceWater") %>% 
-    dplyr::select(campaign, kit_id, transect_location, everything())
+    mutate(transect_location = "Water") %>% 
+    dplyr::select(campaign, kit_id, transect_location, everything()) %>% 
+    janitor::clean_names()
   
   
 }
@@ -301,5 +302,5 @@ data_ions_final = format_df(data_ions_qc)
 #
 # 5. Export cleaned data --------------------------------------------------
 
-data_ions_final %>% write.csv("Data/Processed/EC1_ions_L0B_2022-05-23.csv", row.names = FALSE, na = "")
+data_ions_final %>% write.csv("Data/Processed/EC1_ions_L0B_2022-05-31.csv", row.names = FALSE, na = "")
 

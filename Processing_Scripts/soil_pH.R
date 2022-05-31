@@ -46,11 +46,13 @@ data_raw <- googlesheets4::read_sheet(data_path)
 soil_pH_data_processed = 
   data_raw %>% 
   filter(is.na(Notes)) %>% 
-  mutate(Specific_Conductance_uS_cm = Conductivity_uS_cm/ (1 + 0.02 * (Temp_C - 25)),
-         Specific_Conductance_uS_cm = signif(Specific_Conductance_uS_cm, digits = 3)) %>% 
+  mutate(specific_conductance_us_cm = Conductivity_uS_cm/ (1 + 0.02 * (Temp_C - 25)),
+         specific_conductance_us_cm = signif(specific_conductance_us_cm, digits = 3)) %>% 
   mutate(Transect_location = tolower(Transect_location),
          Transect_location = factor(Transect_location, levels = c("upland", "transition", "wetland"))) %>% 
-  dplyr::select(Kit_ID, Transect_location, pH, Specific_Conductance_uS_cm, date_run)
+  dplyr::select(Kit_ID, Transect_location, pH, specific_conductance_us_cm, date_run) %>% 
+  rename(transect_location = Transect_location,
+         ph = pH)
 
 
 #
@@ -58,16 +60,17 @@ soil_pH_data_processed =
 
 soil_pH_qc = 
   soil_pH_data_processed %>% 
-  mutate(pH_flag = case_when(pH < 0 ~ "below range",
-                             pH > 14 ~ "above range"),
-         Specific_Conductance_flag = case_when(Specific_Conductance_uS_cm < 0 ~ "below range",
-                                               Specific_Conductance_uS_cm > 9999 ~ "above range")) %>% 
-  dplyr::select(-starts_with("pH"), -starts_with("Specific_Conductance"), starts_with("pH"), starts_with("Specific_Conductance"))
+  mutate(ph_flag = case_when(ph < 0 ~ "below range",
+                             ph > 14 ~ "above range"),
+         specific_conductance_flag = case_when(specific_conductance_us_cm < 0 ~ "below range",
+                                               specific_conductance_us_cm > 9999 ~ "above range")) %>% 
+  dplyr::select(-starts_with("ph"), -starts_with("specific_conductance"), starts_with("ph"), starts_with("specific_conductance")) %>% 
+  janitor::clean_names()
   
 
 #
 # 5. Export cleaned data --------------------------------------------------
 
-soil_pH_qc %>% write.csv("Data/Processed/EC1_soil_pH_L0B_2022-05-25.csv", row.names = FALSE, na = "")
+soil_pH_qc %>% write.csv("Data/Processed/EC1_soil_pH_L0B_2022-05-31.csv", row.names = FALSE, na = "")
 
 
