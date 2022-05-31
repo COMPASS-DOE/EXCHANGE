@@ -52,7 +52,8 @@ soil_pH_data_processed =
          Transect_location = factor(Transect_location, levels = c("upland", "transition", "wetland"))) %>% 
   dplyr::select(Kit_ID, Transect_location, pH, specific_conductance_us_cm, date_run) %>% 
   rename(transect_location = Transect_location,
-         ph = pH)
+         ph = pH) %>% 
+  mutate(campaign = "EC1")
 
 
 #
