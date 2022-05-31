@@ -71,6 +71,6 @@ soil_pH_qc =
 #
 # 5. Export cleaned data --------------------------------------------------
 
-soil_pH_qc %>% write.csv("Data/Processed/EC1_soil_pH_L0B_2022-05-31.csv", row.names = FALSE)
+soil_pH_qc %>% write.csv("Data/Processed/EC1_Soil_pH_L0B_2022-05-31.csv", row.names = FALSE)
 
 
