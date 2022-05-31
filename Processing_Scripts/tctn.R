@@ -174,7 +174,9 @@ data_qc %>%
   data_qc %>% 
     left_join(flags, by = c("kit_id", "transect_location")) %>% 
     select(campaign, kit_id, transect_location, acidification, total_nitrogen_perc, 
-         total_carbon_perc, tn_flag, tc_flag) -> data_clean
+         total_carbon_perc, tn_flag, tc_flag) %>% 
+    mutate(total_carbon_perc = round(total_carbon_perc, 2),
+           total_nitrogen_perc = round(total_nitrogen_perc, 2)) -> data_clean
 
 #
 # 5. Write cleaned data to drive -----------------------------------------------
@@ -184,5 +186,5 @@ data_qc %>%
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
 #drive_upload(media = data_clean, path = data_path)
 
-write_csv(data_clean, "Data/EC1_TSS_L0B_20220527.csv")
+write_csv(data_clean, "Data/Processed/EC1_Soil_TSS_L0B_20220527.csv")
 
