@@ -59,7 +59,7 @@ bulk_density_processed <- bulk_density_raw %>%
 
 clean_data <- function(data) {
   data %>% 
-    mutate(bulk_density_g_cm3_flag = ifelse(bulk_density_g_cm3 < 0 | bulk_density_g_cm3 > 2, "TRUE", NA))
+    mutate(bulk_density_flag = ifelse(bulk_density_g_cm3 < 0 | bulk_density_g_cm3 > 2, "outside range", NA))
 }
 
 bulk_density <- clean_data(bulk_density_processed)

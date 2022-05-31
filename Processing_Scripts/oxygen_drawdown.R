@@ -171,10 +171,9 @@ remove_plateau <- function(data){
 }
 
 ## Clean each group, and return the final dataset with 
-firesting_clean <- dataset_list %>% 
+firesting_clean <- split_groups %>% 
   map(remove_plateau) %>%
   bind_rows()
-
 
 
 # 5. Calculate rates -----------------------------------------------------------
@@ -199,7 +198,7 @@ firesting_rates_raw <- firesting_clean %>%
 
 clean_data <- function(data) {
   data %>% 
-    mutate(delta_do_hr_flag = ifelse(delta_do_hr > rate_max, "TRUE", NA))
+    mutate(delta_do_flag = ifelse(delta_do_hr > rate_max, "higher than expected rate", NA))
 }
 
 firesting_rates <- clean_data(firesting_rates_raw)
@@ -212,5 +211,5 @@ date_updated <- "20220517"
 #write_csv(firesting_clean, "data/firesting_full_dataset.csv")
 
 ## Write out dataset with calculated rates
-write_csv(firesting_rates, paste0("Data/Processed/EC1_OxygenDrawdown_L0B_", date_updated, "_PRELIMINARY.csv"))
+write_csv(firesting_rates, paste0("Data/Processed/EC1_OxygenDrawdown_L0B_", date_updated, ".csv"))
 

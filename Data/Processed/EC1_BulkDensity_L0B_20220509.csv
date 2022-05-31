@@ -1,4 +1,4 @@
-campaign,kit_id,transect_location,bulk_density_g_cm3,bulk_density_g_cm3_flag
+campaign,kit_id,transect_location,bulk_density_g_cm3,bulk_density_flag
 EC1,K027,Wetland,0.08272017837235231,NA
 EC1,K011,Wetland,NA,NA
 EC1,K017,Wetland,0.18249158249158248,NA
@@ -133,3 +133,17 @@ EC1,K061,Wetland,NA,NA
 EC1,K056,Wetland,NA,NA
 EC1,K038,Wetland,NA,NA
 EC1,K013,Wetland,0.23393254848469003,NA
+EC1,NA,NA,NA,NA
+EC1,K052,Upland,1.449051724137931,NA
+EC1,K055,Upland,NA,NA
+EC1,K008,Upland,NA,NA
+EC1,K007,Upland,NA,NA
+EC1,K001,Upland,NA,NA
+EC1,K008,NA,NA,NA
+EC1,K025,Upland,NA,NA
+EC1,K018,Upland,NA,NA
+EC1,K017,Upland,NA,NA
+EC1,K004,Upland,NA,NA
+EC1,K009,Upland,NA,NA
+EC1,K008,Upland,NA,NA
+EC1,K011,Upland,NA,NA

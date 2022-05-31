@@ -100,22 +100,43 @@ mean_if_numeric <- function(x){
   ifelse(is.numeric(x), mean(x, na.rm = TRUE), first(x))
 }
 
-## The last step before finalizing is taking care of pesky duplicates from reruns
+## Another step before finalizing is taking care of pesky duplicates from reruns
 npoc_duplicates_removed <- npoc_blank_corrected %>% 
   select(campaign, transect_location, kit_id, date, npoc_mgl, tn_mgl, npoc_blank, tn_blank) %>% 
   group_by(kit_id) %>% 
   summarize(across(everything(), .f = mean_if_numeric))
 
-npoc <- npoc_duplicates_removed %>% 
+## The last step is flagging data
+npoc_raw_flags <- npoc_duplicates_removed %>% 
   ## First, round each parameter to proper significant figures
   mutate(npoc_mgl = round(npoc_mgl, 2), 
          tn_mgl = round(tn_mgl, 3)) %>% 
   ## Second, add flags for outside LOD
-  mutate(npoc_mgl_flag = ifelse(npoc_mgl < lod_npoc | npoc_mgl > 30, "TRUE", NA), #per cal curve upper limit
-         tn_mgl_flag = ifelse(tn_mgl < lod_tn | tn_mgl > 3, "TRUE", NA), 
-         npoc_blank_flag = ifelse(npoc_blank == 0, "Below LOD", NA), 
-         tn_blank_flag = ifelse(tn_blank == 0, "Below LOD", NA)) %>% 
-  select(date, campaign, kit_id, transect_location, npoc_mgl, tn_mgl, npoc_blank, tn_blank, contains("_flag")) # clean up unneeded
+  mutate(`npoc outside range` = ifelse(npoc_mgl < lod_npoc | npoc_mgl > 30, T, F), #per cal curve upper limit
+         `tn outside range` = ifelse(tn_mgl < lod_tn | tn_mgl > 3, T, F), 
+         `npoc blank below LOD` = ifelse(npoc_blank == 0, T, F), 
+         `tn blank below LOD` = ifelse(tn_blank == 0, T, F))
+
+## gather both npoc-relevant flags into a single column
+npoc_flags <- npoc_raw_flags %>% 
+  pivot_longer(cols = c(`npoc outside range`, `npoc blank below LOD`), 
+               names_to = "npoc_flag", values_to = "vals") %>% 
+  filter(vals == TRUE) %>% select(-vals) %>% 
+  group_by(kit_id) %>% 
+  summarize(npoc_flag = toString(npoc_flag))
+
+## gather both npoc-relevant flags into a single column
+tn_flags <- npoc_raw_flags %>% 
+  pivot_longer(cols = c(`tn outside range`, `tn blank below LOD`), 
+               names_to = "tn_flag", values_to = "vals") %>% 
+  filter(vals == TRUE) %>% select(-vals) %>% 
+  group_by(kit_id) %>% 
+  summarize(tn_flag = toString(tn_flag))
+
+npoc_raw_flags %>% 
+  left_join(npoc_flags, by = "kit_id") %>% 
+  left_join(tn_flags, by = "kit_id") %>% 
+  select(date, campaign, kit_id, transect_location, npoc_mgl, tn_mgl, contains("_flag"))
 
 
 # 7. Write data ----------------------------------------------------------------

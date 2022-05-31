@@ -1,4 +1,4 @@
-campaign,kit_id,transect_location,gwc_perc,flag_gwc_perc
+campaign,kit_id,transect_location,gwc_perc,gwc_flag
 EC1,K012,Sediment,716,NA
 EC1,K012,Wetland,80,NA
 EC1,K013,Sediment,185,NA

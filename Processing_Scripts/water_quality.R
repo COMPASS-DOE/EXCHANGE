@@ -57,10 +57,10 @@ clean_data <- function(data) {
            orp_mv = round(orp_mv, 0), 
            alk_mgl_caco3 = round(alk_mgl_caco3, 0)) %>% 
     ## Second, add flags for 
-    mutate(sal_psu_flag = ifelse(sal_psu < 0 | sal_psu > 50, "TRUE", "NA"), 
-           ph_flag = ifelse(ph < 0 | ph > 14, "TRUE", "NA"), 
-           orp_mv_flag = ifelse(orp_mv < 0 | orp_mv > 500, "TRUE", "NA"),
-           alk_mgl_caco3_flag = ifelse(alk_mgl_caco3 < 0, "TRUE", "NA"))
+    mutate(sal_flag = ifelse(sal_psu < 0 | sal_psu > 50, "outside range", "NA"), 
+           ph_flag = ifelse(ph < 0 | ph > 14, "outside range", "NA"), 
+           orp_flag = ifelse(orp_mv < 0 | orp_mv > 500, "outside range", "NA"),
+           alk_flag = ifelse(alk_mgl_caco3 < 0, "outside range", "NA"))
 }
 
 water_quality <- clean_data(water_quality_raw) %>% 

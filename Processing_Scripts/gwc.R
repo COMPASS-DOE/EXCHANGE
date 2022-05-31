@@ -65,7 +65,7 @@ cat("Applying flags to", var, "data...")
 clean_data <- function(data) {
   data %>% 
     mutate(gwc_perc = round(gwc_perc, 0)) %>% 
-    mutate(flag_gwc_perc = ifelse(gwc_perc < gwc_min, "TRUE", NA)) 
+    mutate(gwc_flag = ifelse(gwc_perc < gwc_min, "outside range", NA)) 
 }
 
 gwc <- clean_data(gwc_processed) %>% 

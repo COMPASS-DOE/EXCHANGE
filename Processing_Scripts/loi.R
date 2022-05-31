@@ -66,7 +66,7 @@ cat("Applying flags to", var, "data...")
 clean_data <- function(data) {
   data %>% 
     mutate(loi_perc = round(loi_perc, 0)) %>% 
-    mutate(loi_perc_flag = loi_perc < loi_min | loi_perc > loi_max) 
+    mutate(loi_flag = ifelse(loi_perc < loi_min | loi_perc > loi_max, "outside range", NA)) 
 }
 
 loi <- clean_data(loi_processed)
