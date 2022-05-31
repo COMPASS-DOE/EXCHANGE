@@ -134,7 +134,9 @@ tn_flags <- npoc_raw_flags %>%
 npoc <- npoc_raw_flags %>% 
   left_join(npoc_flags, by = "kit_id") %>% 
   left_join(tn_flags, by = "kit_id") %>% 
-  select(date, campaign, kit_id, transect_location, npoc_mgl, tn_mgl, contains("_flag"))
+  select(date, campaign, kit_id, transect_location, npoc_mgl, tn_mgl, contains("_flag")) %>% 
+  rename(tdn_mgL = tn_mgl,
+         tdn_flag = tn_flag)
 
 
 # 7. Write data ----------------------------------------------------------------

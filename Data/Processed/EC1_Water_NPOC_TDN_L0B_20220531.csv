@@ -1,4 +1,4 @@
-date,campaign,kit_id,transect_location,npoc_mgl,tn_mgl,npoc_flag,tn_flag
+date,campaign,kit_id,transect_location,npoc_mgl,tdn_mgL,npoc_flag,tdn_flag
 20211012,EC1,K004,water,7.17,2.421,NA,NA
 20211026,EC1,K008,water,2.97,0.369,npoc blank below LOD,NA
 20211026,EC1,K009,water,7.03,0.605,npoc blank below LOD,NA
