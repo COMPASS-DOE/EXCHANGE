@@ -52,7 +52,8 @@ bulk_density_processed <- bulk_density_raw %>%
   left_join(gwc %>% select(-campaign), by = c("kit_id", "transect_location")) %>% 
   mutate(wt_soil_dry_g = wt_soil_fm_g / ((gwc_perc / 100) + 1),
          bulk_density_g_cm3 = wt_soil_dry_g / volume_soil_cm3) %>% 
-  dplyr::select(campaign, kit_id, transect_location, bulk_density_g_cm3)
+  dplyr::select(campaign, kit_id, transect_location, bulk_density_g_cm3) %>% 
+  mutate(bulk_density_g_cm3 = round(bulk_density_g_cm3, 2))
 
 
 # 3. QC data -------------------------------------------------------------------
@@ -66,7 +67,7 @@ bulk_density <- clean_data(bulk_density_processed)
 
 
 # 4. Write out dataset ---------------------------------------------------------
-date_updated <- "20220509"
+date_updated <- "20220531"
 
 write_csv(bulk_density, paste0("Data/Processed/EC1_BulkDensity_L0B_", date_updated, ".csv"))
 
