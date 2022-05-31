@@ -140,7 +140,7 @@ npoc <- npoc_raw_flags %>%
 # 7. Write data ----------------------------------------------------------------
 date_updated <- "20220531"
 
-write_csv(npoc, paste0("Data/Processed/EC1_NPOC_TN_L0B_", date_updated, ".csv"))
+write_csv(npoc, paste0("Data/Processed/EC1_Water_NPOC_TN_L0B_", date_updated, ".csv"))
 
 
 
