@@ -1,0 +1,75 @@
+#####################################################################################################################
+Log File: C:\Users\Public\Documents\Jobin Yvon\Data\Aqualog 800 Data\2021ExportData\Oct21\Oct14\AqualogSampleQLog.txt
+Date: Thursday, October 14, 2021
+Time: 2:13:52 PM
+#####################################################################################################################
+[2021-10-14 14-13-52] 
+Aqualog Sample Q Experimental Parameters:
+[Aqualog Sample Q File] C:\Users\Public\Documents\Jobin Yvon\Data\Aqualog 800 Data\SampleQ\COMPASS_EC1_101421.aqu
+[Aqualog Experiment File] C:\Users\Public\Documents\Jobin Yvon\Data\Aqualog 800 Data\2021ExportData\Oct21\Oct14\COMPASS_EC1_101421_Exper_2021-10-14-14-13-51.xml
+[Output Destination Folder] C:\Users\Public\Documents\Jobin Yvon\Data\Aqualog 800 Data\2021ExportData\Oct21\Oct14\
+
+Blank & Sample Setup:
+[Sipper Enabled] False
+[Blank Group 1] B1-DI1     Blank File: C:\Users\Public\Documents\Jobin Yvon\Data\Aqualog 800 Data\2021Projects\October21\October14\DIBlank14Oct212s.blank
+[Blank Group 1: Sample 1] S1-DI2 (Repeats=0)
+[Blank Group 1: Sample 2] S2-SRM1c (Repeats=0)
+[Blank Group 1: Sample 3] S3-K018 (Repeats=0)
+[Blank Group 1: Sample 4] S4-K035 (Repeats=0)
+[Blank Group 1: Sample 5] S5-K019 (Repeats=0)
+[Blank Group 1: Sample 6] S6-K016 (Repeats=0)
+[Blank Group 1: Sample 7] S7-K047 (Repeats=0)
+[Blank Group 1: Sample 8] S8-K039 (Repeats=0)
+[Blank Group 1: Sample 9] S9-K053 (Repeats=0)
+[Blank Group 1: Sample 10] S10-K025 (Repeats=0)
+[Blank Group 1: Sample 11] S11-K033 (Repeats=0)
+[Blank Group 1: Sample 12] S12-K004 (Repeats=0)
+[Blank Group 1: Sample 13] S13-SRM1d (Repeats=0)
+[Blank Group 1: Sample 14] S14-K023 (Repeats=0)
+[Blank Group 1: Sample 15] S15-K026 (Repeats=0)
+[Blank Group 1: Sample 16] S16-K017 (Repeats=0)
+[Blank Group 1: Sample 17] S17-K015 (Repeats=0)
+[Blank Group 1: Sample 18] S18-DI3 (Repeats=0)
+[Total Number of Samples] 19
+
+Post Processing Options:
+IFE = True
+Rayleigh Mask 1st Order, Slit Width = 10
+Normalize Factor = 6343.4
+
+Export Options:
+PEM = True
+ABS = True
+OGW = True
+ASCII = True
+BEM = True
+SEM = True
+SYM = True
+
+Delay Options:
+Single Cell Kinetics = False
+Delay Before First Blank = 0 Seconds
+Delay Between Each Experiment = 0 Seconds
+################################################################################
+[2021-10-14 14-13-52] STARTING Aqualog SampleQ Execution
+[2021-10-14 14-14-07] Experiment 01 of 18 [Blank 1, Sample 1, Repeat 0] Start Done
+[2021-10-14 14-30-18] Experiment 02 of 18 [Blank 1, Sample 2, Repeat 0] Start Done
+[2021-10-14 14-40-51] Experiment 03 of 18 [Blank 1, Sample 3, Repeat 0] Start Done
+[2021-10-14 14-52-16] Experiment 04 of 18 [Blank 1, Sample 4, Repeat 0] Start Done
+[2021-10-14 15-03-11] Experiment 05 of 18 [Blank 1, Sample 5, Repeat 0] Start Done
+[2021-10-14 15-13-47] Experiment 06 of 18 [Blank 1, Sample 6, Repeat 0] Start Done
+[2021-10-14 15-24-22] Experiment 07 of 18 [Blank 1, Sample 7, Repeat 0] Start Done
+[2021-10-14 15-35-02] Experiment 08 of 18 [Blank 1, Sample 8, Repeat 0] Start Done
+[2021-10-14 15-45-33] Experiment 09 of 18 [Blank 1, Sample 9, Repeat 0] Start Done
+[2021-10-14 15-56-02] Experiment 10 of 18 [Blank 1, Sample 10, Repeat 0] Start Done
+[2021-10-14 16-06-32] Experiment 11 of 18 [Blank 1, Sample 11, Repeat 0] Start Done
+[2021-10-14 16-17-06] Experiment 12 of 18 [Blank 1, Sample 12, Repeat 0] Start
+[2021-10-14 16-26-33] ##### WARNING: CCD SATURATION OCCURRED ##### Done
+[2021-10-14 16-27-40] Experiment 13 of 18 [Blank 1, Sample 13, Repeat 0] Start Done
+[2021-10-14 16-38-09] Experiment 14 of 18 [Blank 1, Sample 14, Repeat 0] Start Done
+[2021-10-14 16-49-05] Experiment 15 of 18 [Blank 1, Sample 15, Repeat 0] Start Done
+[2021-10-14 16-59-39] Experiment 16 of 18 [Blank 1, Sample 16, Repeat 0] Start Done
+[2021-10-14 17-10-09] Experiment 17 of 18 [Blank 1, Sample 17, Repeat 0] Start Done
+[2021-10-14 17-20-47] Experiment 18 of 18 [Blank 1, Sample 18, Repeat 0] Start Done
+[2021-10-14 17-31-15] COMPLETED Aqualog SampleQ Execution
+--------------------------------------------------------------------------------
