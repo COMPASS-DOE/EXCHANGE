@@ -44,7 +44,8 @@ var <- "loi"
 cat("Importing", var, "data...")
 
 ## read in raw data
-loi_raw <- read_sheet(loi_path)
+loi_raw <- read_sheet(loi_path) %>% 
+  filter(`duplicate to ignore` == FALSE)
 
 #
 # 3. Process data --------------------------------------------------------------
@@ -73,7 +74,7 @@ loi <- clean_data(loi_processed)
 
 #
 # 5. Write cleaned data to drive -----------------------------------------------
-date_updated <- "20220509"
+date_updated <- "20220601"
 
 write_csv(loi, paste0("Data/Processed/EC1_LOI_L0B_", date_updated, ".csv"))
 

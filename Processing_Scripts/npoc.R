@@ -25,9 +25,9 @@ pacman::p_load(tidyverse, # keep things tidy
 theme_set(theme_bw())
 
 ## Set LOD (for all data after 10/11/2021)
-## If any data were before 10/11/21, lod_npoc = 0.27, lod_tn = 0.070
+## If any data were before 10/11/21, lod_npoc = 0.27, lod_tdn = 0.070
 lod_npoc <- 0.076
-lod_tn <- 0.014
+lod_tdn <- 0.014
 
 ## Set GDrive URL for NPOC raw data files
 directory = "https://drive.google.com/drive/folders/1Mkg5UCEzt9ifKCGyr-Kn9a3LL8XuGzBa"
@@ -42,8 +42,8 @@ read_data <- function(data){
   read_delim(file = data, skip = 10, delim = "\t") %>% 
     rename(sample_name = `Sample Name`, 
            npoc_raw = `Result(NPOC)`, 
-           tn_raw = `Result(TN)`) %>% 
-    select(sample_name, npoc_raw, tn_raw) %>% 
+           tdn_raw = `Result(TN)`) %>% 
+    select(sample_name, npoc_raw, tdn_raw) %>% 
     mutate(date = date)
 }
 
@@ -74,10 +74,10 @@ blanks <- npoc_raw %>%
   filter(grepl("^Blank", sample_name)) %>% 
   group_by(date) %>% 
   summarize(npoc_blank_raw = round(mean(npoc_raw[!is.na(npoc_raw)]), 2), 
-         tn_blank_raw = round(mean(tn_raw[!is.na(tn_raw)]), 2)) %>% 
+         tdn_blank_raw = round(mean(tdn_raw[!is.na(tdn_raw)]), 2)) %>% 
   mutate(npoc_blank = ifelse(npoc_blank_raw > lod_npoc, npoc_blank_raw, 0), 
-         tn_blank = ifelse(tn_blank_raw > lod_tn, tn_blank_raw, 0)) %>% 
-  select(date, npoc_blank, tn_blank)
+         tdn_blank = ifelse(tdn_blank_raw > lod_tdn, tdn_blank_raw, 0)) %>% 
+  select(date, npoc_blank, tdn_blank)
 
 
 # 5. Add blanks data -----------------------------------------------------------
@@ -89,7 +89,7 @@ npoc_blank_corrected <- npoc_raw %>%
          transect_location = "water") %>% 
   inner_join(blanks, by = "date") %>% 
   mutate(npoc_mgl = npoc_raw - npoc_blank, 
-         tn_mgl = tn_raw - tn_blank)
+         tdn_mgl = tdn_raw - tdn_blank)
 
 
 # 6. Clean data ----------------------------------------------------------------
@@ -102,7 +102,7 @@ mean_if_numeric <- function(x){
 
 ## Another step before finalizing is taking care of pesky duplicates from reruns
 npoc_duplicates_removed <- npoc_blank_corrected %>% 
-  select(campaign, transect_location, kit_id, date, npoc_mgl, tn_mgl, npoc_blank, tn_blank) %>% 
+  select(campaign, transect_location, kit_id, date, npoc_mgl, tdn_mgl, npoc_blank, tdn_blank) %>% 
   group_by(kit_id) %>% 
   summarize(across(everything(), .f = mean_if_numeric))
 
@@ -110,39 +110,19 @@ npoc_duplicates_removed <- npoc_blank_corrected %>%
 npoc_raw_flags <- npoc_duplicates_removed %>% 
   ## First, round each parameter to proper significant figures
   mutate(npoc_mgl = round(npoc_mgl, 2), 
-         tn_mgl = round(tn_mgl, 3)) %>% 
+         tdn_mgl = round(tdn_mgl, 3)) %>% 
   ## Second, add flags for outside LOD
-  mutate(`npoc outside range` = ifelse(npoc_mgl < lod_npoc | npoc_mgl > 30, T, F), #per cal curve upper limit
-         `tn outside range` = ifelse(tn_mgl < lod_tn | tn_mgl > 3, T, F), 
-         `npoc blank below LOD` = ifelse(npoc_blank == 0, T, F), 
-         `tn blank below LOD` = ifelse(tn_blank == 0, T, F))
+  mutate(npoc_flag = ifelse(npoc_mgl < lod_npoc | npoc_mgl > 30, "npoc outside range", NA), #per cal curve upper limit
+         tdn_flag = ifelse(tdn_mgl < lod_tdn | tdn_mgl > 3, "tdn outside range", NA))
 
-## gather both npoc-relevant flags into a single column
-npoc_flags <- npoc_raw_flags %>% 
-  pivot_longer(cols = c(`npoc outside range`, `npoc blank below LOD`), 
-               names_to = "npoc_flag", values_to = "vals") %>% 
-  filter(vals == TRUE) %>% select(-vals) %>% 
-  group_by(kit_id) %>% 
-  summarize(npoc_flag = toString(npoc_flag))
-
-## gather both npoc-relevant flags into a single column
-tn_flags <- npoc_raw_flags %>% 
-  pivot_longer(cols = c(`tn outside range`, `tn blank below LOD`), 
-               names_to = "tn_flag", values_to = "vals") %>% 
-  filter(vals == TRUE) %>% select(-vals) %>% 
-  group_by(kit_id) %>% 
-  summarize(tn_flag = toString(tn_flag))
-
-npoc_raw_flags %>% 
-  left_join(npoc_flags, by = "kit_id") %>% 
-  left_join(tn_flags, by = "kit_id") %>% 
-  select(date, campaign, kit_id, transect_location, npoc_mgl, tn_mgl, contains("_flag"))
+npoc <- npoc_raw_flags %>% 
+  select(date, campaign, kit_id, transect_location, npoc_mgl, tdn_mgl, contains("_flag"))
 
 
 # 7. Write data ----------------------------------------------------------------
 date_updated <- "20220524"
 
-write_csv(npoc, paste0("Data/Processed/EC1_NPOC_TN_L0B_", date_updated, ".csv"))
+write_csv(npoc, paste0("Data/Processed/EC1_NPOC_TDN_L0B_", date_updated, ".csv"))
 
 
 

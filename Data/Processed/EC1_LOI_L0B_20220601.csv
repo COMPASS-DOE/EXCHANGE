@@ -116,7 +116,6 @@ EC1,K030,Wetland,14,NA
 EC1,K030,Upland,78,NA
 EC1,K018,Sediment,0,NA
 EC1,K018,Wetland,2,NA
-EC1,K018,Transition,5,NA
 EC1,K018,Upland,28,NA
 EC1,K037,Sediment,14,NA
 EC1,K037,Wetland,19,NA
@@ -130,7 +129,6 @@ EC1,K044,Transition,67,NA
 EC1,K044,Upland,18,NA
 EC1,K019,Sediment,1,NA
 EC1,K019,Wetland,1,NA
-EC1,K019,Transition,18,NA
 EC1,K050,Sediment,0,NA
 EC1,K050,Wetland,31,NA
 EC1,K019,Upland,NA,NA
