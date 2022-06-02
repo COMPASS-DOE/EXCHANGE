@@ -43,7 +43,8 @@ var <- "gwc"
 cat("Importing", var, "data...")
 
 ## read in raw data
-gwc_raw <- read_sheet(gwc_path)
+gwc_raw <- read_sheet(gwc_path) %>% 
+  filter(`duplicate to ignore` == FALSE)
 
 #
 # 3. Process data --------------------------------------------------------------
@@ -74,7 +75,7 @@ gwc <- clean_data(gwc_processed) %>%
 #
 # 5. Write cleaned data to drive -----------------------------------------------
 
-date_updated <- "20220509"
+date_updated <- "20220601"
 
 write_csv(gwc, paste0("Data/Processed/EC1_Soil_GWC_L0B_", date_updated, ".csv"))
 

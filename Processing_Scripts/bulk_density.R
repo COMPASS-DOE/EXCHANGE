@@ -63,11 +63,12 @@ clean_data <- function(data) {
     mutate(bulk_density_flag = ifelse(bulk_density_g_cm3 < 0 | bulk_density_g_cm3 > 2, "outside range", NA))
 }
 
-bulk_density <- clean_data(bulk_density_processed)
+bulk_density <- clean_data(bulk_density_processed) %>% 
+  filter(!is.na(bulk_density_g_cm3))
 
 
 # 4. Write out dataset ---------------------------------------------------------
-date_updated <- "20220531"
+date_updated <- "20220601"
 
 write_csv(bulk_density, paste0("Data/Processed/EC1_Soil_BulkDensity_L0B_", date_updated, ".csv"))
 
