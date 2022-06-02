@@ -211,5 +211,5 @@ date_updated <- "20220517"
 #write_csv(firesting_clean, "data/firesting_full_dataset.csv")
 
 ## Write out dataset with calculated rates
-write_csv(firesting_rates, paste0("Data/Processed/EC1_OxygenDrawdown_L0B_", date_updated, ".csv"))
+write_csv(firesting_rates, paste0("Data/Processed/EC1_SoilSediment_OxygenDrawdown_L0B_", date_updated, ".csv"))
 

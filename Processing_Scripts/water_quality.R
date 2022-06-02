@@ -70,6 +70,6 @@ water_quality <- clean_data(water_quality_raw) %>%
 # 4. Write L0B data to Google Drive ---------------------------------------------
 date_updated <- "20220509"
 
-write_csv(water_quality, paste0("Data/Processed/EC1_WaterQuality_L0B_", date_updated, ".csv"))
+write_csv(water_quality, paste0("Data/Processed/EC1_Water_WaterQuality_L0B_", date_updated, ".csv"))
 
 
