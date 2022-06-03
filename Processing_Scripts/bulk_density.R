@@ -63,12 +63,13 @@ clean_data <- function(data) {
 }
 
 bulk_density <- clean_data(bulk_density_processed) %>% 
-  filter(!is.na(bulk_density_g_cm3))
+  filter(!is.na(bulk_density_g_cm3)) %>% 
+  distinct()
 
 
 # 4. Write out dataset ---------------------------------------------------------
-date_updated <- "20220601"
+date_updated <- "20220602"
 
-write_csv(bulk_density, paste0("Data/Processed/EC1_BulkDensity_L0B_", date_updated, ".csv"))
+write_csv(bulk_density, paste0("Data/Processed/EC1_Soil_BulkDensity_L0B_", date_updated, ".csv"))
 
 
