@@ -82,6 +82,130 @@ blank_kit =
 
 ```
 
+
+```{r basic_map}
+## This script is designed to make several figures to be used for looking at the
+## data coming from EC1 with collaborators at the 2.2 Workshop in 02/22
+##
+## 2022-02-15 (updated 6/2/22 to be project-agnostic)
+## Peter Regier 
+## 
+# #############
+# #############
+
+# 1. Setup ---------------------------------------------------------------------
+
+## Load packages
+require(pacman)
+p_load(cowplot, ## plot_grid()
+       tidyverse, 
+       sf, ## simple features
+       janitor, # clean_names()
+       stringr,
+       googlesheets4, 
+       googledrive, ## import data from Google Sheets
+       ggthemes) ## theme_map()
+
+
+## Set ggplot theme
+# theme_set(theme_bw())
+
+
+  latlong <- read_sheet("https://docs.google.com/spreadsheets/d/1_tKn5vHryVMHvuQix_PRXhzQcEkeAG5LDCBXjs7nZEc/edit#gid=842964887", sheet = 1) %>% 
+    mutate(kit_id = paste0("K", Kit_ID)) %>% 
+    rename("lat" = `Water_Latitude`, 
+           "long" = `Water_Longitude`) %>% 
+    select(kit_id, lat, long)
+
+
+make_map = function(DAT, VAR, COLOR_LEGEND){
+  ## Set CRS
+  common_crs <- 4326
+  
+  ## Set map size and point size
+  point_size <- 2
+  map_width = 9
+  map_height = 6
+  
+  # 2. Import datasets -----------------------------------------------------------
+  ## For this example, we will use salinity which is uploaded in the water_quality
+  ## dataset
+  
+  ## Read in npoc data
+  
+  
+  # 3. Set up map layers for plotting --------------------------------------------
+  
+  ## Set regional and CB (inset) bounding boxes
+  us_bbox <- c(xmin = -125, xmax = -60, ymin = 20, ymax = 50)
+  region_bbox <- c(xmin = -95, xmax = -70, ymin = 35, ymax = 48)
+  cb_bbox <- c(xmin = -77.8, xmax = -74.5, ymin = 36.8, ymax = 40.5)
+  
+  ## Make US states map cropped to GL/CB region
+  us <- read_sf("Reports_markdown/cb_2018_us_state_5m/cb_2018_us_state_5m.shp") %>% 
+    st_transform(., crs = common_crs) %>% 
+    st_crop(., y = us_bbox)
+  
+  region <- st_crop(us, y = region_bbox)
+  
+  ## Further crop states to CB region
+  cb_states <- st_crop(region, y = cb_bbox)
+  
+  
+  # make a dataset merging metadata with site lat-longs
+  df_map <- inner_join(DAT, latlong, by = "kit_id") %>% 
+    st_as_sf(., coords = c("long", "lat"), crs = common_crs)
+  
+  ## Crop data  to CB region for inset plot
+  df_cb <- st_crop(df_map, y = cb_bbox)
+  
+  
+  ## Make the base map with all sites
+  base_plot <- ggplot() + 
+    geom_sf(data = region) + 
+    #geom_sf(data = meta_map, size = point_size * 3, color = "white") +
+    geom_sf(data = df_map, color = "white",
+            size = point_size * 2.5) + 
+    geom_sf(data = df_map, aes_string(color = VAR), 
+            size = point_size * 2) + 
+    geom_rect(aes(xmin = -77.8, xmax = -74.5, ymin = 36.8, ymax = 40.5), 
+              fill = NA, color = "black", lwd = 0.75) +
+    geom_segment(aes(x = -77.8, xend = -76, y = 40.5, yend = 42), 
+                 color = "black", lwd = 0.75) + 
+    geom_segment(aes(x = -74.5, xend = -71, y = 40.5, yend = 41.5), 
+                 color = "black", lwd = 0.75) + 
+    theme_map() + 
+    theme(legend.background = element_rect(fill = alpha("white", 0.0)), 
+          legend.key = element_rect(fill = "transparent"), 
+          legend.position = c(0.9, 0.1)) + 
+    scale_color_viridis_c() + 
+    labs(x = "", y = "" , color = COLOR_LEGEND) + 
+    grattantheme::watermark("Preliminary", fontsize = 40)
+  
+  ## Make the inset map with just CB sites
+  inset_plot <- ggplot() + geom_sf(data = cb_states) + 
+    geom_sf(data = df_cb, color = "white", size = point_size * 2) + 
+    geom_sf(data = df_cb, aes_string(color = VAR), size = point_size * 1.7) + 
+    theme_map() + 
+    theme(legend.background = element_rect(fill = alpha("white", 0.0)), 
+          legend.key = element_rect(fill = "transparent"), 
+          legend.position = c(0.7, 0)) + 
+    scale_color_viridis_c() + 
+    theme(panel.background = element_rect(fill = "white", colour = "black")) + 
+    labs(color = "")
+  
+  ## Combine into single figure
+  base_plot + 
+    annotation_custom(
+      ggplotGrob(inset_plot), 
+      xmin = -78, xmax = -70, ymin = 41, ymax = 48.8) 
+  
+  
+}
+
+```
+
+
 ---
 
 # Soils and sediments
@@ -110,6 +234,7 @@ tctn_data %>%
   facet_wrap(~region)+
   labs(x = "",
        y = "Total N, %")
+
 ```
 
 
@@ -140,6 +265,7 @@ pH_data %>%
        y = "Specific conductance, mS/cm")+
   facet_wrap(~region, scales = "free_y")
 ```
+
 
 ---
 
@@ -227,6 +353,13 @@ ions_data_long %>%
   facet_wrap(~name, scales = "free_y")
 ```
 
+```{r}
+make_map(DAT = ions_data %>% dplyr::select(kit_id, calcium_ppm), VAR = "calcium_ppm", COLOR_LEGEND = "calcium_ppm")
+make_map(DAT = ions_data %>% dplyr::select(kit_id, chloride_ppm), VAR = "chloride_ppm", COLOR_LEGEND = "chloride_ppm")
+make_map(DAT = ions_data %>% dplyr::select(kit_id, sulfate_ppm), VAR = "sulfate_ppm", COLOR_LEGEND = "sulfate_ppm")
+make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrite_ppm), VAR = "nitrite_ppm", COLOR_LEGEND = "nitrite_ppm")
+```
+
 
 ---
 
@@ -253,6 +386,13 @@ cdom_data_long %>%
   facet_wrap(~name, scales = "free_y")
 ```
 
+```{r}
+make_map(DAT = cdom_data %>% dplyr::select(kit_id, SUVA254), VAR = "SUVA254", COLOR_LEGEND = "SUVA254")
+make_map(DAT = cdom_data %>% dplyr::select(kit_id, FRESH), VAR = "FRESH", COLOR_LEGEND = "FRESH")
+make_map(DAT = cdom_data %>% dplyr::select(kit_id, HIX), VAR = "HIX", COLOR_LEGEND = "HIX")
+make_map(DAT = cdom_data %>% dplyr::select(kit_id, FI), VAR = "FI", COLOR_LEGEND = "FI")
+
+```
 
 ---
 
@@ -283,7 +423,7 @@ npoc_data %>%
   NULL
 ```
 
-```{r npoc_map}
+```{r npoc_map_old, eval=FALSE}
 ## This script is designed to make several figures to be used for looking at the
 ## data coming from EC1 with collaborators at the 2.2 Workshop in 02/22
 ##
@@ -398,6 +538,10 @@ base_plot +
     xmin = -78, xmax = -70, ymin = 41, ymax = 48.8) 
 ```
 
+```{r npoc_map}
+make_map(DAT = npoc_data %>% dplyr::select(kit_id, npoc_mgl), VAR = "npoc_mgl", COLOR_LEGEND = "NPOC, mg/L")
+```
+
 
 ---
 
@@ -418,6 +562,10 @@ tss_data %>%
 #  facet_wrap(~region)+
   NULL
 
+```
+
+```{r tss_map}
+make_map(DAT = tss_data %>% dplyr::select(kit_id, tss_mg_perl), VAR = "tss_mg_perl", COLOR_LEGEND = "TSS, mg/L")
 ```
 
 ---
@@ -444,6 +592,10 @@ waterquality_data_long %>%
   facet_wrap(~name, scales = "free_y", nrow = 1)
 ```
 
+```{r}
+make_map(DAT = waterquality_data %>% dplyr::select(kit_id, ph), VAR = "ph", COLOR_LEGEND = "pH") + ggtitle("Surface waters: pH")
+make_map(DAT = waterquality_data %>% dplyr::select(kit_id, sal_psu), VAR = "sal_psu", COLOR_LEGEND = "sal_psu") + ggtitle("Surface waters: salinity")
+```
 
 ---
 
