@@ -27,7 +27,8 @@ pacman::p_load(cowsay,
                googlesheets4, # read_sheet 
                googledrive,
                stringr,
-               lubridate) # drive_upload
+               lubridate,
+               tools) # drive_upload
 
 ## Welcome
 say("Welcome to EXCHANGE!", by = "random")
@@ -37,7 +38,7 @@ folder_path <- "https://drive.google.com/drive/u/2/folders/1OVhQADClTIcfMtbJenoW
 gsheet_tab <- "Summary Table"
 naming_key_path <- "https://docs.google.com/spreadsheets/d/15o0bZ79WIOHlxZlaUxSv7pLYzuH39yP-d3GCE_gfk4c/edit#gid=363825852"
 lod_path <- "https://docs.google.com/spreadsheets/d/14r_bVSGGxgM7f1ENuBFKC5t6UzP_uRgJQ2SPDMKOSoE/edit#gid=225278968"
-
+soil_metrics_path <- "https://docs.google.com/spreadsheets/d/1Swr2Qx-mBXrhRPIpGf-YehSEC6zOwTPKB3u2K9s2Z7A/edit#gid=0"
 
 ## Define constants
 f1_min <- 0
@@ -59,6 +60,13 @@ cat("Importing", var, "data...")
 # Read in naming key
 read_sheet(ss = naming_key_path, range = "Sheet1") %>% 
   select(`Reassigned Sample ID`, `Original Instrument ID`) -> key
+
+# Read in visual soil metrics
+read_sheet(ss = soil_metrics_path, range = "Sheet1") %>% 
+  select(Sample, `Visible Minerals`, `Visible Organisms`, 
+         `Presence of Iron Oxidation`, `Presence of Plastics or Glass`) %>% 
+  separate(Sample, into = c("kit_id", "transect_location"), sep = "_") %>% 
+  mutate(transect_location = toTitleCase(transect_location)) -> soil_metrics
 
 # Read in LOD blanks
 lod <- read_sheet(ss = lod_path, range = gsheet_tab, skip = 2, 
@@ -109,7 +117,8 @@ data_raw %>%
          acidification = case_when(acidification == "UnAc" ~ FALSE)) %>% 
   separate(instrument_id, into = c("one", "two", "three", "Month", "Day"), sep = "_") %>% 
   mutate(Year = "2022", date_ran = make_date(day = Day, month = Month, year = Year)) %>% 
-  bind_cols(lod_processed) -> data_intermediate
+  bind_cols(lod_processed) %>% 
+  left_join(soil_metrics, by = c("kit_id", "transect_location")) -> data_intermediate
 
 data_intermediate %>% 
   group_by(kit_id, transect_location, set) %>% 
