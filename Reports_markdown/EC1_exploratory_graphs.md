@@ -1,7 +1,7 @@
 EXCHANGE Campign 1: Exploratory Figures
 ================
 
-Date updated: 2022-06-02
+Date updated: 2022-06-07
 
 ------------------------------------------------------------------------
 
@@ -9,31 +9,31 @@ Date updated: 2022-06-02
 
 ## Soil: total C and N
 
-![](Report_exploratory_2022-06-02_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->![](Report_exploratory_2022-06-02_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->
 
 ------------------------------------------------------------------------
 
 ## Soil: pH and specific conductivity
 
-![](Report_exploratory_2022-06-02_files/figure-gfm/pH_graphs-1.png)<!-- -->![](Report_exploratory_2022-06-02_files/figure-gfm/pH_graphs-2.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/pH_graphs-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/pH_graphs-2.png)<!-- -->
 
 ------------------------------------------------------------------------
 
 ## Soil: bulk density
 
-![](Report_exploratory_2022-06-02_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ------------------------------------------------------------------------
 
 ## Soil: gravimetric water content
 
-![](Report_exploratory_2022-06-02_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ------------------------------------------------------------------------
 
 ## Soil: loss on ignition
 
-![](Report_exploratory_2022-06-02_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ## —
 
@@ -41,13 +41,17 @@ Date updated: 2022-06-02
 
 ## Water: Ions
 
-![](Report_exploratory_2022-06-02_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-14-3.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-14-4.png)<!-- -->
 
 ------------------------------------------------------------------------
 
 ## Water: CDOM Indices
 
-![](Report_exploratory_2022-06-02_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+
+![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-17-2.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-17-3.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-17-4.png)<!-- -->
 
 ------------------------------------------------------------------------
 
@@ -55,21 +59,25 @@ Date updated: 2022-06-02
 
 DOC measured as NPOC (non-purgeable organic carbon)
 
-![](Report_exploratory_2022-06-02_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->![](Report_exploratory_2022-06-02_files/figure-gfm/unnamed-chunk-17-2.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-19-2.png)<!-- -->
 
-![](Report_exploratory_2022-06-02_files/figure-gfm/npoc_map-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/npoc_map-1.png)<!-- -->
 
 ------------------------------------------------------------------------
 
 ## Water: Total suspended solids
 
-![](Report_exploratory_2022-06-02_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+
+![](EC1_exploratory_graphs_files/figure-gfm/tss_map-1.png)<!-- -->
 
 ------------------------------------------------------------------------
 
 ## Water: Water quality
 
-![](Report_exploratory_2022-06-02_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+
+![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-24-2.png)<!-- -->
 
 ------------------------------------------------------------------------
 
@@ -80,7 +88,7 @@ DOC measured as NPOC (non-purgeable organic carbon)
 Session Info: Click to open
 </summary>
 
-Date run: 2022-06-02
+Date run: 2022-06-07
 
     #> R version 4.1.1 (2021-08-10)
     #> Platform: x86_64-apple-darwin17.0 (64-bit)
@@ -117,7 +125,7 @@ Date run: 2022-06-02
     #> [28] rmarkdown_2.14         pkgconfig_2.0.3        htmltools_0.5.2       
     #> [31] dbplyr_2.1.1           fastmap_1.1.0          highr_0.9             
     #> [34] rvg_0.2.5              rlang_1.0.2            readxl_1.4.0          
-    #> [37] rstudioapi_0.13        farver_2.1.0           generics_0.1.0        
+    #> [37] rstudioapi_0.13        generics_0.1.0         farver_2.1.0          
     #> [40] jsonlite_1.7.2         zip_2.2.0              grattantheme_0.9.1.900
     #> [43] magrittr_2.0.3         s2_1.0.7               patchwork_1.1.1       
     #> [46] Rcpp_1.0.8             munsell_0.5.0          fansi_0.5.0           
