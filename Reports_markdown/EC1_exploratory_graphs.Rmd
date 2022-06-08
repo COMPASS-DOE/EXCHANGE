@@ -1,6 +1,9 @@
 ---
 title: "EXCHANGE Campign 1: Exploratory Figures"
-output: github_document
+output: 
+  github_document:
+      html_preview: true
+  
 
 ---
 
@@ -30,7 +33,7 @@ metadata_kit =
   dplyr::select(kit_id, site_name, region) %>% 
   mutate(kit_id = str_pad(kit_id, 3, pad = "0"),
          kit_id = paste0("K", kit_id)) %>% 
-#  mutate(region = recode(region, "Chesapeake Bay" = "CB", "Great Lakes" = "GL")) %>% 
+  #  mutate(region = recode(region, "Chesapeake Bay" = "CB", "Great Lakes" = "GL")) %>% 
   force()
 ```
 
@@ -83,7 +86,7 @@ blank_kit =
 ```
 
 
-```{r basic_map}
+```{r map_function}
 ## This script is designed to make several figures to be used for looking at the
 ## data coming from EC1 with collaborators at the 2.2 Workshop in 02/22
 ##
@@ -103,22 +106,20 @@ p_load(cowplot, ## plot_grid()
        janitor, # clean_names()
        stringr,
        googlesheets4, 
-       googledrive, ## import data from Google Sheets
+       #googledrive, ## import data from Google Sheets
        ggthemes) ## theme_map()
 
 
-## Set ggplot theme
-# theme_set(theme_bw())
-
-
-  latlong <- read_sheet("https://docs.google.com/spreadsheets/d/1_tKn5vHryVMHvuQix_PRXhzQcEkeAG5LDCBXjs7nZEc/edit#gid=842964887", sheet = 1) %>% 
-    mutate(kit_id = paste0("K", Kit_ID)) %>% 
-    rename("lat" = `Water_Latitude`, 
-           "long" = `Water_Longitude`) %>% 
-    select(kit_id, lat, long)
+# load lat-lon file
+latlong <- read_sheet("https://docs.google.com/spreadsheets/d/1_tKn5vHryVMHvuQix_PRXhzQcEkeAG5LDCBXjs7nZEc/edit#gid=842964887", sheet = 1) %>% 
+  mutate(kit_id = paste0("K", Kit_ID)) %>% 
+  rename("lat" = `Water_Latitude`, 
+         "long" = `Water_Longitude`) %>% 
+  select(kit_id, lat, long)
 
 
 make_map = function(DAT, VAR, COLOR_LEGEND){
+  
   ## Set CRS
   common_crs <- 4326
   
@@ -126,15 +127,8 @@ make_map = function(DAT, VAR, COLOR_LEGEND){
   point_size <- 2
   map_width = 9
   map_height = 6
-  
-  # 2. Import datasets -----------------------------------------------------------
-  ## For this example, we will use salinity which is uploaded in the water_quality
-  ## dataset
-  
-  ## Read in npoc data
-  
-  
-  # 3. Set up map layers for plotting --------------------------------------------
+
+  # Set up map layers for plotting ------------------------------------------
   
   ## Set regional and CB (inset) bounding boxes
   us_bbox <- c(xmin = -125, xmax = -60, ymin = 20, ymax = 50)
@@ -159,14 +153,20 @@ make_map = function(DAT, VAR, COLOR_LEGEND){
   ## Crop data  to CB region for inset plot
   df_cb <- st_crop(df_map, y = cb_bbox)
   
+  ## get max and min values for variable
+  var_min = DAT %>% dplyr::select(-kit_id) %>% pull() %>% min(na.rm = TRUE)
+  var_max = DAT %>% dplyr::select(-kit_id) %>% pull() %>% max(na.rm = TRUE)
+
   
   ## Make the base map with all sites
-  base_plot <- ggplot() + 
+  base_plot <- 
+    ggplot() + 
     geom_sf(data = region) + 
     #geom_sf(data = meta_map, size = point_size * 3, color = "white") +
-    geom_sf(data = df_map, color = "white",
-            size = point_size * 2.5) + 
-    geom_sf(data = df_map, aes_string(color = VAR), 
+    geom_sf(data = df_map, 
+            color = "white", size = point_size * 2.5) + 
+    geom_sf(data = df_map, 
+            aes_string(color = VAR), 
             size = point_size * 2) + 
     geom_rect(aes(xmin = -77.8, xmax = -74.5, ymin = 36.8, ymax = 40.5), 
               fill = NA, color = "black", lwd = 0.75) +
@@ -177,20 +177,26 @@ make_map = function(DAT, VAR, COLOR_LEGEND){
     theme_map() + 
     theme(legend.background = element_rect(fill = alpha("white", 0.0)), 
           legend.key = element_rect(fill = "transparent"), 
-          legend.position = c(0.9, 0.1)) + 
-    scale_color_viridis_c() + 
+          legend.position = c(0.85, 0.1)) + 
+    scale_color_viridis_c(limits = c(var_min, var_max)) + 
     labs(x = "", y = "" , color = COLOR_LEGEND) + 
     grattantheme::watermark("Preliminary", fontsize = 40)
   
   ## Make the inset map with just CB sites
-  inset_plot <- ggplot() + geom_sf(data = cb_states) + 
-    geom_sf(data = df_cb, color = "white", size = point_size * 2) + 
-    geom_sf(data = df_cb, aes_string(color = VAR), size = point_size * 1.7) + 
+  inset_plot <- 
+    ggplot() + 
+    geom_sf(data = cb_states) + 
+    geom_sf(data = df_cb, 
+            color = "white", size = point_size * 2) + 
+    geom_sf(data = df_cb, 
+            aes_string(color = VAR), 
+            size = point_size * 1.7) + 
     theme_map() + 
     theme(legend.background = element_rect(fill = alpha("white", 0.0)), 
           legend.key = element_rect(fill = "transparent"), 
-          legend.position = c(0.7, 0)) + 
-    scale_color_viridis_c() + 
+          #legend.position = c(0.7, 0)
+          legend.position = "none") + 
+    scale_color_viridis_c(limits = c(var_min, var_max)) + 
     theme(panel.background = element_rect(fill = "white", colour = "black")) + 
     labs(color = "")
   
@@ -198,9 +204,12 @@ make_map = function(DAT, VAR, COLOR_LEGEND){
   base_plot + 
     annotation_custom(
       ggplotGrob(inset_plot), 
-      xmin = -78, xmax = -70, ymin = 41, ymax = 48.8) 
+      xmin = -78, xmax = -70, ymin = 41, ymax = 48.8)
+ 
   
   
+  
+     
 }
 
 ```
@@ -211,7 +220,6 @@ make_map = function(DAT, VAR, COLOR_LEGEND){
 # Soils and sediments
 
 ## Soil: total C and N
-
 
 ```{r}
 tctn_data = 
@@ -237,11 +245,16 @@ tctn_data %>%
 
 ```
 
+```{r tctn_map}
+make_map(DAT = tctn_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, tc_perc), VAR = "tc_perc", COLOR_LEGEND = "Total C, %") + ggtitle("Upland soils: total C")
+make_map(DAT = tctn_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, tn_perc), VAR = "tn_perc", COLOR_LEGEND = "Total N, %") + ggtitle("Upland soils: total N")
+```
+
 
 ---
 
 
-## Soil: pH and specific conductivity
+## Soil: pH and specific conductance
 
 ```{r pH}
 pH_data = 
@@ -266,6 +279,11 @@ pH_data %>%
   facet_wrap(~region, scales = "free_y")
 ```
 
+```{r pH_map}
+make_map(DAT = pH_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, ph), VAR = "ph", COLOR_LEGEND = "pH") + ggtitle("Upland soils: pH")
+make_map(DAT = pH_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, specific_conductance_us_cm) %>% mutate(specific_conductance_ms_cm = specific_conductance_us_cm/1000), 
+         VAR = "specific_conductance_ms_cm", COLOR_LEGEND = "Sp. cond., mS/cm") + ggtitle("Upland soils: Sp conductance")
+```
 
 ---
 
@@ -285,6 +303,10 @@ bd_data %>%
   facet_wrap(~region)+
   labs(x = "",
        y = "Bulk density, g/cm3")
+```
+
+```{r bd_map}
+make_map(DAT = bd_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, bulk_density_g_cm3), VAR = "bulk_density_g_cm3", COLOR_LEGEND = "Bulk density, g/cm3") + ggtitle("Upland soils: bulk density")
 ```
 
 ---
@@ -307,6 +329,10 @@ gwc_data %>%
        y = "Gravimetric water, %")
 ```
 
+```{r gwc_map}
+make_map(DAT = gwc_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, gwc_perc), VAR = "gwc_perc", COLOR_LEGEND = "gravimetric water, %") + ggtitle("Upland soils: water content")
+```
+
 ---
 
 ## Soil: loss on ignition
@@ -327,7 +353,12 @@ loi_data %>%
        y = "Loss on ignition, %")
 ```
 
+```{r loi_map}
+make_map(DAT = loi_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, loi_perc), VAR = "loi_perc", COLOR_LEGEND = "loss on ignition, %") + ggtitle("Upland soils: loss on ignition")
+```
+
 ---
+
 ---
 
 # Surface waters
@@ -354,12 +385,11 @@ ions_data_long %>%
 ```
 
 ```{r}
-make_map(DAT = ions_data %>% dplyr::select(kit_id, calcium_ppm), VAR = "calcium_ppm", COLOR_LEGEND = "calcium_ppm")
-make_map(DAT = ions_data %>% dplyr::select(kit_id, chloride_ppm), VAR = "chloride_ppm", COLOR_LEGEND = "chloride_ppm")
-make_map(DAT = ions_data %>% dplyr::select(kit_id, sulfate_ppm), VAR = "sulfate_ppm", COLOR_LEGEND = "sulfate_ppm")
-make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrite_ppm), VAR = "nitrite_ppm", COLOR_LEGEND = "nitrite_ppm")
+make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrate_ppm), VAR = "nitrate_ppm", COLOR_LEGEND = "Nitrate, ppm") + ggtitle("Surface waters: nitrate")
+make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrite_ppm), VAR = "nitrite_ppm", COLOR_LEGEND = "Nitrite, ppm") + ggtitle("Surface waters: nitrite")
+make_map(DAT = ions_data %>% dplyr::select(kit_id, sulfate_ppm), VAR = "sulfate_ppm", COLOR_LEGEND = "Sulfate, ppm") + ggtitle("Surface waters: sulfate")
+make_map(DAT = ions_data %>% dplyr::select(kit_id, chloride_ppm), VAR = "chloride_ppm", COLOR_LEGEND = "Chloride, ppm") + ggtitle("Surface waters: chloride")
 ```
-
 
 ---
 
@@ -387,10 +417,11 @@ cdom_data_long %>%
 ```
 
 ```{r}
-make_map(DAT = cdom_data %>% dplyr::select(kit_id, SUVA254), VAR = "SUVA254", COLOR_LEGEND = "SUVA254")
-make_map(DAT = cdom_data %>% dplyr::select(kit_id, FRESH), VAR = "FRESH", COLOR_LEGEND = "FRESH")
-make_map(DAT = cdom_data %>% dplyr::select(kit_id, HIX), VAR = "HIX", COLOR_LEGEND = "HIX")
-make_map(DAT = cdom_data %>% dplyr::select(kit_id, FI), VAR = "FI", COLOR_LEGEND = "FI")
+make_map(DAT = cdom_data %>% dplyr::select(kit_id, SUVA254), VAR = "SUVA254", COLOR_LEGEND = "SUVA254") + ggtitle("Surface waters: SUVA254")
+make_map(DAT = cdom_data %>% dplyr::select(kit_id, FI), VAR = "FI", COLOR_LEGEND = "FI") + ggtitle("Surface waters: fluorescence index")
+
+#make_map(DAT = cdom_data %>% dplyr::select(kit_id, FRESH), VAR = "FRESH", COLOR_LEGEND = "FRESH")
+#make_map(DAT = cdom_data %>% dplyr::select(kit_id, HIX), VAR = "HIX", COLOR_LEGEND = "HIX")
 
 ```
 
@@ -412,14 +443,14 @@ npoc_data %>%
   ggplot(aes(x = region, y = npoc_mgl))+
   geom_jitter(width = 0.1)+
   labs(y = "NPOC, mg/L")+
-#  facet_wrap(~region)+
+  #  facet_wrap(~region)+
   NULL
 
 npoc_data %>% 
   ggplot(aes(x = region, y = tdn_mgl))+
   geom_jitter(width = 0.1)+
   labs(y = "TDN, mg/L")+
-#  facet_wrap(~region)+
+  #  facet_wrap(~region)+
   NULL
 ```
 
@@ -539,7 +570,7 @@ base_plot +
 ```
 
 ```{r npoc_map}
-make_map(DAT = npoc_data %>% dplyr::select(kit_id, npoc_mgl), VAR = "npoc_mgl", COLOR_LEGEND = "NPOC, mg/L")
+make_map(DAT = npoc_data %>% dplyr::select(kit_id, npoc_mgl), VAR = "npoc_mgl", COLOR_LEGEND = "NPOC, mg/L") + ggtitle("Surface waters: NPOC")
 ```
 
 
@@ -559,13 +590,13 @@ tss_data %>%
   ggplot(aes(x = region, y = tss_mg_perl))+
   geom_jitter(width = 0.1)+
   labs(y = "TSS, mg/L")+
-#  facet_wrap(~region)+
+  #  facet_wrap(~region)+
   NULL
 
 ```
 
 ```{r tss_map}
-make_map(DAT = tss_data %>% dplyr::select(kit_id, tss_mg_perl), VAR = "tss_mg_perl", COLOR_LEGEND = "TSS, mg/L")
+make_map(DAT = tss_data %>% dplyr::select(kit_id, tss_mg_perl), VAR = "tss_mg_perl", COLOR_LEGEND = "TSS, mg/L") + ggtitle("Surface waters: TSS")
 ```
 
 ---
@@ -594,7 +625,7 @@ waterquality_data_long %>%
 
 ```{r}
 make_map(DAT = waterquality_data %>% dplyr::select(kit_id, ph), VAR = "ph", COLOR_LEGEND = "pH") + ggtitle("Surface waters: pH")
-make_map(DAT = waterquality_data %>% dplyr::select(kit_id, sal_psu), VAR = "sal_psu", COLOR_LEGEND = "sal_psu") + ggtitle("Surface waters: salinity")
+make_map(DAT = waterquality_data %>% dplyr::select(kit_id, sal_psu), VAR = "sal_psu", COLOR_LEGEND = "Salinity, PSU") + ggtitle("Surface waters: salinity")
 ```
 
 ---
@@ -602,13 +633,13 @@ make_map(DAT = waterquality_data %>% dplyr::select(kit_id, sal_psu), VAR = "sal_
 ---
 
 <details>
-  <summary> Session Info: Click to open </summary>
-  
-  Date run: `r Sys.Date()`
-  
+<summary> Session Info: Click to open </summary>
+
+Date run: `r Sys.Date()`
+
 ```{r}
 
 sessionInfo()
 ```
-  
+
 

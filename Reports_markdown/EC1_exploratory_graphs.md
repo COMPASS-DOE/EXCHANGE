@@ -11,11 +11,15 @@ Date updated: 2022-06-07
 
 ![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->
 
+![](EC1_exploratory_graphs_files/figure-gfm/tctn_map-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/tctn_map-2.png)<!-- -->
+
 ------------------------------------------------------------------------
 
-## Soil: pH and specific conductivity
+## Soil: pH and specific conductance
 
 ![](EC1_exploratory_graphs_files/figure-gfm/pH_graphs-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/pH_graphs-2.png)<!-- -->
+
+![](EC1_exploratory_graphs_files/figure-gfm/pH_map-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/pH_map-2.png)<!-- -->
 
 ------------------------------------------------------------------------
 
@@ -23,11 +27,15 @@ Date updated: 2022-06-07
 
 ![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
+![](EC1_exploratory_graphs_files/figure-gfm/bd_map-1.png)<!-- -->
+
 ------------------------------------------------------------------------
 
 ## Soil: gravimetric water content
 
 ![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+![](EC1_exploratory_graphs_files/figure-gfm/gwc_map-1.png)<!-- -->
 
 ------------------------------------------------------------------------
 
@@ -35,7 +43,11 @@ Date updated: 2022-06-07
 
 ![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
-## —
+![](EC1_exploratory_graphs_files/figure-gfm/loi_map-1.png)<!-- -->
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
 
 # Surface waters
 
@@ -51,7 +63,7 @@ Date updated: 2022-06-07
 
 ![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
-![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-17-2.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-17-3.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-17-4.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-17-2.png)<!-- -->
 
 ------------------------------------------------------------------------
 
@@ -105,12 +117,11 @@ Date run: 2022-06-07
     #> [1] stats     graphics  grDevices utils     datasets  methods   base     
     #> 
     #> other attached packages:
-    #>  [1] ggthemes_4.2.4      googledrive_2.0.0   googlesheets4_1.0.0
-    #>  [4] janitor_2.1.0       sf_1.0-7            cowplot_1.1.1      
-    #>  [7] pacman_0.5.1        forcats_0.5.1       stringr_1.4.0      
-    #> [10] dplyr_1.0.9         purrr_0.3.4         readr_2.1.2        
-    #> [13] tidyr_1.2.0         tibble_3.1.5        ggplot2_3.3.6      
-    #> [16] tidyverse_1.3.1    
+    #>  [1] ggthemes_4.2.4      googlesheets4_1.0.0 janitor_2.1.0      
+    #>  [4] sf_1.0-7            cowplot_1.1.1       pacman_0.5.1       
+    #>  [7] forcats_0.5.1       stringr_1.4.0       dplyr_1.0.9        
+    #> [10] purrr_0.3.4         readr_2.1.2         tidyr_1.2.0        
+    #> [13] tibble_3.1.5        ggplot2_3.3.6       tidyverse_1.3.1    
     #> 
     #> loaded via a namespace (and not attached):
     #>  [1] fs_1.5.2               lubridate_1.8.0        httr_1.4.2            
@@ -139,5 +150,5 @@ Date run: 2022-06-07
     #> [70] cellranger_1.1.0       gtable_0.3.0           openssl_1.4.4         
     #> [73] assertthat_0.2.1       xfun_0.31              openxlsx_4.2.5        
     #> [76] broom_0.8.0            e1071_1.7-8            class_7.3-19          
-    #> [79] viridisLite_0.4.0      gargle_1.2.0           units_0.7-2           
-    #> [82] ellipsis_0.3.2
+    #> [79] googledrive_2.0.0      viridisLite_0.4.0      gargle_1.2.0          
+    #> [82] units_0.7-2            ellipsis_0.3.2
