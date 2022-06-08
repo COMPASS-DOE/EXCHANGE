@@ -28,7 +28,7 @@ pacman::p_load(cowsay,
                googledrive,
                stringr,
                lubridate,
-               tools) # drive_upload
+               Hmisc) # drive_upload
 
 ## Welcome
 say("Welcome to EXCHANGE!", by = "random")
@@ -63,10 +63,15 @@ read_sheet(ss = naming_key_path, range = "Sheet1") %>%
 
 # Read in visual soil metrics
 read_sheet(ss = soil_metrics_path, range = "Sheet1") %>% 
-  select(Sample, `Visible Minerals`, `Visible Organisms`, 
-         `Presence of Iron Oxidation`, `Presence of Plastics or Glass`) %>% 
+  select(Sample, "Visible Minerals", "Presence of Iron Oxidation", "Root Mass", "Mysterious White Flakes?") %>% 
+  rename(visible_minerals = "Visible Minerals", visible_iron_oxidation = "Presence of Iron Oxidation",
+         root_mass = "Root Mass", visible_white_flakes = "Mysterious White Flakes?") %>% 
   separate(Sample, into = c("kit_id", "transect_location"), sep = "_") %>% 
-  mutate(transect_location = toTitleCase(transect_location)) -> soil_metrics
+  mutate(transect_location = capitalize(transect_location),
+         visible_minerals = capitalize(visible_minerals),
+         visible_iron_oxidation = capitalize(visible_iron_oxidation),
+         root_mass = capitalize(root_mass),
+         visible_white_flakes = capitalize(visible_white_flakes)) -> soil_metrics
 
 # Read in LOD blanks
 lod <- read_sheet(ss = lod_path, range = gsheet_tab, skip = 2, 
@@ -134,7 +139,8 @@ data_intermediate %>%
 data_intermediate %>% 
   distinct(kit_id, transect_location, .keep_all = TRUE) %>% 
   select(campaign, kit_id, transect_location, set, acidification, lod_tc_average, 
-         lod_tc_sd, lod_tn_average, lod_tn_sd, date_ran) %>% 
+         lod_tc_sd, lod_tn_average, lod_tn_sd, date_ran, visible_minerals, 
+         visible_iron_oxidation, root_mass, visible_white_flakes) %>% 
   right_join(means_mins, by = c("kit_id", "transect_location", "set")) -> data_processed
 
 #
@@ -183,8 +189,13 @@ data_qc %>%
   data_qc %>% 
     left_join(flags, by = c("kit_id", "transect_location")) %>% 
     select(campaign, kit_id, transect_location, acidification, total_nitrogen_perc, 
-         total_carbon_perc, tn_flag, tc_flag) -> data_clean
-
+         total_carbon_perc, visible_minerals, visible_iron_oxidation, visible_white_flakes,
+         root_mass, tn_flag, tc_flag) %>% 
+  mutate(total_carbon_perc = round(total_carbon_perc, 2),
+         total_nitrogen_perc = round(total_nitrogen_perc, 2)) %>% 
+  rename(tc_perc = total_carbon_perc,
+         tn_perc = total_nitrogen_perc)-> data_clean
+  
 #
 # 5. Write cleaned data to drive -----------------------------------------------
 
@@ -193,5 +204,5 @@ data_qc %>%
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
 #drive_upload(media = data_clean, path = data_path)
 
-write_csv(data_clean, "Data/EC1_TSS_L0B_20220527.csv")
+write_csv(data_clean, "Data/Processed/EC1_Soil_TCTN_L0B_20220608.csv")
 
