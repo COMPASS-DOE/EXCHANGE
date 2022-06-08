@@ -52,7 +52,8 @@ soil_pH_data_processed =
          Transect_location = factor(Transect_location, levels = c("upland", "transition", "wetland"))) %>% 
   dplyr::select(Kit_ID, Transect_location, pH, specific_conductance_us_cm, date_run) %>% 
   rename(transect_location = Transect_location,
-         ph = pH)
+         ph = pH) %>% 
+  mutate(campaign = "EC1")
 
 
 #
@@ -71,6 +72,6 @@ soil_pH_qc =
 #
 # 5. Export cleaned data --------------------------------------------------
 
-soil_pH_qc %>% write.csv("Data/Processed/EC1_soil_pH_L0B_2022-05-31.csv", row.names = FALSE, na = "")
+soil_pH_qc %>% write.csv("Data/Processed/EC1_Soil_pH_L0B_20220531.csv", row.names = FALSE)
 
 
