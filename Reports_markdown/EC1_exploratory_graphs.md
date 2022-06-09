@@ -1,7 +1,7 @@
 EXCHANGE Campign 1: Exploratory Figures
 ================
 
-Date updated: 2022-06-07
+Date updated: 2022-06-09
 
 ------------------------------------------------------------------------
 
@@ -73,7 +73,7 @@ DOC measured as NPOC (non-purgeable organic carbon)
 
 ![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-19-2.png)<!-- -->
 
-![](EC1_exploratory_graphs_files/figure-gfm/npoc_map-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/npoc_map-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/npoc_map-2.png)<!-- -->
 
 ------------------------------------------------------------------------
 
@@ -100,7 +100,7 @@ DOC measured as NPOC (non-purgeable organic carbon)
 Session Info: Click to open
 </summary>
 
-Date run: 2022-06-07
+Date run: 2022-06-09
 
     #> R version 4.1.1 (2021-08-10)
     #> Platform: x86_64-apple-darwin17.0 (64-bit)

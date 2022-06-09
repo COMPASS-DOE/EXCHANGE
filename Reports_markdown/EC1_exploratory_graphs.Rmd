@@ -385,7 +385,7 @@ ions_data_long %>%
 ```
 
 ```{r}
-make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrate_ppm), VAR = "nitrate_ppm", COLOR_LEGEND = "Nitrate, ppm") + ggtitle("Surface waters: nitrate")
+make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrate_ppm) %>% filter(nitrate_ppm <= 60), VAR = "nitrate_ppm", COLOR_LEGEND = "Nitrate, ppm") + ggtitle("Surface waters: nitrate")
 make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrite_ppm), VAR = "nitrite_ppm", COLOR_LEGEND = "Nitrite, ppm") + ggtitle("Surface waters: nitrite")
 make_map(DAT = ions_data %>% dplyr::select(kit_id, sulfate_ppm), VAR = "sulfate_ppm", COLOR_LEGEND = "Sulfate, ppm") + ggtitle("Surface waters: sulfate")
 make_map(DAT = ions_data %>% dplyr::select(kit_id, chloride_ppm), VAR = "chloride_ppm", COLOR_LEGEND = "Chloride, ppm") + ggtitle("Surface waters: chloride")
