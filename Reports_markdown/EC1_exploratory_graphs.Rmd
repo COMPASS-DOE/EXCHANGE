@@ -571,6 +571,8 @@ base_plot +
 
 ```{r npoc_map}
 make_map(DAT = npoc_data %>% dplyr::select(kit_id, npoc_mgl), VAR = "npoc_mgl", COLOR_LEGEND = "NPOC, mg/L") + ggtitle("Surface waters: NPOC")
+
+make_map(DAT = npoc_data %>% dplyr::select(kit_id, tdn_mgl), VAR = "tdn_mgl", COLOR_LEGEND = "TDN, mg/L") + ggtitle("Surface waters: total dissolved N")
 ```
 
 
