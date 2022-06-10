@@ -25,7 +25,7 @@ Date updated: 2022-06-09
 
 ## Soil: bulk density
 
-![](EC1_exploratory_graphs_files/figure-gfm/nd_jitter-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/bd_jitter-1.png)<!-- -->
 
 ![](EC1_exploratory_graphs_files/figure-gfm/bd_map-1.png)<!-- -->
 

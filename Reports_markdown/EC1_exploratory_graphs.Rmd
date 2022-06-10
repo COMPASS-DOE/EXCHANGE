@@ -296,7 +296,7 @@ bd_data =
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 ```
 
-```{r nd_jitter, fig.width=8, fig.height=4}
+```{r bd_jitter, fig.width=8, fig.height=4}
 bd_data %>% 
   ggplot(aes(x = transect_location, y = bulk_density_g_cm3))+
   geom_jitter(width = 0.1)+
@@ -625,11 +625,12 @@ make_map(DAT = npoc_data %>% dplyr::select(kit_id, tdn_mgl), VAR = "tdn_mgl", CO
 
 ## Water: Total suspended solids
 
-```{r}
+```{r tss}
 tss_data = 
   all_data_processed %>% 
   filter(analysis == "TSS") %>% 
-  select_if(~!(all(is.na(.)) | all(. == ""))) 
+  select_if(~!(all(is.na(.)) | all(. == ""))) %>% 
+  filter(is.na(tss_flag))
 ```
 
 ```{r tss_jitter, fig.width=6, fig.height=4}
