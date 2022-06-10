@@ -428,7 +428,7 @@ make_map(DAT = cdom_data %>% dplyr::select(kit_id, SUVA254), VAR = "SUVA254", CO
 make_map(DAT = cdom_data %>% dplyr::select(kit_id, FI), VAR = "FI", COLOR_LEGEND = "FI") + ggtitle("Surface waters: fluorescence index")
 
 #make_map(DAT = cdom_data %>% dplyr::select(kit_id, FRESH), VAR = "FRESH", COLOR_LEGEND = "FRESH")
-#make_map(DAT = cdom_data %>% dplyr::select(kit_id, HIX), VAR = "HIX", COLOR_LEGEND = "HIX")
+make_map(DAT = cdom_data %>% dplyr::select(kit_id, HIX), VAR = "HIX", COLOR_LEGEND = "HIX")
 
 ```
 
