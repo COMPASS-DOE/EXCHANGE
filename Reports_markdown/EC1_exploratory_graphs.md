@@ -9,7 +9,7 @@ Date updated: 2022-06-09
 
 ## Soil: total C and N
 
-![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/tctn_jitter-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/tctn_jitter-2.png)<!-- -->
 
 ![](EC1_exploratory_graphs_files/figure-gfm/tctn_map-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/tctn_map-2.png)<!-- -->
 
@@ -17,7 +17,7 @@ Date updated: 2022-06-09
 
 ## Soil: pH and specific conductance
 
-![](EC1_exploratory_graphs_files/figure-gfm/pH_graphs-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/pH_graphs-2.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/pH_jitter-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/pH_jitter-2.png)<!-- -->
 
 ![](EC1_exploratory_graphs_files/figure-gfm/pH_map-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/pH_map-2.png)<!-- -->
 
@@ -25,7 +25,7 @@ Date updated: 2022-06-09
 
 ## Soil: bulk density
 
-![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/nd_jitter-1.png)<!-- -->
 
 ![](EC1_exploratory_graphs_files/figure-gfm/bd_map-1.png)<!-- -->
 
@@ -33,7 +33,7 @@ Date updated: 2022-06-09
 
 ## Soil: gravimetric water content
 
-![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/gwc_jitter-1.png)<!-- -->
 
 ![](EC1_exploratory_graphs_files/figure-gfm/gwc_map-1.png)<!-- -->
 
@@ -41,7 +41,7 @@ Date updated: 2022-06-09
 
 ## Soil: loss on ignition
 
-![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/loi_jitter-1.png)<!-- -->
 
 ![](EC1_exploratory_graphs_files/figure-gfm/loi_map-1.png)<!-- -->
 
@@ -53,17 +53,17 @@ Date updated: 2022-06-09
 
 ## Water: Ions
 
-![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/ions_jitter-1.png)<!-- -->
 
-![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-14-3.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-14-4.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/ions_maps-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/ions_maps-2.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/ions_maps-3.png)<!-- -->
 
 ------------------------------------------------------------------------
 
 ## Water: CDOM Indices
 
-![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/cdom_jitter-1.png)<!-- -->
 
-![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-17-2.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/cdom_maps-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/cdom_maps-2.png)<!-- -->
 
 ------------------------------------------------------------------------
 
@@ -71,15 +71,15 @@ Date updated: 2022-06-09
 
 DOC measured as NPOC (non-purgeable organic carbon)
 
-![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-19-2.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/npoc_tdn_jitter-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/npoc_tdn_jitter-2.png)<!-- -->
 
-![](EC1_exploratory_graphs_files/figure-gfm/npoc_map-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/npoc_map-2.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/npoc_tdn_map-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/npoc_tdn_map-2.png)<!-- -->
 
 ------------------------------------------------------------------------
 
 ## Water: Total suspended solids
 
-![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/tss_jitter-1.png)<!-- -->
 
 ![](EC1_exploratory_graphs_files/figure-gfm/tss_map-1.png)<!-- -->
 
@@ -87,9 +87,9 @@ DOC measured as NPOC (non-purgeable organic carbon)
 
 ## Water: Water quality
 
-![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/waterquality_jitter-1.png)<!-- -->
 
-![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/unnamed-chunk-24-2.png)<!-- -->
+![](EC1_exploratory_graphs_files/figure-gfm/waterquality_map-1.png)<!-- -->![](EC1_exploratory_graphs_files/figure-gfm/waterquality_map-2.png)<!-- -->
 
 ------------------------------------------------------------------------
 
