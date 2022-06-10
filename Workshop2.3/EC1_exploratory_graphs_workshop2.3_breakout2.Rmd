@@ -18,13 +18,13 @@ knitr::opts_chunk$set(echo = FALSE,
                       comment = "#>")
 ```
 
-```{r}
+```{r load-packages}
 # load packages 
 library(tidyverse)
 theme_set(theme_bw() + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 12), axis.title.x = element_blank()))
 ```
 
-```{r}
+```{r load-meta}
 # import kit-level metadata
 
 metadata_kit_temp = read.csv("../Data/EC1_Metadata_KitLevel.csv")
@@ -38,7 +38,7 @@ metadata_kit =
 ```
 
 
-```{r}
+```{r load-data}
 # import data
 import_data = function(FILEPATH){
   
@@ -221,14 +221,14 @@ make_map = function(DAT, VAR, COLOR_LEGEND){
 
 ## Soil: total C and N
 
-```{r}
+```{r tctn-filter}
 tctn_data = 
   all_data_processed %>% 
   filter(analysis == "TCTN") %>% 
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 ```
 
-```{r, fig.width=8, fig.height=4}
+```{r tctn, fig.width=8, fig.height=4}
 tctn_data %>% 
   ggplot(aes(x = transect_location, y = tc_perc))+
   geom_jitter(width = 0.1)+
@@ -245,7 +245,7 @@ tctn_data %>%
 
 ```
 
-```{r tctn_map}
+```{r tctn_maps}
 make_map(DAT = tctn_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, tc_perc), VAR = "tc_perc", COLOR_LEGEND = "Total C, %") + ggtitle("Upland soils: total C")
 make_map(DAT = tctn_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, tn_perc), VAR = "tn_perc", COLOR_LEGEND = "Total N, %") + ggtitle("Upland soils: total N")
 ```
@@ -289,14 +289,14 @@ make_map(DAT = pH_data %>% filter(transect_location == "upland") %>% dplyr::sele
 
 ## Soil: bulk density
 
-```{r}
+```{r bd-filter}
 bd_data = 
   all_data_processed %>% 
   filter(analysis == "BulkDensity") %>% 
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 ```
 
-```{r, fig.width=8, fig.height=4}
+```{r bd, fig.width=8, fig.height=4}
 bd_data %>% 
   ggplot(aes(x = transect_location, y = bulk_density_g_cm3))+
   geom_jitter(width = 0.1)+
@@ -305,7 +305,7 @@ bd_data %>%
        y = "Bulk density, g/cm3")
 ```
 
-```{r bd_map}
+```{r bd_maps}
 make_map(DAT = bd_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, bulk_density_g_cm3), VAR = "bulk_density_g_cm3", COLOR_LEGEND = "Bulk density, g/cm3") + ggtitle("Upland soils: bulk density")
 ```
 
@@ -313,14 +313,14 @@ make_map(DAT = bd_data %>% filter(transect_location == "upland") %>% dplyr::sele
 
 ## Soil: gravimetric water content
 
-```{r}
+```{r gwc-filter}
 gwc_data = 
   all_data_processed %>% 
   filter(analysis == "GWC") %>% 
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 ```
 
-```{r, fig.width=8, fig.height=4}
+```{r gwc, fig.width=8, fig.height=4}
 gwc_data %>% 
   ggplot(aes(x = transect_location, y = gwc_perc))+
   geom_jitter(width = 0.1)+
@@ -337,14 +337,14 @@ make_map(DAT = gwc_data %>% filter(transect_location == "upland") %>% dplyr::sel
 
 ## Soil: loss on ignition
 
-```{r}
+```{r loi-filter}
 loi_data = 
   all_data_processed %>% 
   filter(analysis == "LOI") %>% 
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 ```
 
-```{r, fig.width=8, fig.height=4}
+```{r loi, fig.width=8, fig.height=4}
 loi_data %>% 
   ggplot(aes(x = transect_location, y = loi_perc))+
   geom_jitter(width = 0.1)+
@@ -353,7 +353,7 @@ loi_data %>%
        y = "Loss on ignition, %")
 ```
 
-```{r loi_map}
+```{r loi_maps}
 make_map(DAT = loi_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, loi_perc), VAR = "loi_perc", COLOR_LEGEND = "loss on ignition, %") + ggtitle("Upland soils: loss on ignition")
 ```
 
@@ -365,7 +365,7 @@ make_map(DAT = loi_data %>% filter(transect_location == "upland") %>% dplyr::sel
 
 ## Water: Ions
 
-```{r}
+```{r ions-filter}
 ions_data = 
   all_data_processed %>% 
   filter(analysis == "Ions") %>% 
@@ -378,14 +378,14 @@ ions_data_long =
   filter(!is.na(value))
 ```
 
-```{r, fig.width=12, fig.height=8}
+```{r ions, fig.width=12, fig.height=8}
 ions_data_long %>% 
   ggplot(aes(x = region, y = value))+
   geom_jitter(width = 0.1, show.legend = F)+
   facet_wrap(~name, scales = "free_y")
 ```
 
-```{r}
+```{r ions-maps}
 make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrate_n) %>% filter(nitrate_n <= 10) %>% filter(nitrate_n >= 0), VAR = "nitrate_n", COLOR_LEGEND = "Nitrate-N, ppm") + ggtitle("Surface waters: nitrate")
 make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrite_ppm), VAR = "nitrite_ppm", COLOR_LEGEND = "Nitrite, ppm") + ggtitle("Surface waters: nitrite")
 make_map(DAT = ions_data %>% dplyr::select(kit_id, sulfate_ppm), VAR = "sulfate_ppm", COLOR_LEGEND = "Sulfate, ppm") + ggtitle("Surface waters: sulfate")
@@ -396,7 +396,7 @@ make_map(DAT = ions_data %>% dplyr::select(kit_id, chloride_ppm), VAR = "chlorid
 
 ## Water: CDOM Indices
 
-```{r}
+```{r cdom-filter}
 cdom_data = 
   all_data_processed %>% 
   filter(grepl("CDOM", analysis)) %>% 
@@ -410,14 +410,14 @@ cdom_data_long =
   filter(!is.na(value))
 ```
 
-```{r, fig.width=9, fig.height=6}
+```{r cdom, fig.width=9, fig.height=6}
 cdom_data_long %>% 
   ggplot(aes(x = region, y = value))+
   geom_jitter(width = 0.1, show.legend = FALSE)+
   facet_wrap(~name, scales = "free_y")
 ```
 
-```{r}
+```{r cdom-maps}
 make_map(DAT = cdom_data %>% dplyr::select(kit_id, SUVA254), VAR = "SUVA254", COLOR_LEGEND = "SUVA254") + ggtitle("Surface waters: SUVA254")
 make_map(DAT = cdom_data %>% dplyr::select(kit_id, FI), VAR = "FI", COLOR_LEGEND = "FI") + ggtitle("Surface waters: fluorescence index")
 
@@ -432,14 +432,14 @@ make_map(DAT = cdom_data %>% dplyr::select(kit_id, FI), VAR = "FI", COLOR_LEGEND
 
 DOC measured as NPOC (non-purgeable organic carbon)
 
-```{r}
+```{r doc-filter}
 npoc_data = 
   all_data_processed %>% 
   filter(analysis == "NPOC_TDN") %>% 
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 ```
 
-```{r, fig.width=6, fig.height=4}
+```{r doc, fig.width=6, fig.height=4}
 npoc_data %>% 
   ggplot(aes(x = region, y = npoc_mgl))+
   geom_jitter(width = 0.1)+
@@ -455,7 +455,7 @@ npoc_data %>%
   NULL
 ```
 
-```{r npoc_map_old, eval=FALSE}
+```{r doc_maps_old, eval=FALSE}
 ## This script is designed to make several figures to be used for looking at the
 ## data coming from EC1 with collaborators at the 2.2 Workshop in 02/22
 ##
@@ -570,7 +570,7 @@ base_plot +
     xmin = -78, xmax = -70, ymin = 41, ymax = 48.8) 
 ```
 
-```{r npoc_map}
+```{r doc_maps}
 make_map(DAT = npoc_data %>% dplyr::select(kit_id, npoc_mgl), VAR = "npoc_mgl", COLOR_LEGEND = "NPOC, mg/L") + ggtitle("Surface waters: NPOC")
 
 make_map(DAT = npoc_data %>% dplyr::select(kit_id, tdn_mgl), VAR = "tdn_mgl", COLOR_LEGEND = "TDN, mg/L") + ggtitle("Surface waters: total dissolved N")
@@ -581,14 +581,14 @@ make_map(DAT = npoc_data %>% dplyr::select(kit_id, tdn_mgl), VAR = "tdn_mgl", CO
 
 ## Water: Total suspended solids
 
-```{r}
+```{r tss-filter}
 tss_data = 
   all_data_processed %>% 
   filter(analysis == "TSS") %>% 
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 ```
 
-```{r, fig.width=6, fig.height=4}
+```{r tss, fig.width=6, fig.height=4}
 tss_data %>% 
   ggplot(aes(x = region, y = tss_mg_perl))+
   geom_jitter(width = 0.1)+
@@ -598,7 +598,7 @@ tss_data %>%
 
 ```
 
-```{r tss_map}
+```{r tss_maps}
 make_map(DAT = tss_data %>% dplyr::select(kit_id, tss_mg_perl), VAR = "tss_mg_perl", COLOR_LEGEND = "TSS, mg/L") + ggtitle("Surface waters: TSS")
 ```
 
@@ -606,7 +606,7 @@ make_map(DAT = tss_data %>% dplyr::select(kit_id, tss_mg_perl), VAR = "tss_mg_pe
 
 ## Water: Water quality
 
-```{r}
+```{r waterq-filter}
 waterquality_data = 
   all_data_processed %>% 
   filter(analysis == "WaterQuality") %>% 
@@ -619,14 +619,14 @@ waterquality_data_long =
   filter(!is.na(value))
 ```
 
-```{r, fig.width=12, fig.height=4}
+```{r waterq, fig.width=12, fig.height=4}
 waterquality_data_long %>% 
   ggplot(aes(x = region, y = value))+
   geom_jitter(width = 0.1)+
   facet_wrap(~name, scales = "free_y", nrow = 1)
 ```
 
-```{r}
+```{r waterq-maps}
 make_map(DAT = waterquality_data %>% dplyr::select(kit_id, ph), VAR = "ph", COLOR_LEGEND = "pH") + ggtitle("Surface waters: pH")
 make_map(DAT = waterquality_data %>% dplyr::select(kit_id, sal_psu), VAR = "sal_psu", COLOR_LEGEND = "Salinity, PSU") + ggtitle("Surface waters: salinity")
 ```
