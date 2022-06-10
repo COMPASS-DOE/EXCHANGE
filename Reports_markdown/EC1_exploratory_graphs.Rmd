@@ -385,18 +385,22 @@ ions_data_long_flag =
   mutate(ion = str_remove(ion, "_flag")) %>% 
   filter(!is.na(flag))
 
-ions_data_long_with_flags = 
+ions_data_long_with_flagged_points = 
   ions_data_long_ppm %>% 
   left_join(ions_data_long_flag)
 
 ions_data_long = 
-  ions_data_long_with_flags %>% 
+  ions_data_long_with_flagged_points %>% 
   filter(is.na(flag))
+
+ions_data_long_including_below_detect = 
+  ions_data_long_with_flagged_points %>% 
+  filter(!flag %in% "above calibration") 
 
 ```
 
 ```{r ions_jitter, fig.width=12, fig.height=8}
-ions_data_long %>% 
+ions_data_long_including_below_detect %>% 
   filter(ion != "nitrite") %>% 
   ggplot(aes(x = region, y = ppm))+
   geom_jitter(width = 0.1, )+
@@ -406,12 +410,15 @@ ions_data_long %>%
 
 ```{r ions_maps}
 
-make_map(DAT = ions_data_long %>% filter(ion == "nitrate") %>% filter(ppm <= 60), 
+make_map(DAT = ions_data_long_including_below_detect %>% 
+           dplyr::select(kit_id, ion, ppm) %>% 
+           filter(ion == "nitrate") %>% filter(ppm <= 60), 
           VAR = "ppm", 
           COLOR_LEGEND = "Nitrate, ppm") + ggtitle("Surface waters: nitrate")
 
-make_map(DAT = ions_data_long %>% filter(ion == "nitrate") %>% filter(ppm <= 60) %>% mutate(nitrate_n_ppm = ppm * 14/62), 
-          VAR = "ppm", 
+make_map(DAT = ions_data_long_including_below_detect %>% filter(ion == "nitrate") %>% 
+           filter(ppm <= 60) %>% mutate(nitrate_n_ppm = ppm * 14/62), 
+          VAR = "nitrate_n_ppm", 
           COLOR_LEGEND = "Nitrate-N, ppm") + ggtitle("Surface waters: nitrate-N")
 
 make_map(DAT = ions_data_long %>% filter(ion == "sulfate"), 
