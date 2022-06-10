@@ -85,6 +85,12 @@ blank_kit =
 
 ```
 
+```{r load combined data}
+# import steph's combined spreadsheet for workshop
+
+combined_data = read_sheet("https://docs.google.com/spreadsheets/d/1f6nvuvWGHsmb-vOynBUkIgnwAAymbEiXmj92UNUOaFA/edit#gid=1145965819", sheet = 1)
+
+```
 
 ```{r map_function}
 ## This script is designed to make several figures to be used for looking at the
