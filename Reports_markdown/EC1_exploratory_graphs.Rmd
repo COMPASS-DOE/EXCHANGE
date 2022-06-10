@@ -296,7 +296,7 @@ bd_data =
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 ```
 
-```{r nd_jitter, fig.width=8, fig.height=4}
+```{r bd_jitter, fig.width=8, fig.height=4}
 bd_data %>% 
   ggplot(aes(x = transect_location, y = bulk_density_g_cm3))+
   geom_jitter(width = 0.1)+
@@ -476,7 +476,7 @@ make_map(DAT = cdom_data %>% dplyr::select(kit_id, FI), VAR = "FI", COLOR_LEGEND
 
 DOC measured as NPOC (non-purgeable organic carbon)
 
-```{r}
+```{r npoc}
 npoc_data = 
   all_data_processed %>% 
   filter(analysis == "NPOC_TDN") %>% 
@@ -625,11 +625,12 @@ make_map(DAT = npoc_data %>% dplyr::select(kit_id, tdn_mgl), VAR = "tdn_mgl", CO
 
 ## Water: Total suspended solids
 
-```{r}
+```{r tss}
 tss_data = 
   all_data_processed %>% 
   filter(analysis == "TSS") %>% 
-  select_if(~!(all(is.na(.)) | all(. == ""))) 
+  select_if(~!(all(is.na(.)) | all(. == ""))) %>% 
+  filter(is.na(tss_flag))
 ```
 
 ```{r tss_jitter, fig.width=6, fig.height=4}
@@ -654,20 +655,37 @@ make_map(DAT = tss_data %>% dplyr::select(kit_id, tss_mg_perl), VAR = "tss_mg_pe
 waterquality_data = 
   all_data_processed %>% 
   filter(analysis == "WaterQuality") %>% 
-  select_if(~!(all(is.na(.)) | all(. == ""))) 
+  select_if(~!(all(is.na(.)) | all(. == "")))
 
+
+waterquality_data_long_ppm = 
+  waterquality_data %>% 
+  dplyr::select(-ends_with("_flag")) %>% 
+  pivot_longer(cols = where(is.numeric), names_to = "analyte", values_to = "value") %>% 
+  filter(!is.na(value)) %>% 
+  mutate(analyte2 = analyte) %>% 
+  separate(analyte2, sep = "_", into = c("variable", "unit")) %>% 
+  dplyr::select(-unit)
+
+waterquality_data_long_flag = 
+  waterquality_data %>% 
+  dplyr::select(-where(is.numeric)) %>% 
+  pivot_longer(ends_with("_flag"), names_to = "analyte", values_to = "flag") %>% 
+  mutate(analyte = str_remove(analyte, "_flag")) %>% 
+  rename(variable = analyte) %>% 
+  filter(!is.na(flag))
 
 waterquality_data_long = 
-  waterquality_data %>% 
-  pivot_longer(cols = where(is.numeric)) %>% 
-  filter(!is.na(value))
+  waterquality_data_long_ppm %>% 
+  left_join(waterquality_data_long_flag) %>% 
+  filter(is.na(flag))
 ```
 
 ```{r waterquality_jitter, fig.width=12, fig.height=4}
 waterquality_data_long %>% 
   ggplot(aes(x = region, y = value))+
   geom_jitter(width = 0.1)+
-  facet_wrap(~name, scales = "free_y", nrow = 1)
+  facet_wrap(~analyte, scales = "free_y", nrow = 1)
 ```
 
 ```{r waterquality_map}
