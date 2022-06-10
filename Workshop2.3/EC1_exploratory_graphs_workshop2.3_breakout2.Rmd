@@ -1,0 +1,648 @@
+---
+title: "EXCHANGE Campign 1: Exploratory Figures"
+output: 
+  github_document:
+      html_preview: true
+  
+
+---
+
+Date updated: `r Sys.Date()`
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      collapse = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      comment = "#>")
+```
+
+```{r}
+# load packages 
+library(tidyverse)
+theme_set(theme_bw() + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 12), axis.title.x = element_blank()))
+```
+
+```{r}
+# import kit-level metadata
+
+metadata_kit_temp = read.csv("../Data/EC1_Metadata_KitLevel.csv")
+metadata_kit = 
+  metadata_kit_temp %>% 
+  dplyr::select(kit_id, site_name, region) %>% 
+  mutate(kit_id = str_pad(kit_id, 3, pad = "0"),
+         kit_id = paste0("K", kit_id)) %>% 
+  #  mutate(region = recode(region, "Chesapeake Bay" = "CB", "Great Lakes" = "GL")) %>% 
+  force()
+```
+
+
+```{r}
+# import data
+import_data = function(FILEPATH){
+  
+  # pull a list of file names in the target folder with the target pattern
+  # then read all files and combine
+  
+  filePaths <- list.files(path = FILEPATH, pattern = ".csv", full.names = TRUE)
+  
+  # dat <- 
+  do.call(bind_rows, lapply(filePaths, function(path){
+    # then add a new column `source` to denote the file name
+    df <- read.csv(path, header = TRUE)
+    #  df <- read.delim(path, skip = 2)
+    df[["source"]] <- rep(path, nrow(df))
+    df}))
+  
+}
+
+# Now, run this function
+all_data <- import_data(FILEPATH = "../Data/Processed/")
+
+all_data_processed = 
+  all_data %>% 
+  mutate(transect_location = tolower(transect_location)) %>% 
+  dplyr::select(-ends_with("flag"),
+                -starts_with("date")) %>% 
+  separate(source, sep = "EC1_", into = c("source1", "analysis")) %>% 
+  mutate(analysis = str_remove(analysis, "_[0-9]{8}"),
+         analysis = str_remove(analysis, ".csv"),
+         analysis = str_remove(analysis, "_L[0-9][A-Z]")) %>% 
+  dplyr::select(-source1) %>% 
+  mutate(analysis = str_remove(analysis, "Soil_"),
+         analysis = str_remove(analysis, "Water_")) %>% 
+  mutate(transect_location = factor(transect_location, levels = c("upland", "transition", "wetland", "sediment", "water"))) %>% 
+  arrange(kit_id, transect_location) %>% 
+  filter(!is.na(kit_id)) %>% 
+  left_join(metadata_kit) %>% 
+  filter(!is.na(region))
+
+blank_kit =
+  all_data_processed %>% 
+  filter(is.na(region)) %>% 
+  distinct(kit_id)
+
+```
+
+
+```{r map_function}
+## This script is designed to make several figures to be used for looking at the
+## data coming from EC1 with collaborators at the 2.2 Workshop in 02/22
+##
+## 2022-02-15 (updated 6/2/22 to be project-agnostic)
+## Peter Regier 
+## 
+# #############
+# #############
+
+# 1. Setup ---------------------------------------------------------------------
+
+## Load packages
+require(pacman)
+p_load(cowplot, ## plot_grid()
+       tidyverse, 
+       sf, ## simple features
+       janitor, # clean_names()
+       stringr,
+       googlesheets4, 
+       #googledrive, ## import data from Google Sheets
+       ggthemes) ## theme_map()
+
+
+# load lat-lon file
+latlong <- read_sheet("https://docs.google.com/spreadsheets/d/1_tKn5vHryVMHvuQix_PRXhzQcEkeAG5LDCBXjs7nZEc/edit#gid=842964887", sheet = 1) %>% 
+  mutate(kit_id = paste0("K", Kit_ID)) %>% 
+  rename("lat" = `Water_Latitude`, 
+         "long" = `Water_Longitude`) %>% 
+  select(kit_id, lat, long)
+
+
+make_map = function(DAT, VAR, COLOR_LEGEND){
+  
+  ## Set CRS
+  common_crs <- 4326
+  
+  ## Set map size and point size
+  point_size <- 2
+  map_width = 9
+  map_height = 6
+
+  # Set up map layers for plotting ------------------------------------------
+  
+  ## Set regional and CB (inset) bounding boxes
+  us_bbox <- c(xmin = -125, xmax = -60, ymin = 20, ymax = 50)
+  region_bbox <- c(xmin = -95, xmax = -70, ymin = 35, ymax = 48)
+  cb_bbox <- c(xmin = -77.8, xmax = -74.5, ymin = 36.8, ymax = 40.5)
+  
+  ## Make US states map cropped to GL/CB region
+  us <- read_sf("../Reports_markdown/cb_2018_us_state_5m/cb_2018_us_state_5m.shp") %>% 
+    st_transform(., crs = common_crs) %>% 
+    st_crop(., y = us_bbox)
+  
+  region <- st_crop(us, y = region_bbox)
+  
+  ## Further crop states to CB region
+  cb_states <- st_crop(region, y = cb_bbox)
+  
+  
+  # make a dataset merging metadata with site lat-longs
+  df_map <- inner_join(DAT, latlong, by = "kit_id") %>% 
+    st_as_sf(., coords = c("long", "lat"), crs = common_crs)
+  
+  ## Crop data  to CB region for inset plot
+  df_cb <- st_crop(df_map, y = cb_bbox)
+  
+  ## get max and min values for variable
+  var_min = DAT %>% dplyr::select(-kit_id) %>% pull() %>% min(na.rm = TRUE)
+  var_max = DAT %>% dplyr::select(-kit_id) %>% pull() %>% max(na.rm = TRUE)
+
+  
+  ## Make the base map with all sites
+  base_plot <- 
+    ggplot() + 
+    geom_sf(data = region) + 
+    #geom_sf(data = meta_map, size = point_size * 3, color = "white") +
+    geom_sf(data = df_map, 
+            color = "white", size = point_size * 2.5) + 
+    geom_sf(data = df_map, 
+            aes_string(color = VAR), 
+            size = point_size * 2) + 
+    geom_rect(aes(xmin = -77.8, xmax = -74.5, ymin = 36.8, ymax = 40.5), 
+              fill = NA, color = "black", lwd = 0.75) +
+    geom_segment(aes(x = -77.8, xend = -76, y = 40.5, yend = 42), 
+                 color = "black", lwd = 0.75) + 
+    geom_segment(aes(x = -74.5, xend = -71, y = 40.5, yend = 41.5), 
+                 color = "black", lwd = 0.75) + 
+    theme_map() + 
+    theme(legend.background = element_rect(fill = alpha("white", 0.0)), 
+          legend.key = element_rect(fill = "transparent"), 
+          legend.position = c(0.85, 0.1)) + 
+    scale_color_viridis_c(limits = c(var_min, var_max)) + 
+    labs(x = "", y = "" , color = COLOR_LEGEND) + 
+    grattantheme::watermark("Preliminary", fontsize = 40)
+  
+  ## Make the inset map with just CB sites
+  inset_plot <- 
+    ggplot() + 
+    geom_sf(data = cb_states) + 
+    geom_sf(data = df_cb, 
+            color = "white", size = point_size * 2) + 
+    geom_sf(data = df_cb, 
+            aes_string(color = VAR), 
+            size = point_size * 1.7) + 
+    theme_map() + 
+    theme(legend.background = element_rect(fill = alpha("white", 0.0)), 
+          legend.key = element_rect(fill = "transparent"), 
+          #legend.position = c(0.7, 0)
+          legend.position = "none") + 
+    scale_color_viridis_c(limits = c(var_min, var_max)) + 
+    theme(panel.background = element_rect(fill = "white", colour = "black")) + 
+    labs(color = "")
+  
+  ## Combine into single figure
+  base_plot + 
+    annotation_custom(
+      ggplotGrob(inset_plot), 
+      xmin = -78, xmax = -70, ymin = 41, ymax = 48.8)
+ 
+  
+  
+  
+     
+}
+
+```
+
+
+---
+
+# Soils and sediments
+
+## Soil: total C and N
+
+```{r}
+tctn_data = 
+  all_data_processed %>% 
+  filter(analysis == "TCTN") %>% 
+  select_if(~!(all(is.na(.)) | all(. == ""))) 
+```
+
+```{r, fig.width=8, fig.height=4}
+tctn_data %>% 
+  ggplot(aes(x = transect_location, y = tc_perc))+
+  geom_jitter(width = 0.1)+
+  facet_wrap(~region)+
+  labs(x = "",
+       y = "Total C, %")
+
+tctn_data %>% 
+  ggplot(aes(x = transect_location, y = tn_perc))+
+  geom_jitter(width = 0.1)+
+  facet_wrap(~region)+
+  labs(x = "",
+       y = "Total N, %")
+
+```
+
+```{r tctn_map}
+make_map(DAT = tctn_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, tc_perc), VAR = "tc_perc", COLOR_LEGEND = "Total C, %") + ggtitle("Upland soils: total C")
+make_map(DAT = tctn_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, tn_perc), VAR = "tn_perc", COLOR_LEGEND = "Total N, %") + ggtitle("Upland soils: total N")
+```
+
+
+---
+
+
+## Soil: pH and specific conductance
+
+```{r pH}
+pH_data = 
+  all_data_processed %>% 
+  filter(analysis == "pH") %>% 
+  select_if(~!(all(is.na(.)) | all(. == ""))) 
+```
+
+```{r pH_graphs, fig.width=8, fig.height=4}
+pH_data %>% 
+  ggplot(aes(x = transect_location, y = ph))+
+  geom_jitter(width = 0.1)+
+  facet_wrap(~region)+
+  labs(x = "",
+       y = "pH")
+
+pH_data %>% 
+  ggplot(aes(x = transect_location, y = specific_conductance_us_cm/1000))+
+  geom_jitter(width = 0.2)+
+  labs(x = "",
+       y = "Specific conductance, mS/cm")+
+  facet_wrap(~region, scales = "free_y")
+```
+
+```{r pH_map}
+make_map(DAT = pH_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, ph), VAR = "ph", COLOR_LEGEND = "pH") + ggtitle("Upland soils: pH")
+make_map(DAT = pH_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, specific_conductance_us_cm) %>% mutate(specific_conductance_ms_cm = specific_conductance_us_cm/1000), 
+         VAR = "specific_conductance_ms_cm", COLOR_LEGEND = "Sp. cond., mS/cm") + ggtitle("Upland soils: Sp conductance")
+```
+
+---
+
+## Soil: bulk density
+
+```{r}
+bd_data = 
+  all_data_processed %>% 
+  filter(analysis == "BulkDensity") %>% 
+  select_if(~!(all(is.na(.)) | all(. == ""))) 
+```
+
+```{r, fig.width=8, fig.height=4}
+bd_data %>% 
+  ggplot(aes(x = transect_location, y = bulk_density_g_cm3))+
+  geom_jitter(width = 0.1)+
+  facet_wrap(~region)+
+  labs(x = "",
+       y = "Bulk density, g/cm3")
+```
+
+```{r bd_map}
+make_map(DAT = bd_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, bulk_density_g_cm3), VAR = "bulk_density_g_cm3", COLOR_LEGEND = "Bulk density, g/cm3") + ggtitle("Upland soils: bulk density")
+```
+
+---
+
+## Soil: gravimetric water content
+
+```{r}
+gwc_data = 
+  all_data_processed %>% 
+  filter(analysis == "GWC") %>% 
+  select_if(~!(all(is.na(.)) | all(. == ""))) 
+```
+
+```{r, fig.width=8, fig.height=4}
+gwc_data %>% 
+  ggplot(aes(x = transect_location, y = gwc_perc))+
+  geom_jitter(width = 0.1)+
+  facet_wrap(~region)+
+  labs(x = "",
+       y = "Gravimetric water, %")
+```
+
+```{r gwc_map}
+make_map(DAT = gwc_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, gwc_perc), VAR = "gwc_perc", COLOR_LEGEND = "gravimetric water, %") + ggtitle("Upland soils: water content")
+```
+
+---
+
+## Soil: loss on ignition
+
+```{r}
+loi_data = 
+  all_data_processed %>% 
+  filter(analysis == "LOI") %>% 
+  select_if(~!(all(is.na(.)) | all(. == ""))) 
+```
+
+```{r, fig.width=8, fig.height=4}
+loi_data %>% 
+  ggplot(aes(x = transect_location, y = loi_perc))+
+  geom_jitter(width = 0.1)+
+  facet_wrap(~region)+
+  labs(x = "",
+       y = "Loss on ignition, %")
+```
+
+```{r loi_map}
+make_map(DAT = loi_data %>% filter(transect_location == "upland") %>% dplyr::select(kit_id, loi_perc), VAR = "loi_perc", COLOR_LEGEND = "loss on ignition, %") + ggtitle("Upland soils: loss on ignition")
+```
+
+---
+
+---
+
+# Surface waters
+
+## Water: Ions
+
+```{r}
+ions_data = 
+  all_data_processed %>% 
+  filter(analysis == "Ions") %>% 
+  select_if(~!(all(is.na(.)) | all(. == ""))) %>%
+ mutate(nitrate_n = nitrate_ppm * (14/62))
+
+ions_data_long = 
+  ions_data %>% 
+  pivot_longer(ends_with("_ppm")) %>% 
+  filter(!is.na(value))
+```
+
+```{r, fig.width=12, fig.height=8}
+ions_data_long %>% 
+  ggplot(aes(x = region, y = value))+
+  geom_jitter(width = 0.1, show.legend = F)+
+  facet_wrap(~name, scales = "free_y")
+```
+
+```{r}
+make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrate_n) %>% filter(nitrate_n <= 10) %>% filter(nitrate_n >= 0), VAR = "nitrate_n", COLOR_LEGEND = "Nitrate-N, ppm") + ggtitle("Surface waters: nitrate")
+make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrite_ppm), VAR = "nitrite_ppm", COLOR_LEGEND = "Nitrite, ppm") + ggtitle("Surface waters: nitrite")
+make_map(DAT = ions_data %>% dplyr::select(kit_id, sulfate_ppm), VAR = "sulfate_ppm", COLOR_LEGEND = "Sulfate, ppm") + ggtitle("Surface waters: sulfate")
+make_map(DAT = ions_data %>% dplyr::select(kit_id, chloride_ppm), VAR = "chloride_ppm", COLOR_LEGEND = "Chloride, ppm") + ggtitle("Surface waters: chloride")
+```
+
+---
+
+## Water: CDOM Indices
+
+```{r}
+cdom_data = 
+  all_data_processed %>% 
+  filter(grepl("CDOM", analysis)) %>% 
+  select_if(~!(all(is.na(.)) | all(. == ""))) %>% 
+  dplyr::select(campaign, kit_id, transect_location, analysis, region, 
+                SUVA254, Sr, FRESH, HIX, BIX, FI)
+
+cdom_data_long = 
+  cdom_data %>% 
+  pivot_longer(cols = where(is.numeric)) %>% 
+  filter(!is.na(value))
+```
+
+```{r, fig.width=9, fig.height=6}
+cdom_data_long %>% 
+  ggplot(aes(x = region, y = value))+
+  geom_jitter(width = 0.1, show.legend = FALSE)+
+  facet_wrap(~name, scales = "free_y")
+```
+
+```{r}
+make_map(DAT = cdom_data %>% dplyr::select(kit_id, SUVA254), VAR = "SUVA254", COLOR_LEGEND = "SUVA254") + ggtitle("Surface waters: SUVA254")
+make_map(DAT = cdom_data %>% dplyr::select(kit_id, FI), VAR = "FI", COLOR_LEGEND = "FI") + ggtitle("Surface waters: fluorescence index")
+
+#make_map(DAT = cdom_data %>% dplyr::select(kit_id, FRESH), VAR = "FRESH", COLOR_LEGEND = "FRESH")
+#make_map(DAT = cdom_data %>% dplyr::select(kit_id, HIX), VAR = "HIX", COLOR_LEGEND = "HIX")
+
+```
+
+---
+
+## Water: Dissolved organic carbon and total dissolved nitrogen 
+
+DOC measured as NPOC (non-purgeable organic carbon)
+
+```{r}
+npoc_data = 
+  all_data_processed %>% 
+  filter(analysis == "NPOC_TDN") %>% 
+  select_if(~!(all(is.na(.)) | all(. == ""))) 
+```
+
+```{r, fig.width=6, fig.height=4}
+npoc_data %>% 
+  ggplot(aes(x = region, y = npoc_mgl))+
+  geom_jitter(width = 0.1)+
+  labs(y = "NPOC, mg/L")+
+  #  facet_wrap(~region)+
+  NULL
+
+npoc_data %>% 
+  ggplot(aes(x = region, y = tdn_mgl))+
+  geom_jitter(width = 0.1)+
+  labs(y = "TDN, mg/L")+
+  #  facet_wrap(~region)+
+  NULL
+```
+
+```{r npoc_map_old, eval=FALSE}
+## This script is designed to make several figures to be used for looking at the
+## data coming from EC1 with collaborators at the 2.2 Workshop in 02/22
+##
+## 2022-02-15 (updated 6/2/22 to be project-agnostic)
+## Peter Regier 
+## 
+# #############
+# #############
+
+# 1. Setup ---------------------------------------------------------------------
+
+## Load packages
+require(pacman)
+p_load(cowplot, ## plot_grid()
+       tidyverse, 
+       sf, ## simple features
+       janitor, # clean_names()
+       stringr,
+       googlesheets4, 
+       googledrive, ## import data from Google Sheets
+       ggthemes) ## theme_map()
+
+## Set CRS
+common_crs <- 4326
+
+## Set ggplot theme
+# theme_set(theme_bw())
+
+## Set map size and point size
+point_size <- 2
+map_width = 9
+map_height = 6
+
+# 2. Import datasets -----------------------------------------------------------
+## For this example, we will use salinity which is uploaded in the water_quality
+## dataset
+
+## Read in npoc data
+npoc <- npoc_data %>% 
+  dplyr::select(kit_id, npoc_mgl)
+
+latlong <- read_sheet("https://docs.google.com/spreadsheets/d/1_tKn5vHryVMHvuQix_PRXhzQcEkeAG5LDCBXjs7nZEc/edit#gid=842964887", sheet = 1) %>% 
+  mutate(kit_id = paste0("K", Kit_ID)) %>% 
+  rename("lat" = `Water_Latitude`, 
+         "long" = `Water_Longitude`) %>% 
+  select(kit_id, lat, long)
+
+# 3. Set up map layers for plotting --------------------------------------------
+
+## Set regional and CB (inset) bounding boxes
+us_bbox <- c(xmin = -125, xmax = -60, ymin = 20, ymax = 50)
+region_bbox <- c(xmin = -95, xmax = -70, ymin = 35, ymax = 48)
+cb_bbox <- c(xmin = -77.8, xmax = -74.5, ymin = 36.8, ymax = 40.5)
+
+## Make US states map cropped to GL/CB region
+us <- read_sf("../Reports_markdown/cb_2018_us_state_5m/cb_2018_us_state_5m.shp") %>% 
+  st_transform(., crs = common_crs) %>% 
+  st_crop(., y = us_bbox)
+
+region <- st_crop(us, y = region_bbox)
+
+## Further crop states to CB region
+cb_states <- st_crop(region, y = cb_bbox)
+
+
+# make a dataset merging metadata with site lat-longs
+df_map <- inner_join(npoc, latlong, by = "kit_id") %>% 
+  st_as_sf(., coords = c("long", "lat"), crs = common_crs)
+
+## Crop data  to CB region for inset plot
+df_cb <- st_crop(df_map, y = cb_bbox)
+
+
+## Make the base map with all sites
+base_plot <- ggplot() + 
+  geom_sf(data = region) + 
+  #geom_sf(data = meta_map, size = point_size * 3, color = "white") +
+  geom_sf(data = df_map, color = "white",
+          size = point_size * 2.5) + 
+  geom_sf(data = df_map, aes(color = npoc_mgl), 
+          size = point_size * 2) + 
+  geom_rect(aes(xmin = -77.8, xmax = -74.5, ymin = 36.8, ymax = 40.5), 
+            fill = NA, color = "black", lwd = 0.75) +
+  geom_segment(aes(x = -77.8, xend = -76, y = 40.5, yend = 42), 
+               color = "black", lwd = 0.75) + 
+  geom_segment(aes(x = -74.5, xend = -71, y = 40.5, yend = 41.5), 
+               color = "black", lwd = 0.75) + 
+  theme_map() + 
+  theme(legend.background = element_rect(fill = alpha("white", 0.0)), 
+        legend.key = element_rect(fill = "transparent"), 
+        legend.position = c(0.9, 0.1)) + 
+  scale_color_viridis_c() + 
+  labs(x = "", y = "", color = "NPOC \n (mg/L)") + 
+  grattantheme::watermark("Preliminary", fontsize = 40)
+
+## Make the inset map with just CB sites
+inset_plot <- ggplot() + geom_sf(data = cb_states) + 
+  geom_sf(data = df_cb, color = "white", size = point_size * 2) + 
+  geom_sf(data = df_cb, aes(color = npoc_mgl), size = point_size * 1.7) + 
+  theme_map() + 
+  theme(legend.background = element_rect(fill = alpha("white", 0.0)), 
+        legend.key = element_rect(fill = "transparent"), 
+        legend.position = c(0.7, 0)) + 
+  scale_color_viridis_c() + 
+  theme(panel.background = element_rect(fill = "white", colour = "black")) + 
+  labs(color = "")
+
+## Combine into single figure
+base_plot + 
+  annotation_custom(
+    ggplotGrob(inset_plot), 
+    xmin = -78, xmax = -70, ymin = 41, ymax = 48.8) 
+```
+
+```{r npoc_map}
+make_map(DAT = npoc_data %>% dplyr::select(kit_id, npoc_mgl), VAR = "npoc_mgl", COLOR_LEGEND = "NPOC, mg/L") + ggtitle("Surface waters: NPOC")
+
+make_map(DAT = npoc_data %>% dplyr::select(kit_id, tdn_mgl), VAR = "tdn_mgl", COLOR_LEGEND = "TDN, mg/L") + ggtitle("Surface waters: total dissolved N")
+```
+
+
+---
+
+## Water: Total suspended solids
+
+```{r}
+tss_data = 
+  all_data_processed %>% 
+  filter(analysis == "TSS") %>% 
+  select_if(~!(all(is.na(.)) | all(. == ""))) 
+```
+
+```{r, fig.width=6, fig.height=4}
+tss_data %>% 
+  ggplot(aes(x = region, y = tss_mg_perl))+
+  geom_jitter(width = 0.1)+
+  labs(y = "TSS, mg/L")+
+  #  facet_wrap(~region)+
+  NULL
+
+```
+
+```{r tss_map}
+make_map(DAT = tss_data %>% dplyr::select(kit_id, tss_mg_perl), VAR = "tss_mg_perl", COLOR_LEGEND = "TSS, mg/L") + ggtitle("Surface waters: TSS")
+```
+
+---
+
+## Water: Water quality
+
+```{r}
+waterquality_data = 
+  all_data_processed %>% 
+  filter(analysis == "WaterQuality") %>% 
+  select_if(~!(all(is.na(.)) | all(. == ""))) 
+
+
+waterquality_data_long = 
+  waterquality_data %>% 
+  pivot_longer(cols = where(is.numeric)) %>% 
+  filter(!is.na(value))
+```
+
+```{r, fig.width=12, fig.height=4}
+waterquality_data_long %>% 
+  ggplot(aes(x = region, y = value))+
+  geom_jitter(width = 0.1)+
+  facet_wrap(~name, scales = "free_y", nrow = 1)
+```
+
+```{r}
+make_map(DAT = waterquality_data %>% dplyr::select(kit_id, ph), VAR = "ph", COLOR_LEGEND = "pH") + ggtitle("Surface waters: pH")
+make_map(DAT = waterquality_data %>% dplyr::select(kit_id, sal_psu), VAR = "sal_psu", COLOR_LEGEND = "Salinity, PSU") + ggtitle("Surface waters: salinity")
+```
+
+---
+
+---
+
+<details>
+<summary> Session Info: Click to open </summary>
+
+Date run: `r Sys.Date()`
+
+```{r}
+
+sessionInfo()
+```
+
+
