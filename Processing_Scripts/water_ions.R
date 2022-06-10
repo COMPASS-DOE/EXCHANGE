@@ -82,9 +82,6 @@ ions_lods = read.csv("data/LODs/ions_LODs_2020_Oct_2022_April_COMPASS_Only.csv")
 # `process_data`: this function will assign ions and tidy the dataframe
 # input parameters are (a) the dataframe being cleaned and (b) the ions in question.
 
-# `do_corrections`: this function will apply blank and dilution corrections
-# input parameters are (a) the processed_data df and the path for readme files, which contain data for dilutions, etc.
-
 process_data = function(raw_data, IONS){
   
   # The input data are in shitty, non-tidy format, with multi-line headers and multiple chunks of data per dataframe.  
@@ -149,16 +146,63 @@ process_data = function(raw_data, IONS){
   
 }
 
-do_corrections = function(data_ions_processed, README_PATH){
+# Now, run the function
+# set ions of interest
+all_ions = c("Lithium", "Sodium", "Ammonium", "Potassium", "Magnesium", "Calcium", "Nitrite", "Nitrate",
+             "Chloride", "Bromide", "Sulfate", "Phosphate", "Fluoride")
+
+data_ions_processed = process_data(raw_data, IONS = all_ions)
+
+#
+# 4. Apply QC flags ------------------------------------------------------------
+
+# `apply_qc_flags`: applying flags to data points below the Limit of Detection
+
+apply_qc_flags = function(data_ions_processed, QC_DATA){
+  # we will apply two flags: (1) LOD, (2) above cal-curve
+  ions_lods_processed = 
+    QC_DATA %>% 
+    rename(Ion = Analyte) %>% 
+    mutate(Ion = str_remove_all(Ion, "_UV"))
+  
+  data_ions_standards = 
+    data_ions_processed %>% 
+    filter(grepl("A-", Name) | grepl("C-", Name)) %>% 
+    filter(!grepl("CK", Name)) %>%
+    filter(!is.na(Amount)) %>% 
+    group_by(Ion, date_run) %>% 
+    dplyr::summarise(calib_min = min(Amount),
+                     calib_max = max(Amount))
+  data_ions_qc = 
+    data_ions_processed %>% 
+    left_join(ions_lods_processed %>% dplyr::select(Ion, LOD_ppm)) %>%
+    left_join(data_ions_standards) %>% 
+    mutate(flag = case_when(Amount  < LOD_ppm ~ "below detect",
+                            Amount  > calib_max ~ "above calibration")) %>% 
+    rename(ppm = Amount) %>% 
+    dplyr::select(Name, date_run, Ion, ppm, flag) %>% 
+    filter(ppm >= 0)
+  
+}
+data_ions_qc = apply_qc_flags(data_ions_processed, QC_DATA = ions_lods)
+
+
+#
+# 5. Do dilution/blank corrections ----------------------------------------
+
+# `do_corrections`: this function will apply blank and dilution corrections
+# input parameters are (a) the processed_data df and the path for readme files, which contain data for dilutions, etc.
+
+do_corrections = function(data_ions_qc, README_PATH){
   
   # 1. blank corrections ----
   samples_and_blanks = 
-    data_ions_processed %>% 
+    data_ions_qc %>% 
     filter(grepl("EC1_", Name) | grepl("Blank", Name)) %>% 
     filter(!Name %in% c("Blank1", "Blank2", "Blank3", "Blank4")) %>% 
     filter(!grepl("CondBlank", Name)) %>% 
     # remove NA amounts
-    filter(!is.na(Amount)) %>% 
+    filter(!is.na(ppm)) %>% 
     # assign sample or blank
     mutate(sample_type = case_when(grepl("Blank", Name) ~ "Blank",
                                    grepl("EC1_", Name) ~ "Sample")) 
@@ -167,14 +211,14 @@ do_corrections = function(data_ions_processed, README_PATH){
     samples_and_blanks %>% 
     filter(sample_type == "Blank") %>% 
     group_by(Ion, date_run) %>% 
-    dplyr::summarise(blank_mean = mean(Amount))
+    dplyr::summarise(blank_mean_ppm = mean(ppm))
     
   samples_blank_corrected = 
     samples_and_blanks %>% 
     filter(sample_type == "Sample") %>% 
     left_join(blank_mean, by = c("Ion", "date_run")) %>% 
-    replace(is.na(.), 0) %>% 
-    mutate(Amount_bl_corrected = Amount - blank_mean)
+    mutate(blank_mean_ppm = replace_na(blank_mean_ppm,0)) %>% 
+    mutate(Amount_bl_corrected = ppm - blank_mean_ppm)
   
   #
   # 2. dilution correction ----
@@ -208,25 +252,17 @@ do_corrections = function(data_ions_processed, README_PATH){
     mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
     mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
            Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
-    dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected)
+    dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag) %>% 
+    filter(Amount_bl_dil_corrected > 0)
   
   samples_dilution_corrected
   
 }
-
-
-
-# Now, run these functions
-# set ions of interest
-all_ions = c("Lithium", "Sodium", "Ammonium", "Potassium", "Magnesium", "Calcium", "Nitrite", "Nitrate",
-             "Chloride", "Bromide", "Sulfate", "Phosphate", "Fluoride")
-
-data_ions_processed = process_data(raw_data, IONS = all_ions)
-data_ions_corrected = do_corrections(data_ions_processed, README_PATH = "data/ions/ions_readme")
+data_ions_corrected = do_corrections(data_ions_qc, README_PATH = "data/ions/ions_readme")
 
 
 #
-# 3b. other functions -----------------------------------------------------
+# xx. other functions -----------------------------------------------------
 
 check_cal_curve_values = function(){
   
@@ -252,37 +288,14 @@ check_cal_curve_values = function(){
 
 
 #
-
-
-# 4. Apply QC flags ------------------------------------------------------------
-
-# `apply_qc_flags`: applying flags to data points below the Limit of Detection
-
-apply_qc_flags = function(data_ions_corrected, QC_DATA){
-  
-  ions_lods_processed = 
-    QC_DATA %>% 
-    rename(Ion = Analyte) %>% 
-    mutate(Ion = str_remove_all(Ion, "_UV"))
-
-  data_ions_corrected %>% 
-    left_join(ions_lods_processed %>% dplyr::select(Ion, LOD_ppm)) %>% 
-    mutate(flag = case_when(Amount_bl_dil_corrected  < LOD_ppm ~ "below detect")) %>% 
-    rename(ppm = Amount_bl_dil_corrected) %>% 
-    dplyr::select(Name, date_run, Ion, ppm, flag)
-    
-}
-
-data_ions_qc = apply_qc_flags(data_ions_corrected, QC_DATA = ions_lods)
-
-#
-# 4b. final formatting ----------------------------------------------------
+# 6. final formatting ----------------------------------------------------
 
 # `format_df`: format the dataframe to a more legible format in wideform, with a flag column for each ion
 
-format_df = function(data_ions_qc){
+format_df = function(data_ions_corrected){
   
-  data_ions_qc %>% 
+  data_ions_corrected %>% 
+    rename(ppm = Amount_bl_dil_corrected) %>% 
     mutate(ppm = as.character(ppm)) %>% 
     pivot_longer(-c(Name, date_run, Ion)) %>% 
     mutate(name2 = paste0(Ion, "_", name)) %>% 
@@ -291,16 +304,16 @@ format_df = function(data_ions_qc){
     separate(Name, sep = "_", into = c("campaign", "kit_id")) %>% 
     mutate(transect_location = "Water") %>% 
     dplyr::select(campaign, kit_id, transect_location, everything()) %>% 
+    mutate(across(ends_with("_ppm"), as.numeric)) %>% 
     janitor::clean_names()
   
   
 }
-
-data_ions_final = format_df(data_ions_qc)
+data_ions_final = format_df(data_ions_corrected)
 
 
 #
 # 5. Export cleaned data --------------------------------------------------
 
-data_ions_final %>% write.csv("Data/Processed/EC1_Water_Ions_L0B_20220531.csv", row.names = FALSE)
+data_ions_final %>% write.csv("Data/Processed/EC1_Water_Ions_L0B_20220609.csv", row.names = FALSE)
 

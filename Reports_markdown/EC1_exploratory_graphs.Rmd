@@ -18,13 +18,13 @@ knitr::opts_chunk$set(echo = FALSE,
                       comment = "#>")
 ```
 
-```{r}
+```{r packages}
 # load packages 
 library(tidyverse)
 theme_set(theme_bw() + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 12), axis.title.x = element_blank()))
 ```
 
-```{r}
+```{r metadata}
 # import kit-level metadata
 
 metadata_kit_temp = read.csv("Data/EC1_Metadata_KitLevel.csv")
@@ -38,7 +38,7 @@ metadata_kit =
 ```
 
 
-```{r}
+```{r import_data}
 # import data
 import_data = function(FILEPATH){
   
@@ -63,7 +63,7 @@ all_data <- import_data(FILEPATH = "Data/Processed/")
 all_data_processed = 
   all_data %>% 
   mutate(transect_location = tolower(transect_location)) %>% 
-  dplyr::select(-ends_with("flag"),
+  dplyr::select(#-ends_with("flag"),
                 -starts_with("date")) %>% 
   separate(source, sep = "EC1_", into = c("source1", "analysis")) %>% 
   mutate(analysis = str_remove(analysis, "_[0-9]{8}"),
@@ -221,14 +221,14 @@ make_map = function(DAT, VAR, COLOR_LEGEND){
 
 ## Soil: total C and N
 
-```{r}
+```{r tctn}
 tctn_data = 
   all_data_processed %>% 
   filter(analysis == "TCTN") %>% 
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 ```
 
-```{r, fig.width=8, fig.height=4}
+```{r tctn_jitter, fig.width=8, fig.height=4}
 tctn_data %>% 
   ggplot(aes(x = transect_location, y = tc_perc))+
   geom_jitter(width = 0.1)+
@@ -263,7 +263,7 @@ pH_data =
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 ```
 
-```{r pH_graphs, fig.width=8, fig.height=4}
+```{r pH_jitter, fig.width=8, fig.height=4}
 pH_data %>% 
   ggplot(aes(x = transect_location, y = ph))+
   geom_jitter(width = 0.1)+
@@ -289,14 +289,14 @@ make_map(DAT = pH_data %>% filter(transect_location == "upland") %>% dplyr::sele
 
 ## Soil: bulk density
 
-```{r}
+```{r bd}
 bd_data = 
   all_data_processed %>% 
   filter(analysis == "BulkDensity") %>% 
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 ```
 
-```{r, fig.width=8, fig.height=4}
+```{r bd_jitter, fig.width=8, fig.height=4}
 bd_data %>% 
   ggplot(aes(x = transect_location, y = bulk_density_g_cm3))+
   geom_jitter(width = 0.1)+
@@ -313,14 +313,14 @@ make_map(DAT = bd_data %>% filter(transect_location == "upland") %>% dplyr::sele
 
 ## Soil: gravimetric water content
 
-```{r}
+```{r gwc}
 gwc_data = 
   all_data_processed %>% 
   filter(analysis == "GWC") %>% 
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 ```
 
-```{r, fig.width=8, fig.height=4}
+```{r gwc_jitter, fig.width=8, fig.height=4}
 gwc_data %>% 
   ggplot(aes(x = transect_location, y = gwc_perc))+
   geom_jitter(width = 0.1)+
@@ -337,14 +337,14 @@ make_map(DAT = gwc_data %>% filter(transect_location == "upland") %>% dplyr::sel
 
 ## Soil: loss on ignition
 
-```{r}
+```{r loi}
 loi_data = 
   all_data_processed %>% 
   filter(analysis == "LOI") %>% 
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 ```
 
-```{r, fig.width=8, fig.height=4}
+```{r loi_jitter, fig.width=8, fig.height=4}
 loi_data %>% 
   ggplot(aes(x = transect_location, y = loi_perc))+
   geom_jitter(width = 0.1)+
@@ -365,37 +365,89 @@ make_map(DAT = loi_data %>% filter(transect_location == "upland") %>% dplyr::sel
 
 ## Water: Ions
 
-```{r}
+```{r ions}
 ions_data = 
   all_data_processed %>% 
   filter(analysis == "Ions") %>% 
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 
-ions_data_long = 
+ions_data_long_ppm = 
   ions_data %>% 
-  pivot_longer(ends_with("_ppm")) %>% 
-  filter(!is.na(value))
+  dplyr::select(-ends_with("_flag")) %>% 
+  pivot_longer(ends_with("_ppm"), names_to = "ion", values_to = "ppm") %>% 
+  mutate(ion = str_remove(ion, "_ppm")) %>% 
+  filter(!is.na(ppm))
+
+ions_data_long_flag = 
+  ions_data %>% 
+  dplyr::select(-ends_with("_ppm")) %>% 
+  pivot_longer(ends_with("_flag"), names_to = "ion", values_to = "flag") %>% 
+  mutate(ion = str_remove(ion, "_flag")) %>% 
+  filter(!is.na(flag))
+
+ions_data_long_with_flagged_points = 
+  ions_data_long_ppm %>% 
+  left_join(ions_data_long_flag)
+
+ions_data_long = 
+  ions_data_long_with_flagged_points %>% 
+  filter(is.na(flag))
+
+ions_data_long_including_below_detect = 
+  ions_data_long_with_flagged_points %>% 
+  filter(!flag %in% "above calibration") 
+
 ```
 
-```{r, fig.width=12, fig.height=8}
-ions_data_long %>% 
-  ggplot(aes(x = region, y = value))+
-  geom_jitter(width = 0.1, show.legend = F)+
-  facet_wrap(~name, scales = "free_y")
+```{r ions_jitter, fig.width=12, fig.height=8}
+ions_data_long_including_below_detect %>% 
+  filter(ion != "nitrite") %>% 
+  ggplot(aes(x = region, y = ppm))+
+  geom_jitter(width = 0.1, )+
+  facet_wrap(~ion, scales = "free_y")
+
 ```
 
-```{r}
-make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrate_ppm) %>% filter(nitrate_ppm <= 60), VAR = "nitrate_ppm", COLOR_LEGEND = "Nitrate, ppm") + ggtitle("Surface waters: nitrate")
-make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrite_ppm), VAR = "nitrite_ppm", COLOR_LEGEND = "Nitrite, ppm") + ggtitle("Surface waters: nitrite")
-make_map(DAT = ions_data %>% dplyr::select(kit_id, sulfate_ppm), VAR = "sulfate_ppm", COLOR_LEGEND = "Sulfate, ppm") + ggtitle("Surface waters: sulfate")
-make_map(DAT = ions_data %>% dplyr::select(kit_id, chloride_ppm), VAR = "chloride_ppm", COLOR_LEGEND = "Chloride, ppm") + ggtitle("Surface waters: chloride")
+```{r ions_maps}
+
+make_map(DAT = ions_data_long_including_below_detect %>% 
+           dplyr::select(kit_id, ion, ppm) %>% 
+           filter(ion == "nitrate") %>% filter(ppm <= 60), 
+          VAR = "ppm", 
+          COLOR_LEGEND = "Nitrate, ppm") + ggtitle("Surface waters: nitrate")
+
+make_map(DAT = ions_data_long_including_below_detect %>% filter(ion == "nitrate") %>% 
+           filter(ppm <= 60) %>% mutate(nitrate_n_ppm = ppm * 14/62), 
+          VAR = "nitrate_n_ppm", 
+          COLOR_LEGEND = "Nitrate-N, ppm") + ggtitle("Surface waters: nitrate-N")
+
+make_map(DAT = ions_data_long %>% filter(ion == "sulfate"), 
+          VAR = "ppm", 
+          COLOR_LEGEND = "Sulfate, ppm") + ggtitle("Surface waters: sulfate")
+
+```
+
+```{r maps_nitrite, eval=FALSE}
+
+make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrite_ppm), VAR = "nitrite_ppm", COLOR_LEGEND = "Nitrite,  ppm") + ggtitle("Surface waters: nitrite")
+ 
+make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrite_ppm) %>% 
+            mutate(nitrite_n_ppm = nitrite_ppm * 14/46), 
+          VAR = "nitrite_n_ppm", 
+          COLOR_LEGEND = "Nitrite-N, ppm") + ggtitle("Surface waters: nitrite")
+ 
+ 
+make_map(DAT = ions_data_long %>% filter(ion == "nitrite") %>% 
+            mutate(nitrite_n_ppm = ppm * 14/46), 
+          VAR = "nitrite_n_ppm", 
+          COLOR_LEGEND = "Nitrite-N, ppm") + ggtitle("Surface waters: nitrite")
 ```
 
 ---
 
 ## Water: CDOM Indices
 
-```{r}
+```{r cdom}
 cdom_data = 
   all_data_processed %>% 
   filter(grepl("CDOM", analysis)) %>% 
@@ -409,14 +461,14 @@ cdom_data_long =
   filter(!is.na(value))
 ```
 
-```{r, fig.width=9, fig.height=6}
+```{r cdom_jitter, fig.width=9, fig.height=6}
 cdom_data_long %>% 
   ggplot(aes(x = region, y = value))+
   geom_jitter(width = 0.1, show.legend = FALSE)+
   facet_wrap(~name, scales = "free_y")
 ```
 
-```{r}
+```{r cdom_maps}
 make_map(DAT = cdom_data %>% dplyr::select(kit_id, SUVA254), VAR = "SUVA254", COLOR_LEGEND = "SUVA254") + ggtitle("Surface waters: SUVA254")
 make_map(DAT = cdom_data %>% dplyr::select(kit_id, FI), VAR = "FI", COLOR_LEGEND = "FI") + ggtitle("Surface waters: fluorescence index")
 
@@ -431,14 +483,14 @@ make_map(DAT = cdom_data %>% dplyr::select(kit_id, FI), VAR = "FI", COLOR_LEGEND
 
 DOC measured as NPOC (non-purgeable organic carbon)
 
-```{r}
+```{r npoc}
 npoc_data = 
   all_data_processed %>% 
   filter(analysis == "NPOC_TDN") %>% 
   select_if(~!(all(is.na(.)) | all(. == ""))) 
 ```
 
-```{r, fig.width=6, fig.height=4}
+```{r npoc_tdn_jitter, fig.width=6, fig.height=4}
 npoc_data %>% 
   ggplot(aes(x = region, y = npoc_mgl))+
   geom_jitter(width = 0.1)+
@@ -569,7 +621,7 @@ base_plot +
     xmin = -78, xmax = -70, ymin = 41, ymax = 48.8) 
 ```
 
-```{r npoc_map}
+```{r npoc_tdn_map}
 make_map(DAT = npoc_data %>% dplyr::select(kit_id, npoc_mgl), VAR = "npoc_mgl", COLOR_LEGEND = "NPOC, mg/L") + ggtitle("Surface waters: NPOC")
 
 make_map(DAT = npoc_data %>% dplyr::select(kit_id, tdn_mgl), VAR = "tdn_mgl", COLOR_LEGEND = "TDN, mg/L") + ggtitle("Surface waters: total dissolved N")
@@ -580,14 +632,15 @@ make_map(DAT = npoc_data %>% dplyr::select(kit_id, tdn_mgl), VAR = "tdn_mgl", CO
 
 ## Water: Total suspended solids
 
-```{r}
+```{r tss}
 tss_data = 
   all_data_processed %>% 
   filter(analysis == "TSS") %>% 
-  select_if(~!(all(is.na(.)) | all(. == ""))) 
+  select_if(~!(all(is.na(.)) | all(. == ""))) %>% 
+  filter(is.na(tss_flag))
 ```
 
-```{r, fig.width=6, fig.height=4}
+```{r tss_jitter, fig.width=6, fig.height=4}
 tss_data %>% 
   ggplot(aes(x = region, y = tss_mg_perl))+
   geom_jitter(width = 0.1)+
@@ -609,23 +662,40 @@ make_map(DAT = tss_data %>% dplyr::select(kit_id, tss_mg_perl), VAR = "tss_mg_pe
 waterquality_data = 
   all_data_processed %>% 
   filter(analysis == "WaterQuality") %>% 
-  select_if(~!(all(is.na(.)) | all(. == ""))) 
+  select_if(~!(all(is.na(.)) | all(. == "")))
 
+
+waterquality_data_long_ppm = 
+  waterquality_data %>% 
+  dplyr::select(-ends_with("_flag")) %>% 
+  pivot_longer(cols = where(is.numeric), names_to = "analyte", values_to = "value") %>% 
+  filter(!is.na(value)) %>% 
+  mutate(analyte2 = analyte) %>% 
+  separate(analyte2, sep = "_", into = c("variable", "unit")) %>% 
+  dplyr::select(-unit)
+
+waterquality_data_long_flag = 
+  waterquality_data %>% 
+  dplyr::select(-where(is.numeric)) %>% 
+  pivot_longer(ends_with("_flag"), names_to = "analyte", values_to = "flag") %>% 
+  mutate(analyte = str_remove(analyte, "_flag")) %>% 
+  rename(variable = analyte) %>% 
+  filter(!is.na(flag))
 
 waterquality_data_long = 
-  waterquality_data %>% 
-  pivot_longer(cols = where(is.numeric)) %>% 
-  filter(!is.na(value))
+  waterquality_data_long_ppm %>% 
+  left_join(waterquality_data_long_flag) %>% 
+  filter(is.na(flag))
 ```
 
-```{r, fig.width=12, fig.height=4}
+```{r waterquality_jitter, fig.width=12, fig.height=4}
 waterquality_data_long %>% 
   ggplot(aes(x = region, y = value))+
   geom_jitter(width = 0.1)+
-  facet_wrap(~name, scales = "free_y", nrow = 1)
+  facet_wrap(~analyte, scales = "free_y", nrow = 1)
 ```
 
-```{r}
+```{r waterquality_map}
 make_map(DAT = waterquality_data %>% dplyr::select(kit_id, ph), VAR = "ph", COLOR_LEGEND = "pH") + ggtitle("Surface waters: pH")
 make_map(DAT = waterquality_data %>% dplyr::select(kit_id, sal_psu), VAR = "sal_psu", COLOR_LEGEND = "Salinity, PSU") + ggtitle("Surface waters: salinity")
 ```
