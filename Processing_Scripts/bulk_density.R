@@ -8,7 +8,8 @@
 # #############
 # #############
 
-## TO DO: not correct! Need to use dry weight obtained from GWC for correct BD!!!
+## KNOWN ISSUE: need to ID typos with K026 W and K046 UP - both have duplicates
+## but have different ring weights, so typo suspected
 
 # 1. Setup ---------------------------------------------------------------------
 
@@ -34,7 +35,8 @@ gwc_path <- list.files(path = "Data/Processed", pattern = "GWC")
 gwc <- read_csv(paste0("Data/Processed/", gwc_path))
 
 ## import bulk density data (non-hyprop)
-bulk_density_raw <- read_sheet(bd_path) 
+bulk_density_raw <- read_sheet(bd_path, col_types = c("TcdddcccddTlllcc")) %>% 
+  filter(run_for_hyprop == "FALSE")
 
 ## Calculate bulk density using GWC to calculate dry weight
 ## two 2.5" ring lids weigh 16.9g, with 5cm diameter and 5.1cm height. Thus, the 
@@ -68,8 +70,8 @@ bulk_density <- clean_data(bulk_density_processed) %>%
 
 
 # 4. Write out dataset ---------------------------------------------------------
-date_updated <- "20220602"
+date_updated <- "20220707"
 
 write_csv(bulk_density, paste0("Data/Processed/EC1_Soil_BulkDensity_L0B_", date_updated, ".csv"))
 
-
+bulk_density[duplicated(bulk_density %>% select(kit_id, transect_location)) == TRUE, ]
