@@ -76,7 +76,7 @@ loi <- clean_data(loi_processed)
 # 5. Write cleaned data to drive -----------------------------------------------
 date_updated <- "20220707"
 
-write_csv(loi, paste0("Data/Processed/EC1_LOI_L0B_", date_updated, ".csv"))
+write_csv(loi, paste0("Data/Processed/EC1_Soil_LOI_L0B_", date_updated, ".csv"))
 
 
 

@@ -77,7 +77,7 @@ gwc <- clean_data(gwc_processed) %>%
 
 date_updated <- "20220707"
 
-write_csv(gwc, paste0("Data/Processed/EC1_GWC_L0B_", date_updated, ".csv"))
+write_csv(gwc, paste0("Data/Processed/EC1_Soil_GWC_L0B_", date_updated, ".csv"))
 
 
 
