@@ -35,8 +35,9 @@ gwc_path <- list.files(path = "Data/Processed", pattern = "GWC")
 gwc <- read_csv(paste0("Data/Processed/", gwc_path))
 
 ## import bulk density data (non-hyprop)
-bulk_density_raw <- read_sheet(bd_path, col_types = c("TcdddcccddTlllcc")) %>% 
-  filter(run_for_hyprop == "FALSE")
+bulk_density_raw <- read_sheet(bd_path, col_types = c("TcdddccccddTlllcc")) %>% 
+  filter(run_for_hyprop == "FALSE") %>% 
+  filter(duplicate == "FALSE")
 
 ## Calculate bulk density using GWC to calculate dry weight
 ## two 2.5" ring lids weigh 16.9g, with 5cm diameter and 5.1cm height. Thus, the 
@@ -70,8 +71,16 @@ bulk_density <- clean_data(bulk_density_processed) %>%
 
 
 # 4. Write out dataset ---------------------------------------------------------
-date_updated <- "20220707"
+date_updated <- "20220714"
 
 write_csv(bulk_density, paste0("Data/Processed/EC1_Soil_BulkDensity_L0B_", date_updated, ".csv"))
 
-bulk_density[duplicated(bulk_density %>% select(kit_id, transect_location)) == TRUE, ]
+## Check for duplicates
+bulk_density %>% 
+  group_by(kit_id, transect_location) %>% 
+  #unique()
+  filter(n() > 1) 
+
+
+
+

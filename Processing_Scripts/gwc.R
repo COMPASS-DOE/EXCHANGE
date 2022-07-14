@@ -75,9 +75,11 @@ gwc <- clean_data(gwc_processed) %>%
 #
 # 5. Write cleaned data to drive -----------------------------------------------
 
-date_updated <- "20220707"
+date_updated <- "20220714"
 
 write_csv(gwc, paste0("Data/Processed/EC1_Soil_GWC_L0B_", date_updated, ".csv"))
 
-
-
+## Check for duplicates
+gwc %>% 
+  group_by(kit_id, transect_location) %>% 
+  filter(n() > 1) 
