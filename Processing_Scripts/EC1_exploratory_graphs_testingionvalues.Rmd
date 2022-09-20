@@ -88,7 +88,7 @@ blank_kit =
 ```{r load combined data}
 # import steph's combined spreadsheet for workshop
 
-combined_data = read_sheet("https://docs.google.com/spreadsheets/d/1f6nvuvWGHsmb-vOynBUkIgnwAAymbEiXmj92UNUOaFA/edit#gid=1145965819", sheet = 1)
+combined_data = googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1f6nvuvWGHsmb-vOynBUkIgnwAAymbEiXmj92UNUOaFA/edit#gid=1145965819", sheet = 1)
 
 ```
 
@@ -421,7 +421,7 @@ make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrate_n_ppm), VAR = "nitrat
 make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrite_n_ppm), VAR = "nitrite_n_ppm", COLOR_LEGEND = "Nitrite-N, ppm") + ggtitle("Surface waters: nitrite")
 #make_map(DAT = ions_data %>% dplyr::select(kit_id, nitrite_ppm), VAR = "nitrite_ppm", COLOR_LEGEND = "Nitrite, ppm") + ggtitle("Surface waters: nitrite")
 make_map(DAT = ions_data %>% dplyr::select(kit_id, sulfate_ppm), VAR = "sulfate_ppm", COLOR_LEGEND = "Sulfate, ppm") + ggtitle("Surface waters: sulfate")
-#make_map(DAT = ions_data %>% dplyr::select(kit_id, chloride_ppm), VAR = "chloride_ppm", COLOR_LEGEND = "Chloride, ppm") + ggtitle("Surface waters: chloride")
+make_map(DAT = ions_data %>% dplyr::select(kit_id, phosphate_ppm), VAR = "phosphate_ppm", COLOR_LEGEND = "Phosphate, ppm") + ggtitle("Surface waters: phosphate")
 ```
 
 ---
