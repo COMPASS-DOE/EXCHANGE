@@ -8,7 +8,8 @@
 # #############
 # #############
 
-## TO DO: not correct! Need to use dry weight obtained from GWC for correct BD!!!
+## KNOWN ISSUE: need to ID typos with K026 W and K046 UP - both have duplicates
+## but have different ring weights, so typo suspected
 
 # 1. Setup ---------------------------------------------------------------------
 
@@ -34,7 +35,9 @@ gwc_path <- list.files(path = "Data/Processed", pattern = "GWC")
 gwc <- read_csv(paste0("Data/Processed/", gwc_path))
 
 ## import bulk density data (non-hyprop)
-bulk_density_raw <- read_sheet(bd_path) 
+bulk_density_raw <- read_sheet(bd_path, col_types = c("TcdddccccddTlllcc")) %>% 
+  filter(run_for_hyprop == "FALSE") %>% 
+  filter(duplicate == "FALSE")
 
 ## Calculate bulk density using GWC to calculate dry weight
 ## two 2.5" ring lids weigh 16.9g, with 5cm diameter and 5.1cm height. Thus, the 
@@ -52,8 +55,7 @@ bulk_density_processed <- bulk_density_raw %>%
   left_join(gwc %>% select(-campaign), by = c("kit_id", "transect_location")) %>% 
   mutate(wt_soil_dry_g = wt_soil_fm_g / ((gwc_perc / 100) + 1),
          bulk_density_g_cm3 = wt_soil_dry_g / volume_soil_cm3) %>% 
-  dplyr::select(campaign, kit_id, transect_location, bulk_density_g_cm3) %>% 
-  mutate(bulk_density_g_cm3 = round(bulk_density_g_cm3, 2))
+  dplyr::select(campaign, kit_id, transect_location, bulk_density_g_cm3)
 
 
 # 3. QC data -------------------------------------------------------------------
@@ -64,12 +66,21 @@ clean_data <- function(data) {
 }
 
 bulk_density <- clean_data(bulk_density_processed) %>% 
-  filter(!is.na(bulk_density_g_cm3))
+  filter(!is.na(bulk_density_g_cm3)) %>% 
+  distinct()
 
 
 # 4. Write out dataset ---------------------------------------------------------
-date_updated <- "20220601"
+date_updated <- "20220714"
 
 write_csv(bulk_density, paste0("Data/Processed/EC1_Soil_BulkDensity_L0B_", date_updated, ".csv"))
+
+## Check for duplicates
+bulk_density %>% 
+  group_by(kit_id, transect_location) %>% 
+  #unique()
+  filter(n() > 1) 
+
+
 
 

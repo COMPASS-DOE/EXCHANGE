@@ -42,7 +42,7 @@ var <- "gwc"
 # 2. Import data ---------------------------------------------------------------
 cat("Importing", var, "data...")
 
-## read in raw data
+## read in raw data.
 gwc_raw <- read_sheet(gwc_path) %>% 
   filter(`duplicate to ignore` == FALSE)
 
@@ -75,11 +75,11 @@ gwc <- clean_data(gwc_processed) %>%
 #
 # 5. Write cleaned data to drive -----------------------------------------------
 
-date_updated <- "20220601"
+date_updated <- "20220714"
 
 write_csv(gwc, paste0("Data/Processed/EC1_Soil_GWC_L0B_", date_updated, ".csv"))
 
-
-
-
-
+## Check for duplicates
+gwc %>% 
+  group_by(kit_id, transect_location) %>% 
+  filter(n() > 1) 
