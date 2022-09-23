@@ -1,0 +1,137 @@
+campaign,kit_id,transect_location,acidification,tn_perc,tc_perc,visible_minerals,visible_iron_oxidation,visible_white_flakes,root_mass,tn_flag,tc_flag
+EC1,K042,Transition,FALSE,0.97,12.58,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K019,Transition,FALSE,0.06,1.72,None,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K050,Transition,FALSE,0.15,2.36,None,Yes,No,No roots present,rep outlier,rep outlier
+EC1,K046,Transition,FALSE,0.5,5.31,None,No,No,None,rep outlier,rep outlier
+EC1,K044,Transition,FALSE,1.16,14.85,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K029,Transition,FALSE,1.48,19.29,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K025,Transition,FALSE,0.62,7.71,None,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K041,Transition,FALSE,1.43,22.73,None,No,No,No roots,rep outlier,rep outlier
+EC1,K035,Transition,FALSE,0.93,9.18,None,No,No,Moderate roots,rep outlier,rep outlier
+EC1,K039,Transition,FALSE,2.38,24.61,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K004,Transition,FALSE,0.7,7.3,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K040,Transition,FALSE,1.15,21.48,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K013,Transition,FALSE,0.93,9.77,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K051,Transition,FALSE,1.39,21.17,None,No,NA,Moderate roots present,rep outlier,rep outlier
+EC1,K024,Transition,FALSE,0.77,9.38,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K017,Transition,FALSE,0.33,3.98,Quartz,No,No,Few roots present,rep outlier,rep outlier
+EC1,K056,Transition,FALSE,0.34,3.53,Quartz,No,No,Few roots present,rep outlier,rep outlier
+EC1,K053,Transition,FALSE,0.36,4.16,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K026,Transition,FALSE,1.08,11.47,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K016,Transition,FALSE,0.14,2.15,None,Yes,No,No roots,rep outlier,rep outlier
+EC1,K007,Transition,FALSE,0.55,5.5,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K008,Transition,FALSE,1.45,18.68,None,No,NA,Few roots present,rep outlier,rep outlier
+EC1,K010,Transition,FALSE,0.29,3.31,None,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K009,Transition,FALSE,0.36,4.74,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K015,Transition,FALSE,0.17,2.48,None,Yes,No,No roots,rep outlier,rep outlier
+EC1,K011,Transition,FALSE,0.21,2.42,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K049,Transition,FALSE,0.09,0.91,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K045,Transition,FALSE,1.1,15.83,None,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K021,Transition,FALSE,1.05,11.58,None,No,NA,Few roots present,rep outlier,rep outlier
+EC1,K036,Transition,FALSE,1.35,14.63,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K062,Transition,FALSE,0.43,6.84,None,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K034,Transition,FALSE,0.88,9.45,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K048,Transition,FALSE,0.65,7.61,Mica,No,No,Few roots present,rep outlier,rep outlier
+EC1,K054,Transition,FALSE,1.2,24.58,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K022,Transition,FALSE,2,NA,None,No,No,Moderate roots present,NA,NA
+EC1,K018,Transition,FALSE,0.23,3.19,Mica,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K047,Transition,FALSE,0.49,7.25,Quartz,Yes,No,Moderate roots present,rep outlier,rep outlier
+EC1,K059,Transition,FALSE,0.94,14.07,None,No,No,No roots present,rep outlier,rep outlier
+EC1,K052,Transition,FALSE,0.24,3.06,None,No,No,None,rep outlier,rep outlier
+EC1,K001,Transition,FALSE,0.68,9.09,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K058,Transition,FALSE,0.8,9.67,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K061,Transition,FALSE,1.04,7.38,Quartz,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K039,Upland,FALSE,0.2,3.62,Quartz,No,No,Few roots present,rep outlier,rep outlier
+EC1,K008,Upland,FALSE,0.28,3.22,None,No,NA,Few roots,rep outlier,rep outlier
+EC1,K020,Upland,FALSE,0.56,7.44,None,No,No,Moderate roots,rep outlier,rep outlier
+EC1,K059,Upland,FALSE,1.07,31.36,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K004,Upland,FALSE,0.4,4.28,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K036,Upland,FALSE,1.53,18.27,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K055,Upland,FALSE,0.39,4.84,Quartz,No,No,Few roots present,rep outlier,rep outlier
+EC1,K056,Upland,FALSE,0.7,15.22,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K030,Upland,FALSE,1.56,27.84,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K009,Upland,FALSE,0.39,4.31,NA,NA,NA,NA,rep outlier,rep outlier
+EC1,K053,Upland,FALSE,0.5,5.46,Quartz,No,No,Moderate roots,rep outlier,rep outlier
+EC1,K016,Upland,FALSE,1.41,30.14,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K021,Upland,FALSE,0.56,7.43,None,No,NA,Few roots present,rep outlier,rep outlier
+EC1,K047,Upland,FALSE,1.16,17.35,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K061,Upland,FALSE,0.2,2.49,Quartz,No,No,Few roots present,rep outlier,rep outlier
+EC1,K025,Upland,FALSE,0.42,6.27,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K046,Upland,FALSE,0.98,11.07,Nonoe,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K010,Upland,FALSE,0.38,4.35,None,No,NA,None,rep outlier,rep outlier
+EC1,K029,Upland,FALSE,1.03,18.96,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K048,Upland,FALSE,0.37,4.22,Quartz,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K023,Upland,FALSE,1.01,19.54,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K058,Upland,FALSE,1.66,32.47,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K018,Upland,FALSE,1.47,10.82,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K011,Upland,FALSE,0.26,3.32,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K019,Upland,FALSE,0.64,7.63,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K044,Upland,FALSE,1.19,23.73,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K054,Upland,FALSE,0.57,10.24,Quartz,No,No,Few roots present,rep outlier,rep outlier
+EC1,K062,Upland,FALSE,0.5,10.06,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K052,Upland,FALSE,0.22,3.87,None,No,NA,Few roots present,rep outlier,rep outlier
+EC1,K040,Upland,FALSE,0.92,46.58,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K024,Upland,FALSE,1.36,33.46,Quartz,No,No,Few roots present,rep outlier,rep outlier
+EC1,K033,Upland,FALSE,1,23.75,Quartz,No,No,Few roots present,rep outlier,rep outlier
+EC1,K034,Upland,FALSE,0.66,9.8,Quartz,No,No,Few roots present,rep outlier,rep outlier
+EC1,K017,Upland,FALSE,0.34,5.85,Quartz,No,No,Few roots present,rep outlier,rep outlier
+EC1,K026,Upland,FALSE,0.17,2.23,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K045,Upland,FALSE,1.8,40.48,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K050,Upland,FALSE,1.38,35.14,None,Yes,No,Moderate roots present,rep outlier,rep outlier
+EC1,K013,Upland,FALSE,1.12,15.05,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K001,Upland,FALSE,0.18,4.25,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K007,Upland,FALSE,0.55,9.69,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K051,Upland,FALSE,0.09,2.31,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K042,Upland,FALSE,0.54,10.04,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K022,Upland,FALSE,0.72,10.67,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K041,Upland,FALSE,1.12,45.27,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K038,Upland,FALSE,0.67,9.7,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K035,Upland,FALSE,0.51,7.39,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K015,Upland,FALSE,0.38,6.53,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K054,Wetland,FALSE,0.92,12.76,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K041,Wetland,FALSE,0.11,1.58,None,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K007,Wetland,FALSE,0.73,6.04,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K048,Wetland,FALSE,0.52,5.89,Mica,No,No,Few roots present,rep outlier,rep outlier
+EC1,K021,Wetland,FALSE,0.81,7.45,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K053,Wetland,FALSE,0.94,7.88,None,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K059,Wetland,FALSE,1.53,16.43,None,No,Yes,Root dominated,rep outlier,rep outlier
+EC1,K050,Wetland,FALSE,0.65,6.82,None,Yes,No,Root dominated,rep outlier,rep outlier
+EC1,K047,Wetland,FALSE,1.95,24.76,Quarts,Yes,No,Moderate roots present,rep outlier,rep outlier
+EC1,K019,Wetland,FALSE,NA,0.63,Quartz,No,No,None,NA,rep outlier
+EC1,K062,Wetland,FALSE,0.76,6.83,None,Yes,No,Few roots,rep outlier,rep outlier
+EC1,K010,Wetland,FALSE,0.45,5.06,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K015,Wetland,FALSE,0.53,6.37,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K029,Wetland,FALSE,0.54,4.93,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K045,Wetland,FALSE,0.83,8.43,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K049,Wetland,FALSE,0.12,1.27,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K017,Wetland,FALSE,0.64,6.67,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K056,Wetland,FALSE,0.7,7.53,None,No,Yes,Moderate roots present,rep outlier,rep outlier
+EC1,K022,Wetland,FALSE,1.27,10.39,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K051,Wetland,FALSE,0.2,1.97,Quartz,Yes,No,None,rep outlier,rep outlier
+EC1,K042,Wetland,FALSE,0.67,7.02,Mica,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K024,Wetland,FALSE,1.3,18.03,None,No,No,Root dominated,rep outlier,rep outlier
+EC1,K018,Wetland,FALSE,0.09,1.04,Quartz,No,Yes,None,rep outlier,rep outlier
+EC1,K009,Wetland,FALSE,0.75,8.84,None,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K044,Wetland,FALSE,0.5,4.77,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K001,Wetland,FALSE,0.65,6.58,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K035,Wetland,FALSE,1.25,11.03,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K025,Wetland,FALSE,0.32,3.59,None,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K037,Wetland,FALSE,0.55,5.32,None,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K016,Wetland,FALSE,0.51,5.33,None,No,Yes,No roots,rep outlier,rep outlier
+EC1,K013,Wetland,FALSE,1.88,17.78,None,No,No,Root dominated,rep outlier,rep outlier
+EC1,K014,Wetland,FALSE,0.24,2.52,Quartz,No,No,Few roots present,rep outlier,rep outlier
+EC1,K058,Wetland,FALSE,0.57,5.36,None,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K040,Wetland,FALSE,0.18,2.65,None,Yes,No,Moderate roots present,rep outlier,rep outlier
+EC1,K026,Wetland,FALSE,0.36,4.19,None,Yes,No,Moderate roots present,rep outlier,rep outlier
+EC1,K012,Wetland,FALSE,0.51,4.58,Quartz,No,No,Moderate roots present,rep outlier,rep outlier
+EC1,K011,Wetland,FALSE,0.56,5.82,None,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K061,Wetland,FALSE,0.49,4.55,Quartz,Yes,No,Moderate,rep outlier,rep outlier
+EC1,K023,Wetland,FALSE,1.47,15.22,None,Yes,No,Moderate roots,rep outlier,rep outlier
+EC1,K004,Wetland,FALSE,0.72,7.21,None,Yes,No,Moderate roots present,rep outlier,rep outlier
+EC1,K008,Wetland,FALSE,0.54,7,None,No,No,Few roots present,rep outlier,rep outlier
+EC1,K039,Wetland,FALSE,2.62,34.52,None,No,No,Root dominated,rep outlier,rep outlier
+EC1,K030,Wetland,FALSE,0.54,5.49,None,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K036,Wetland,FALSE,1.57,14.71,None,Yes,No,Moderate roots present,rep outlier,rep outlier
+EC1,K034,Wetland,FALSE,0.73,6.93,None,Yes,No,Few roots present,rep outlier,rep outlier
+EC1,K033,Wetland,FALSE,0.37,5.17,None,No,No,Root dominated,rep outlier,rep outlier
+EC1,K038,Wetland,FALSE,1.06,10.54,Mica,Yes,No,Moderate roots present,rep outlier,rep outlier
