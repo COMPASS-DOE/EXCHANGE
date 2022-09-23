@@ -73,7 +73,7 @@ bulk_density <- clean_data(bulk_density_processed) %>%
 # 4. Write out dataset ---------------------------------------------------------
 date_updated <- "20220714"
 
-write_csv(bulk_density, paste0("Data/Processed/EC1_Soil_BulkDensity_L0B_", date_updated, ".csv"))
+write_csv(bulk_density, paste0("Data/Processed/L0B/EC1_Soil_BulkDensity_L0B_", date_updated, ".csv"))
 
 ## Check for duplicates
 bulk_density %>% 

@@ -62,14 +62,15 @@ write_csv(gwc_l2_soil, "Data/Processed/L2/EC1_Soil_GWC_L2_20220923.csv")
 
 ## Remove flagged values then remove flag column
 loi_l2 <- loi_l0 %>% 
-  filter(is.na(gwc_flag)) %>% 
-  select(-gwc_flag)
+  filter(!is.na(loi_perc)) %>% 
+  filter(is.na(loi_flag)) %>% 
+  select(-loi_flag) 
 
 ## Split into soil and sediment
-gwc_l2_sed <- gwc_l2 %>% filter(transect_location == "Sediment")
-gwc_l2_soil <- gwc_l2 %>% filter(transect_location != "Sediment")
+loi_l2_sed <- loi_l2 %>% filter(transect_location == "Sediment")
+loi_l2_soil <- loi_l2 %>% filter(transect_location != "Sediment")
 
 ## Write out
-write_csv(gwc_l2_sed, "Data/Processed/L2/EC1_Sediment_GWC_L2_20220923.csv")
-write_csv(gwc_l2_soil, "Data/Processed/L2/EC1_Soil_GWC_L2_20220923.csv")
+write_csv(loi_l2_sed, "Data/Processed/L2/EC1_Sediment_LOI_L2_20220923.csv")
+write_csv(loi_l2_soil, "Data/Processed/L2/EC1_Soil_LOI_L2_20220923.csv")
 
