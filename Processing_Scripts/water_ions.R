@@ -115,7 +115,26 @@ import_data = function(directory){
 raw_data = import_data(directory)
 
 
+
+## import the dilutions key
+## ADD CODE HERE
+
+
 # 3. Process data ---------------------------------------------------------
+
+process_dilutions_data = function(){
+  dat %>% 
+    pivot_longer(names_to = "Ion",
+                 values_to = "Dilution") %>% 
+    mutate(Ion = str_remove(Ion, "_dilution"))
+  
+  
+}
+
+dilutions_key = process_dilutions_data()
+
+
+
 
 # `process_data`: this function will assign ions and tidy the dataframe
 # input parameters are (a) the dataframe being cleaned and (b) the ions in question.
@@ -180,7 +199,9 @@ process_data = function(raw_data, IONS){
     mutate(Ion = str_remove_all(Ion, "_UV")) %>% 
     force()
   
-  data_new_processed
+  data_new_processed_with_dilutions = 
+    data_new_processed %>% 
+    left_join(dilutions_key)
   
 }
 
