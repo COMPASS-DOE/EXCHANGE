@@ -19,7 +19,7 @@ p_load(tidyverse)
 theme_set(theme_bw())
 
 
-# 2. Import physicochemical datasets -------------------------------------------
+# 2. Import datasets -----------------------------------------------------------
 
 ## Read in L0B bulk density (BD)
 bd_l0 <- read_csv("Data/Processed/L0B/EC1_Soil_BulkDensity_L0B_20220714.csv")
@@ -29,6 +29,9 @@ gwc_l0 <- read_csv("Data/Processed/L0B/EC1_Soil_GWC_L0B_20220714.csv")
 
 ## Read in L0B loss on ignition (LOI)
 loi_l0 <- read_csv("Data/Processed/L0B/EC1_Soil_LOI_L0B_20220714.csv")
+
+## Read in L0B water quality
+wq_l0 <- read_csv("Data/Processed/L0B")
 
 
 # 3. Clean up and export L2 Bulk Density ---------------------------------------
@@ -58,7 +61,7 @@ write_csv(gwc_l2_sed, "Data/Processed/L2/EC1_Sediment_GWC_L2_20220923.csv")
 write_csv(gwc_l2_soil, "Data/Processed/L2/EC1_Soil_GWC_L2_20220923.csv")
 
 
-# 4. Clean up and export L2 GWC ------------------------------------------------
+# 4. Clean up and export L2 LOI ------------------------------------------------
 
 ## Remove flagged values then remove flag column
 loi_l2 <- loi_l0 %>% 
@@ -74,3 +77,19 @@ loi_l2_soil <- loi_l2 %>% filter(transect_location != "Sediment")
 write_csv(loi_l2_sed, "Data/Processed/L2/EC1_Sediment_LOI_L2_20220923.csv")
 write_csv(loi_l2_soil, "Data/Processed/L2/EC1_Soil_LOI_L2_20220923.csv")
 
+
+# 4. Clean up and export L2 water quality --------------------------------------
+
+## Remove flagged values then remove flag column
+wa_l2 <- wq_l0 %>% 
+  filter(!is.na(loi_perc)) %>% 
+  filter(is.na(loi_flag)) %>% 
+  select(-loi_flag) 
+
+## Split into soil and sediment
+loi_l2_sed <- loi_l2 %>% filter(transect_location == "Sediment")
+loi_l2_soil <- loi_l2 %>% filter(transect_location != "Sediment")
+
+## Write out
+write_csv(loi_l2_sed, "Data/Processed/L2/EC1_Sediment_LOI_L2_20220923.csv")
+write_csv(loi_l2_soil, "Data/Processed/L2/EC1_Soil_LOI_L2_20220923.csv")
