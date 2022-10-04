@@ -31,16 +31,16 @@ cat("Setup")
 # load packages
 require(pacman)
 pacman::p_load(cowsay,
-               tidyverse
-               #googlesheets4, # read_sheet 
-               #googledrive # drive_upload
+               tidyverse,
+               googlesheets4, # read_sheet 
+               googledrive # drive_upload
 )
 
 ## Welcome
 say("Welcome to EXCHANGE!", by = "random")
 
-## URL for data
-# data_path = "xxxx" 
+## URL for data (Google)
+directory = "https://drive.google.com/drive/u/1/folders/1tp6X9bJYFjsc9fda5R8aGBhiNMUfpJsN"
 
 ## Define analyte
 var <- "ions"
@@ -53,7 +53,11 @@ cat("Importing", var, "data...")
 # `import_data`: this function will import all xls files in the target directpry and combine them
 # input parameters are (a) FILEPATH, the target directory with the raw data files
 
-import_data = function(FILEPATH){
+import_data_OLD = function(FILEPATH){
+  ## THIS WAS THE OLD FUNCTION,
+  ## pulling files stored locally
+  ## Replaced by the function below
+  ## KFP 2022-10-04
   
   # pull a list of file names in the target folder with the target pattern
   # then read all files and combine
@@ -71,12 +75,46 @@ import_data = function(FILEPATH){
 }
 
 # Now, run this function
-raw_data <- import_data(FILEPATH = "data/ions/ions_data_without_dilution_correction")
+# raw_data <- import_data(FILEPATH = "data/ions/ions_data_without_dilution_correction")
 
 # Import the Limits of Detection (LOD)
 ions_lods = read.csv("data/LODs/ions_LODs_2020_Oct_2022_April_COMPASS_Only.csv")
 
-#
+# Import files from Google Drive
+
+## import the raw data files
+import_data = function(directory){
+  
+  ## a. Create a list of files to download
+  files <- 
+    drive_ls(directory) %>% 
+    filter(grepl("_Data_Raw_", name))
+  
+  ## b. Download files to local (don't worry, we'll delete em in a sec)
+  lapply(files$id, drive_download, overwrite = TRUE)
+  
+  
+  ## c. pull a list of file names
+  ## then read all files and combine
+  
+  filePaths <- files$name
+  dat <- 
+    do.call(rbind, lapply(filePaths, function(path){
+      # then add a new column `source` to denote the file name
+      df <- readxl::read_excel(path, skip = 2)
+      #  df <- read.delim(path, skip = 2)
+      df[["source"]] <- rep(path, nrow(df))
+      df}))
+
+  ## d. delete the temporary files
+  file.remove(c(files$name))  
+  
+  ## e. output
+  dat
+}
+raw_data = import_data(directory)
+
+
 # 3. Process data ---------------------------------------------------------
 
 # `process_data`: this function will assign ions and tidy the dataframe
