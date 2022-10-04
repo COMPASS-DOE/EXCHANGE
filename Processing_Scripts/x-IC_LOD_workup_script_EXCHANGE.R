@@ -1,36 +1,54 @@
 ################# IC LOD Workup Script ##################
 ### By Opal & Allison 
-## Last Updated: May 2022
+## Last Updated: Oct 2022
 
 #Steps: 
-# 1.	Develop a script to calculate the slope of the standard curve for each ion – slope is the signal response 
-# 2.	Need to collate each blank run – need the signal response for each ion
-# 3.	Need to average blank concentrations and SDs of blank concentrations 
-# 4.	Need to calculate average slope of each ion 
-# 5.	Calculate LOD and LOQ
+#This will calculate run specific LODs:
+# 1.	Establish Constants & Load Packages 
+# 2.  Import blank concentrations
+# 3.  Calculate averages and SDs of blank concentrations per run 
+# 4.	Import slope of the standard curve for each ion – slope is the signal response  
+# 5.	Calculate LOD and LOQ per run 
 
-# LOD = limit of detection calculated from Harris et al & Harvey et al # Need to link DOIs still #
+# Definitions & Calculations:
+
+# 1. LOD = limit of detection calculated from Harris et al & Harvey et al # Need to link DOIs still #
+# 2. (SA)DL= detection limit of analyte (signal)
+# 3. Sreag = average blank signal
+# 4. z = confidence interval (3 = 99%)
+# 5. σreag = standard deviation of blank signals
 
 # (SA)DL = Sreag + zσreag
-#[LOD] = (SA)DL / m 
-#(SA)DL= detection limit of analyte (signal)
-# Sreag = average blank signal
-# z = confidence interval (3 = 99%)
-z <- 3
-#σreag = standard deviation of blank signals
+# [LOD] = (SA)DL / m 
 
-#### Set Maintenance Period ####
+#1. Establish Constants & Load Packages :
+z <- 3 # z = confidence interval (3 = 99%)
 
-#Opal to make spreadsheet of maintenance periods 
-#Allison to write this part of the code 
-
-#### Calculate Blank Signal Average & Standard Deviation ####
 library(tidyverse)
-setuser <- "/Users/myer056/OneDrive - PNNL/"
-setwd(paste0(setuser,"/Documents/GitHub/EXCHANGE/Data/LODs/"))
 
-Blankfile <- read.csv(paste0(setuser,"/Data Generation and Files/Raw_Instrument_Data/IC-6000 MCRL/Data for LOD calculations/Blank_Output_complete_2022-05-04.csv"))
-Blankfile <- Blankfile %>% mutate(Date_Run.1 = as.character(Date_Run), Date_Run = lubridate::as_date(Date_Run.1, format = "%Y%m%d")) %>% select(-Date_Run.1)
+#### 2.  Import blank concentrations ####
+
+#2a. confirm working directory is ../GitHub/EXCHANGE#
+getwd()
+
+#2b. Create Function to read in blanks 
+read_blanks <- function(data){
+  # First, scrape date from filename
+  date <- str_extract(data, "[0-9]{8}")
+  # Second, read in data
+  read_delim(file = data, skip = 10, delim = "\t") %>% 
+    rename(sample_name = `Sample Name`, 
+           npoc_raw = `Result(NPOC)`, 
+           tdn_raw = `Result(TN)`,
+           run_datetime = `Date / Time`) %>% 
+    select(sample_name, npoc_raw, tdn_raw,run_datetime) %>% 
+    mutate(date = date)
+}
+blanks_raw <- files %>% 
+  map_df(read_data) %>% 
+  filter(grepl("^Blank", sample_name)) %>% # filter to TMP samples only
+  bind_rows() 
+
 
 Sreag.avg <- aggregate(Area ~ Analyte + Date_Run, data = Blankfile, mean)
 σreag.sd <- aggregate(Area ~ Analyte + Date_Run, data = Blankfile, sd)
