@@ -33,6 +33,9 @@ loi_l0 <- read_csv("Data/Processed/L0B/EC1_Soil_LOI_L0B_20220714.csv")
 ## Read in L0B water quality
 wq_l0 <- read_csv("Data/Processed/L0B/EC1_Water_WaterQuality_L0B_20220509.csv")
 
+## Read in L0B oxygen drawdown
+o2_l0 <- read_csv("Data/Processed/L0B/EC1_SoilSedimentOxygenDrawdown_L0B_20220517.csv")
+
 
 # 3. Clean up and export L2 Bulk Density ---------------------------------------
 
@@ -94,3 +97,20 @@ wq_l2 <- wq_l0 %>%
 
 ## Write out
 write_csv(wq_l2, "Data/Processed/L2/EC1_Water_WaterQuality_L2_20221004.csv")
+
+
+# 4. Clean up and export L2 water quality --------------------------------------
+
+## Remove flagged values then remove flag column
+o2_l2 <- o2_l0 %>% 
+  filter(!is.na(delta_do_hr)) %>% 
+  filter(is.na(delta_do_flag)) %>% 
+  select(-delta_do_flag)
+
+## Split into soil and sediment
+o2_l2_sed <- o2_l2 %>% filter(transect_location == "Sediment")
+o2_l2_soil <- o2_l2 %>% filter(transect_location != "Sediment")
+
+## Write out
+write_csv(o2_l2_sed, "Data/Processed/L2/EC1_Sediment_OxygenDrawdown_L2_20221004.csv")
+write_csv(o2_l2_soil, "Data/Processed/L2/EC1_Soil_OxygenDrawdown_L2_20221004.csv")
