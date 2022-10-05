@@ -63,7 +63,7 @@ import_data = function(directory){
   ## c. pull a list of file names
   ## then read all files and combine
   
-  filePaths <- files$id
+  filePaths <- files$name
   dat <- 
     do.call(rbind, lapply(filePaths, function(path){
       # then add a new column `source` to denote the file name
@@ -73,7 +73,7 @@ import_data = function(directory){
       df}))
   
   ## d. delete the temporary files
-  file.remove(c(files$id))  
+  file.remove(c(files$name))  
   
   ## e. output
   dat
