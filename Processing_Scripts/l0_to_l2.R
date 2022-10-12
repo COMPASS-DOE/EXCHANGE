@@ -36,7 +36,11 @@ wq_l0 <- read_csv("Data/Processed/L0B/EC1_Water_WaterQuality_L0B_20220509.csv")
 ## Read in L0B oxygen drawdown
 o2_l0 <- read_csv("Data/Processed/L0B/EC1_SoilSedimentOxygenDrawdown_L0B_20220517.csv")
 
+## Read in L0B soil pH/conductivity
+pH_l0 <- read_csv("Data/Processed/L0B/EC1_Soil_pH_L0B_20220531.csv")
 
+
+# 
 # 3. Clean up and export L2 Bulk Density ---------------------------------------
 
 ## Remove flagged values then remove flag column
@@ -114,3 +118,16 @@ o2_l2_soil <- o2_l2 %>% filter(transect_location != "Sediment")
 ## Write out
 write_csv(o2_l2_sed, "Data/Processed/L2/EC1_Sediment_OxygenDrawdown_L2_20221004.csv")
 write_csv(o2_l2_soil, "Data/Processed/L2/EC1_Soil_OxygenDrawdown_L2_20221004.csv")
+
+
+
+# 5. Clean up and export L2 soil pH/conductivity --------------------------
+
+## Remove flagged values then remove flag column
+pH_l2 <- 
+  pH_l0 %>% 
+  filter(is.na(ph_flag) & is.na(specific_conductance_flag)) %>% 
+  select(-ph_flag, -specific_conductance_flag)
+
+## Write out
+write_csv(pH_l2, "Data/Processed/L2/EC1_Soil_pH_L2_20221012.csv")
