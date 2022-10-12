@@ -114,26 +114,57 @@ import_data = function(directory){
 }
 raw_data = import_data(directory)
 
-
-
 ## import the dilutions key
-## ADD CODE HERE
+dilutions_key_wide = read_sheet("1ekMFJrzE_1dAzfFuLrDfrRUzp2b66WAgE4LRNZEYGy0")
 
-
-# 3. Process data ---------------------------------------------------------
-
-process_dilutions_data = function(){
-  dat %>% 
-    pivot_longer(names_to = "Ion",
-                 values_to = "Dilution") %>% 
-    mutate(Ion = str_remove(Ion, "_dilution"))
+## import the readme files
+directory_readme = "https://drive.google.com/drive/u/1/folders/1PAa6Gtnthn9gUw5QhiyLOSLsBN1j7fpc"
+import_readme = function(directory_readme){
+  
+  ## a. Create a list of files to download
+  files <- 
+    drive_ls(directory_readme) %>% 
+    filter(grepl("_Readme_", name))
+  
+  ## b. Download files to local (don't worry, we'll delete em in a sec)
+  lapply(files$id, drive_download, overwrite = TRUE)
   
   
+  ## c. pull a list of file names
+  ## then read all files and combine
+  
+  filePaths <- files$name
+  dat <- 
+    do.call(dplyr::bind_rows, lapply(filePaths, function(path){
+      # then add a new column `source` to denote the file name
+      df <- readxl::read_excel(path)
+      #  df <- read.delim(path, skip = 2)
+      df[["source"]] <- rep(path, nrow(df))
+      df}))
+  
+  ## d. delete the temporary files
+  file.remove(c(files$name))  
+  
+  ## e. output
+  dat
 }
 
-dilutions_key = process_dilutions_data()
+readme_data = import_readme(directory_readme)
 
 
+#
+# 3. Process data ---------------------------------------------------------
+
+# `process_dilutions_data`: this function will make longform and clean the dilutions map/key
+# input parameters are (a) the dilutions key (wideform)
+process_dilutions_data = function(dilutions_key_wide){
+  dilutions_key_wide %>% 
+    pivot_longer(cols = ends_with("_dilution"),
+                 names_to = "Ion",
+                 values_to = "Dilution") %>% 
+    mutate(Ion = str_remove(Ion, "_dilution"))
+}
+dilutions_key = process_dilutions_data(dilutions_key_wide)
 
 
 # `process_data`: this function will assign ions and tidy the dataframe
@@ -196,12 +227,16 @@ process_data = function(raw_data, IONS){
     mutate(date_run = str_extract(source, "[0-9]{8}"),
            date_run = lubridate::as_date(date_run)) %>% 
     dplyr::select(Name, Amount, Ion, date_run) %>% 
-    mutate(Ion = str_remove_all(Ion, "_UV")) %>% 
+    mutate(Ion = str_remove_all(Ion, "_UV"),
+           Ion = tolower(Ion)) %>% 
     force()
   
-  data_new_processed_with_dilutions = 
-    data_new_processed %>% 
-    left_join(dilutions_key)
+  data_new_processed
+  # This file has all the processed data for all the samples/standards/blanks run on the machine.
+  # Some samples were run multiple times, at varying dilutions
+  # We will use the Readme file to map these dilutions later, 
+  # and then pick only the dilutions we want.
+  # --> see the `do_corrections()` function
   
 }
 
@@ -250,9 +285,12 @@ data_ions_qc = apply_qc_flags(data_ions_processed, QC_DATA = ions_lods)
 # 5. Do dilution/blank corrections ----------------------------------------
 
 # `do_corrections`: this function will apply blank and dilution corrections
-# input parameters are (a) the processed_data df and the path for readme files, which contain data for dilutions, etc.
+# input parameters are:
+#  (a) the processed_data dataframe with qc flags, 
+#  (b) compiled readme file, which contains data for dilutions, etc.,
+#  (c) and the dilutions key, which tells us which dilutions we want to keep for each sample/ion
 
-do_corrections = function(data_ions_qc, README_PATH){
+do_corrections = function(data_ions_qc, readme_data, dilutions_key){
   
   # 1. blank corrections ----
   samples_and_blanks = 
@@ -283,41 +321,35 @@ do_corrections = function(data_ions_qc, README_PATH){
   # 2. dilution correction ----
   options(scipen = 50)
   
-  # read and combine README files
-  
-  # pull a list of file names in the target folder with the target pattern
-  # then read all files and combine
-  filePaths <- list.files(path = README_PATH, pattern = ".xlsx", full.names = TRUE)
-  
-  dat <- do.call(rbind, lapply(filePaths, function(path) {
-    # then add a new column `source` to denote the file name
-    df <- readxl::read_xlsx(path)
-    df[["source"]] <- rep(path, nrow(df))
-    df}))
-  
-  dilutions = 
-    dat %>% 
+  readme_data2 = 
+    readme_data %>% 
     rename(Name = `Sample Name`) %>% 
     mutate(date_run = str_extract(source, "[0-9]{8}"),
            date_run = lubridate::as_date(date_run)) %>% 
     dplyr::select(date_run, Name, Action, Dilution) %>% 
     force()
   
-  
   samples_dilution_corrected = 
     samples_blank_corrected %>% 
-    left_join(dilutions, by = c("Name", "date_run")) %>% 
-    filter(!Action %in% "Omit") %>% 
+    # bring in the readme file to assign diliutions to each sample
+    left_join(readme_data2, by = c("Name", "date_run")) %>% 
+    filter(!Action %in% "Omit") %>%
+    # bring in the dilutions key to determine which dilutions to keep
+    left_join(dilutions_key %>% mutate(keep = TRUE), 
+              by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution")) %>% 
+    filter(keep) %>% 
+    dplyr::select(-keep) %>% 
+    # do the dilution correction
     mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
     mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
            Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
-    dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag) %>% 
+    dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Dilution) %>% 
     filter(Amount_bl_dil_corrected > 0)
   
   samples_dilution_corrected
   
 }
-data_ions_corrected = do_corrections(data_ions_qc, README_PATH = "data/ions/ions_readme")
+data_ions_corrected = do_corrections(data_ions_qc, readme_data, dilutions_key)
 
 
 #
@@ -355,7 +387,8 @@ format_df = function(data_ions_corrected){
   
   data_ions_corrected %>% 
     rename(ppm = Amount_bl_dil_corrected) %>% 
-    mutate(ppm = as.character(ppm)) %>% 
+    mutate(ppm = as.character(ppm),
+           Dilution = as.character(Dilution)) %>% 
     pivot_longer(-c(Name, date_run, Ion)) %>% 
     mutate(name2 = paste0(Ion, "_", name)) %>% 
     dplyr::select(-Ion, -name) %>% 
@@ -364,7 +397,8 @@ format_df = function(data_ions_corrected){
     mutate(transect_location = "Water") %>% 
     dplyr::select(campaign, kit_id, transect_location, everything()) %>% 
     mutate(across(ends_with("_ppm"), as.numeric)) %>% 
-    janitor::clean_names()
+    janitor::clean_names() %>% 
+    arrange(kit_id)
   
   
 }
@@ -374,5 +408,5 @@ data_ions_final = format_df(data_ions_corrected)
 #
 # 5. Export cleaned data --------------------------------------------------
 
-data_ions_final %>% write.csv("Data/Processed/EC1_Water_Ions_L0B_20220609.csv", row.names = FALSE)
+data_ions_final %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221012_WITH_dilutions.csv", row.names = FALSE)
 
