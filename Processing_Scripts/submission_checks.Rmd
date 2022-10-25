@@ -1,0 +1,72 @@
+---
+title: "submission checks"
+output: html_document
+date: "2022-10-21"
+---
+
+#### Checks on Level 2 data before marking as "ready for submission" to ESS-DIVE
+
+#### Created October 21, 2022 \| Stephanie Pennington
+
+**Checks/formatting we need to do:**
+
+1.  Arrange by Kit ID
+2.  Check file name structure
+3.  Check for duplicate Kit IDs
+4.  Check where each flagged value falls
+
+```{r setup, include=FALSE}
+pacman::p_load(ggplot2, readr, dplyr, tidyr, kableExtra, data.table)
+
+files <- list.files("~/Desktop/EC1 ESS-DIVE Submission/", recursive = TRUE, full.names = TRUE)
+```
+
+Are file names in the correct structure?
+
+    *[Campaign]\_[Sample Type]\_[Analyte]\_Level2.csv*
+
+```{r file-naming}
+basename(files)
+```
+
+```{r dupes-check, message = FALSE, include = TRUE}
+kit_check <- function(file_path) {
+    df <- read_csv(file_path)
+
+    df %>% 
+      group_by(kit_id, transect_location) %>% 
+      summarise(dupes = sum(duplicated(kit_id))) %>%  
+      mutate(file = basename(file_path))
+    #tibble(file_name = basename(file_path), dupe_kitid = sum(duplicated(df$kit_id)))
+}
+
+lapply(files, kit_check) %>% bind_rows() -> dupes
+
+```
+
+```{r na-check, message = FALSE, include = TRUE}
+
+
+na_check <- function(file_path) {
+    df <- read_csv(file_path)
+
+    colSums(is.na(df)) -> t
+    
+    data.frame(as.list(t)) %>% 
+      pivot_longer(everything(), names_to = "col_name", values_to = "na_count") %>% 
+      mutate(file = basename(file_path), .before = col_name)
+
+}
+
+lapply(files, na_check) %>% bind_rows() -> na_checks
+
+
+# color.me <- which(na_checks$na_count > 0)
+# na_checks %>% 
+#   kable(booktabs = T) %>%
+#   kable_styling() %>%
+#   row_spec(color.me, bold = T, color = "white", background = "red")
+
+```
+
+
