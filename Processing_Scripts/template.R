@@ -14,7 +14,9 @@
 ##
 ## This script imports raw data for [insert parameters of interest] measured using
 ## [insert relevant instrument and method details] at [insert location, eg. MCRL].
-## and exports clean, Level 1 QC'ed data. [add additional relevant details]. 
+
+## and exports clean, Level 0B QC'ed data. [add additional relevant details]. 
+
 ## Data are read in from the COMPASS Google Drive.
 ## 
 ## Created: YYYY-MM-DD
@@ -29,6 +31,7 @@ cat("Setup")
 
 # load packages
 require(pacman)
+
 pacman::p_load(cowsay,
                tidyverse, 
                googlesheets4, # read_sheet 
@@ -38,6 +41,7 @@ pacman::p_load(cowsay,
 say("Welcome to EXCHANGE!", by = "random")
 
 ## URL for data
+
 data_path = "xxxx" 
 
 ## Define constants
@@ -58,6 +62,9 @@ data_raw <- read_sheet("")
 # 3. Process data --------------------------------------------------------------
 cat("Processing", var, "data...")
 
+## Note: common columns needed for every dataset: 
+## "campaign", "kit_id", "transect_location"
+
 data_processed <- data_raw %>% 
   rename(rename any weirdly named columns) %>% 
   mutate(create any new columns needed (eg calculations)) %>% 
@@ -67,10 +74,13 @@ data_processed <- data_raw %>%
 # 4. Apply QC flags ------------------------------------------------------------
 cat("Applying flags to", var, "data...")
 
+## When naming flags, start the name with the parameter to make it easier to
+## manipulate a parameter and its flag together
 data_qc <- function(data) {
   data %>% 
     mutate(a = round(a, n_sig_figs)) %>% 
-    mutate(f_a = a < a_min | a > a_max) 
+    mutate(a_flag_1 = a < a_min | a > a_max, 
+           a_flag_n = a < a_min | a > a_max, ) 
 }
 
 data_clean <- data_qc(data_processed)
