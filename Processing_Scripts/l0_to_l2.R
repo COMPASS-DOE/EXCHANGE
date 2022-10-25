@@ -36,6 +36,9 @@ wq_l0 <- read_csv("Data/Processed/L0B/EC1_Water_WaterQuality_L0B_20220509.csv")
 ## Read in L0B oxygen drawdown
 o2_l0 <- read_csv("Data/Processed/L0B/EC1_SoilSedimentOxygenDrawdown_L0B_20220517.csv")
 
+## Read in L0B ions (surface waters)
+ions_l0 <- read_csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221012.csv")
+
 ## Read in L0B soil pH/conductivity
 pH_l0 <- read_csv("Data/Processed/L0B/EC1_Soil_pH_L0B_20220531.csv")
 
@@ -131,3 +134,17 @@ pH_l2 <-
 
 ## Write out
 write_csv(pH_l2, "Data/Processed/L2/EC1_Soil_pH_L2_20221012.csv")
+
+#
+# 5. Clean up and export L2 water ions ------------------------------------
+
+make_l2_ions = function(ions_l0){
+  
+ions_l2 <- 
+  ions_l0 %>% 
+  mutate_all(as.character) %>% 
+  pivot_longer(cols = -c(campaign, kit_id, transect_location, date_run)) %>% 
+  separate(name, sep = "_", into = c("ion", "type")) %>% 
+  pivot_wider(name)
+
+}
