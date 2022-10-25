@@ -150,7 +150,7 @@ import_readme = function(directory_readme){
 }
 
 readme_data = import_readme(directory_readme)
-
+readme_data %>% write_csv("TEMP-ions_readme_compiled_2022-10-12.csv")
 
 #
 # 3. Process data ---------------------------------------------------------
@@ -346,10 +346,32 @@ do_corrections = function(data_ions_qc, readme_data, dilutions_key){
     dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Dilution) %>% 
     filter(Amount_bl_dil_corrected > 0)
   
-  samples_dilution_corrected
+  
+  samples_dilution_corrected_ALLDILUTIONS = 
+    samples_blank_corrected %>% 
+    # bring in the readme file to assign diliutions to each sample
+    left_join(readme_data2, by = c("Name", "date_run")) %>% 
+    filter(!Action %in% "Omit") %>%
+    # bring in the dilutions key to determine which dilutions to keep
+    left_join(dilutions_key %>% mutate(keep = TRUE), 
+              by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution")) %>% 
+   # filter(keep) %>% 
+   #  dplyr::select(-keep) %>% 
+    # do the dilution correction
+    mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
+    mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
+           Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
+    dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Dilution, keep) %>% 
+    filter(Amount_bl_dil_corrected > 0) %>% 
+    mutate(keep = as.character(keep))
+  
+  list(samples_dilution_corrected = samples_dilution_corrected,
+       samples_dilution_corrected_ALLDILUTIONS = samples_dilution_corrected_ALLDILUTIONS
+  )
   
 }
-data_ions_corrected = do_corrections(data_ions_qc, readme_data, dilutions_key)
+data_ions_corrected = do_corrections(data_ions_qc, readme_data, dilutions_key)$samples_dilution_corrected
+data_ions_corrected_all_dilutions = do_corrections(data_ions_qc, readme_data, dilutions_key)$samples_dilution_corrected_ALLDILUTIONS
 
 
 #
@@ -403,10 +425,13 @@ format_df = function(data_ions_corrected){
   
 }
 data_ions_final = format_df(data_ions_corrected)
+data_ions_final_all_dilutions = format_df(data_ions_corrected_all_dilutions)
 
 
 #
 # 5. Export cleaned data --------------------------------------------------
 
 data_ions_final %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221012_WITH_dilutions.csv", row.names = FALSE)
+data_ions_final_all_dilutions %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221012_WITH_ALL_dilutions.csv", row.names = FALSE)
 
+data_ions_qc %>% write.csv("TEMP-EC1-ions-not-dilution-corrected_2022-10-12.csv", row.names = FALSE)
