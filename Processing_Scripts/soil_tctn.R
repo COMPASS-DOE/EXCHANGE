@@ -33,11 +33,8 @@ pacman::p_load(cowsay,
 say("Welcome to EXCHANGE!", by = "random")
 
 ## URL for data
-folder_path <- "https://drive.google.com/drive/u/2/folders/1OVhQADClTIcfMtbJenoWfCD8fnODx_it" 
+folder_path <- "https://drive.google.com/drive/folders/1OVhQADClTIcfMtbJenoWfCD8fnODx_it" 
 gsheet_tab <- "Summary Table"
-naming_key_path <- "https://docs.google.com/spreadsheets/d/15o0bZ79WIOHlxZlaUxSv7pLYzuH39yP-d3GCE_gfk4c/edit#gid=363825852"
-lod_path <- "https://docs.google.com/spreadsheets/d/14r_bVSGGxgM7f1ENuBFKC5t6UzP_uRgJQ2SPDMKOSoE/edit#gid=225278968"
-
 
 ## Define constants
 f1_min <- 0
@@ -56,17 +53,9 @@ read_tctn <- function(x) {
 # 2. Import data ---------------------------------------------------------------
 cat("Importing", var, "data...")
 
-# Read in naming key
-read_sheet(ss = naming_key_path, range = "Sheet1") %>% 
-  select(`Reassigned Sample ID`, `Original Instrument ID`) -> key
-
-# Read in LOD blanks
-lod <- read_sheet(ss = lod_path, range = gsheet_tab, skip = 2, 
-           col_types = "ccccccccccccccccccc")
-
 ## read in raw data
 all_files <- drive_ls(path = folder_path, pattern = "2022")
-gsheet_files <- all_files[endsWith(all_files$name, "2022"),2]
+gsheet_files <- all_files[endsWith(all_files$name, "2022.txt"),2]
 
 lapply(gsheet_files$id, read_tctn) %>% 
   bind_rows() -> data_raw
