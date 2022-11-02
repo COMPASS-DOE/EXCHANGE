@@ -45,7 +45,7 @@ var <- "TC/TN"
 
 # Create function to use in lapply that reads in a google sheet 
 read_tctn <- function(x) {
-  df <- read_delim(file = x, skip = 7, delim = "\t")
+  df <- read_delim(file = x, delim = "\t", col_names = c("AA", "BB", "CC", "DD"))
 }
 
 
