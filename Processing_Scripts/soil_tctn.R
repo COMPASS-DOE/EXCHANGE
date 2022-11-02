@@ -34,7 +34,7 @@ say("Welcome to EXCHANGE!", by = "random")
 
 ## URL for data
 folder_path <- "https://drive.google.com/drive/folders/1OVhQADClTIcfMtbJenoWfCD8fnODx_it" 
-gsheet_tab <- "Summary Table"
+
 
 ## Define constants
 f1_min <- 0
@@ -45,9 +45,31 @@ var <- "TC/TN"
 
 # Create function to use in lapply that reads in a google sheet 
 read_tctn <- function(x) {
-  df <- read_sheet(ss = x, range = gsheet_tab, skip = 2, 
-                   col_types = "ccccccccccccccccccc", na = c("N/A", "NA"))
+  df <- read_delim(file = x, skip = 7, delim = "\t")
 }
+
+
+
+# 3. Import data ---------------------------------------------------------------
+
+## Create a list of files to download
+files <- drive_ls(directory) %>% 
+  filter(grepl("_Summary_", name))
+
+## Download files to local (don't worry, we'll delete em in a sec)
+lapply(files$name, drive_download, overwrite = TRUE)
+
+# 3. Import data ---------------------------------------------------------------
+
+## Read in data, filter to EC1 samples, and add sample name
+npoc_raw <- files$name %>% 
+  map(read_data) %>% 
+  bind_rows() 
+
+## Clean up local (delete downloaded files)
+file.remove(c(files$name))
+
+map_dfr(file_name,readtext)
 
 #
 # 2. Import data ---------------------------------------------------------------
@@ -55,11 +77,15 @@ cat("Importing", var, "data...")
 
 ## read in raw data
 all_files <- drive_ls(path = folder_path, pattern = "2022")
-gsheet_files <- all_files[endsWith(all_files$name, "2022.txt"),2]
+gsheet_files <- all_files[endsWith(all_files$name, "2022.txt"),1]
 
-lapply(gsheet_files$id, read_tctn) %>% 
+## Download files to local (don't worry, we'll delete em in a sec)
+lapply(all_files$name, drive_download, overwrite = TRUE)
+
+lapply(gsheet_files$name, read_tctn) %>% 
   bind_rows() -> data_raw
 
+file.remove(c(files$name))
 #
 # 3. Process data --------------------------------------------------------------
 cat("Processing", var, "data...")
