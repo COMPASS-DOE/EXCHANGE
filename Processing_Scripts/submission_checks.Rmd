@@ -9,7 +9,7 @@ date: "2022-10-21"
 
 #### Checks on Level 2 data before marking as "ready for submission" to ESS-DIVE
 
-#### Created October 21, 2022 \| Stephanie Pennington
+#### Created October 21, 2022 | Stephanie Pennington
 
 **Checks/formatting we need to do:**
 
