@@ -56,8 +56,7 @@ import_data = function(directory){
   ## b. Download files to local (don't worry, we'll delete em in a sec)
   lapply(files$id, drive_download, overwrite = TRUE)
   
-  ## c. pull a list of file names
-  ## then read all files and combine
+  ## c. pull a list of file names, then read all files and combine
   
   filePaths <- files$name
   
@@ -91,11 +90,24 @@ import_data = function(directory){
   ## e. output
   dat
 }
+
 data_raw = import_data(directory)
+
+data_raw = data_raw %>% mutate(date_run = str_extract(source, "[0-9]{8}"))
 
 
 #
 # 3. Process data --------------------------------------------------------------
+#TO DO:
+  #extract response values
+  ##get range of responses from samples in each run to bound curve
+  #take cal curve for each run date
+  ##Filter to standards that are reading a weight percentage of C and N 
+  #that are in line with what the standard should be reporting
+  ##Check out the curve with all good points as is, no averaging by level 
+  # calculate standard curves in R 
+  ##recalculate all sample values based on responses 
+
 cat("Processing", var, "data...")
 
 # Process LOD data
@@ -153,6 +165,12 @@ data_intermediate %>%
 
 #
 # 4. Apply QC flags ------------------------------------------------------------
+#TO DO:
+#Flag 2:
+  #below_detect rename to "outside cal curve"
+  #actually make flag 2 a range between the response values 
+    #for 0.1mg to 6mg and flag true if it falls outside those bounds
+
 cat("Applying flags to", var, "data...")
 
 data_qc <- function(data) {
@@ -162,10 +180,10 @@ data_qc <- function(data) {
            tc_flag_1 = ifelse(total_carbon_perc < f1_min | total_carbon_perc > f1_max, T, F),
            tn_flag_2 = ifelse(total_nitrogen_mg < (lod_tn_sd * 3), T, F),
            tc_flag_2 = ifelse(total_carbon_mg < (lod_tc_sd * 3), T, F),
-           tn_flag_3 = ifelse(total_nitrogen_perc_min < (0.5 * total_nitrogen_perc) |
-                              total_nitrogen_perc_max > (0.5 * total_nitrogen_perc), T, F),
-           tc_flag_3 = ifelse(total_carbon_perc_min < (0.5 * total_carbon_perc) |
-                              total_carbon_perc_max > (0.5 * total_carbon_perc), T, F)
+           tn_flag_3 = ifelse(total_nitrogen_perc_min < (0.05 * total_nitrogen_perc) |
+                              total_nitrogen_perc_max > (0.05 * total_nitrogen_perc), T, F),
+           tc_flag_3 = ifelse(total_carbon_perc_min < (0.05 * total_carbon_perc) |
+                              total_carbon_perc_max > (0.05 * total_carbon_perc), T, F)
            )
 }
 
@@ -211,5 +229,5 @@ data_qc %>%
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
 #drive_upload(media = data_clean, path = data_path)
 
-write_csv(data_clean, "Data/Processed/EC1_Soil_TCTN_L0B_20220602.csv")
-
+write_csv(data_clean, paste0("Data/Processed/EC1_Soil_TCTN_L0B_",Sys.Date(),".csv"))
+ 
