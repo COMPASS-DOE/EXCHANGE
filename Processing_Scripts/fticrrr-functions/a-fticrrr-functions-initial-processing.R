@@ -122,11 +122,10 @@ make_fticr_data_intensities = function(report, sample_key){
   fticr_report = (apply_filter_report(report))
   mass_to_formula = make_fticr_meta(report)$meta_formula
   
-  data_columns = fticr_report %>% dplyr::select(Mass, starts_with(c("Blank", "K")))
-  
   data_samples = 
     fticr_report %>% 
-    dplyr::select(Mass, starts_with("K"))
+    left_join(mass_to_formula, by = "Mass") %>% 
+    dplyr::select(Mass, formula, starts_with("K"))
   
   data_blanks  = 
     data_columns %>% 
