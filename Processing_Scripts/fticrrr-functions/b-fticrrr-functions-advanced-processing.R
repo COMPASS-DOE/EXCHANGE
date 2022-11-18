@@ -19,12 +19,12 @@
 
 ## the functions in this script include:
 ## (a) processing FTICR data
-## -- (a1)  
-## -- (a2)  
-## -- (a3) 
+## -- (a1)  convert intensities to presence/absence (highly recommended!)
+## -- (a2)  make longform
 ## (b) analyzing the FTICR data
-## -- (b1)
-## -- (b2)
+## -- (b1) Van Krevelen plots
+## -- (b2) compute relative abundance per sample
+## -- (b3) PCA and PERMANOVA
 
 # INSTRUCTIONS:
 ## These functions use, as input, the data generated from `Processing_Scripts/water-fticr`
@@ -33,14 +33,18 @@
 ################################################## #
 
 
-# setup -------------------------------------------------------------------
+# Setup -------------------------------------------------------------------
 
-library(tidyverse)
-library(PNWColors)
-library(soilpalettes)
+library(tidyverse) # for general processing
+library(PNWColors) # color palettes, compatible with ggplot2
+library(soilpalettes) # color palettes, compatible with ggplot2
+library(ggbiplot) # for PCA biplots
+# devtools::install_github("miraKlein/ggbiplot")
+library(vegan) # for PERMANOVA
+
 
 #
-# processing the data -----------------------------------------------------
+# Processing the data -----------------------------------------------------
 
 compute_presence = function(dat){
   dat %>% 
@@ -134,7 +138,7 @@ gg_vankrev(data = fticr_data_hcoc_frequency,
        caption = "CB = 36 kits, GL = 15 kits")
 
 #
-# relative abundance ------------------------------------------------------
+# Relative abundance ------------------------------------------------------
 
 compute_relabund_by_sample = function(fticr_data_longform, fticr_meta){
   fticr_data_longform %>% 
@@ -160,3 +164,67 @@ fticr_relabund_per_sample %>%
   facet_wrap(~region, scales = "free_x")
 
 #
+
+# Stats - PCA -------------------------------------------------------------
+
+fit_pca_function = function(fticr_relabund_per_sample, sample_key){
+  relabund_pca =
+    fticr_relabund_per_sample %>% 
+    left_join(sample_key %>% dplyr::select(kit_id, region)) %>% 
+    ungroup %>% 
+    dplyr::select(-c(abund, total)) %>% 
+    spread(Class, relabund) %>% 
+    filter(!is.na(region)) %>% 
+    replace(.,is.na(.),0)
+  
+  num = 
+    relabund_pca %>% 
+    dplyr::select(where(is.numeric))
+  
+  grp = 
+    relabund_pca %>% 
+    dplyr::select(where(is.character)) %>% 
+    dplyr::mutate(row = row_number())
+  
+  pca_int = prcomp(num, scale. = T)
+  
+  list(num = num,
+       grp = grp,
+       pca_int = pca_int)
+}
+
+pca_overall = fit_pca_function(fticr_relabund_per_sample, sample_key)
+
+# PCA biplot
+ggbiplot(pca_overall$pca_int, obs.scale = 1, var.scale = 1,
+         groups = pca_overall$grp$region, 
+         ellipse = TRUE, circle = FALSE, var.axes = TRUE, alpha = 0) +
+  geom_point(size=2,stroke=1, alpha = 1,
+             aes(shape = pca_overall$grp$region,
+                 color = groups))+
+  scale_shape_manual(values = c(19, 1), name = "")+
+  xlim(-4,4)+
+  ylim(-3.5,3.5)
+  
+
+#
+# permanova -----------------------------------------------------------
+
+compute_permanova = function(relabund_cores){
+  relabund_wide = 
+    fticr_relabund_per_sample %>% 
+    left_join(sample_key %>% dplyr::select(kit_id, region)) %>% 
+    ungroup %>% 
+    dplyr::select(-c(abund, total)) %>% 
+    spread(Class, relabund) %>% 
+    filter(!is.na(region)) %>% 
+    replace(.,is.na(.),0)
+  
+  permanova_fticr_all = 
+    adonis(relabund_wide %>% dplyr::select(where(is.numeric)) ~ region, 
+           data = relabund_wide)
+  broom::tidy(permanova_fticr_all$aov.tab)
+}
+
+
+
