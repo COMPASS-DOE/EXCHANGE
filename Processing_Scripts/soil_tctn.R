@@ -56,8 +56,7 @@ import_data = function(directory){
   ## b. Download files to local (don't worry, we'll delete em in a sec)
   lapply(files$id, drive_download, overwrite = TRUE)
   
-  ## c. pull a list of file names
-  ## then read all files and combine
+  ## c. pull a list of file names, then read all files and combine
   
   filePaths <- files$name
   
@@ -91,28 +90,42 @@ import_data = function(directory){
   ## e. output
   dat
 }
+
 data_raw = import_data(directory)
+
+data_raw = data_raw %>% mutate(date_run = str_extract(source, "[0-9]{8}"))
 
 
 #
 # 3. Process data --------------------------------------------------------------
+#TO DO:
+  #extract response values
+  ##get range of responses from samples in each run to bound curve
+  #take cal curve for each run date
+  ##Filter to standards that are reading a weight percentage of C and N 
+  #that are in line with what the standard should be reporting
+  ##Check out the curve with all good points as is, no averaging by level 
+  # calculate standard curves in R 
+  ##recalculate all sample values based on responses 
+
 cat("Processing", var, "data...")
 
-# Process LOD data
-lod %>% 
-  rename(instrument_id = "...1", sample_id = "...3",
-               total_nitrogen_mg = "Weight\n[mg]...8",
-               total_carbon_mg = "Weight\n[mg]...15") %>% 
-  left_join(key, by = c("instrument_id" = "Original Instrument ID")) %>% 
-  separate(sample_id, into = c("type", "weight", "run"), sep = "_") %>% 
-  select(type, weight, run, total_nitrogen_mg, total_carbon_mg) %>% 
-  filter(weight == "0.1", type == "ACN") %>% 
-  mutate(total_nitrogen_mg = as.numeric(total_nitrogen_mg),
-         total_carbon_mg = as.numeric(total_carbon_mg)) %>% 
-  summarise(lod_tn_average = mean(total_nitrogen_mg),
-            lod_tn_sd = sd(total_nitrogen_mg),
-            lod_tc_average = mean(total_carbon_mg),
-            lod_tc_sd = sd(total_carbon_mg)) -> lod_processed
+## I dont think we need these lines now- AMP ##
+# # Process LOD data
+# lod %>% 
+#   rename(instrument_id = "...1", sample_id = "...3",
+#                total_nitrogen_mg = "Weight\n[mg]...8",
+#                total_carbon_mg = "Weight\n[mg]...15") %>% 
+#   left_join(key, by = c("instrument_id" = "Original Instrument ID")) %>% 
+#   separate(sample_id, into = c("type", "weight", "run"), sep = "_") %>% 
+#   select(type, weight, run, total_nitrogen_mg, total_carbon_mg) %>% 
+#   filter(weight == "0.1", type == "ACN") %>% 
+#   mutate(total_nitrogen_mg = as.numeric(total_nitrogen_mg),
+#          total_carbon_mg = as.numeric(total_carbon_mg)) %>% 
+#   summarise(lod_tn_average = mean(total_nitrogen_mg),
+#             lod_tn_sd = sd(total_nitrogen_mg),
+#             lod_tc_average = mean(total_carbon_mg),
+#             lod_tc_sd = sd(total_carbon_mg)) -> lod_processed
 
 data_raw %>% 
   rename(instrument_id = "...1", sample_id = "...3",
@@ -134,16 +147,43 @@ data_raw %>%
   mutate(Year = "2022", date_ran = make_date(day = Day, month = Month, year = Year)) %>% 
   bind_cols(lod_processed) -> data_intermediate
 
+## This is where I would first filter to standards and samples dataframes 
+
+cat("Calcuating", var, "data from cal curves...")
+
+#Step 1. filter nitrogen_response and carbon_response and date_ran in standards = Standards Dataframe
+#Step 2. filter nitrogen_response and carbon_response and date_ran in samples = Sample Dataframe
+#Step 3. filtering samples outside of range between the response values for 0.1mg to 6mg in Standards Dataframe per date_ran
+#Step 4. get range of responses from samples in each run (date_ran)
+#Step 5. Filter Standards Dataframe that are reading a weight percentage of C and N that are in line with what the standard should be reporting +/- 5% (Acetanilide_C_per = 71.09, Acetanilide_N_per = 10.36)
+#Step 6. make a linear plot to visually confirm the curve per date_ran is reasonable with good points as is (at min 3 points per curve, ideally as many as possible), no averaging by curve/weight level needed (if curves look wonky, need to average and/or drop points dates)
+#Step 7. Steph talk to Allison & Khadijah
+#Step 8. Response ratios of good/bad curves if needed (@amyerspigg)
+#Step 9. Re-calculate standard curves in R using package EnvStats calibrate function:
+      #curve_fit_N = calibrate(nitrogen_response ~ nitrogen_wt_mg, Standards Dataframe, max.order = 2)
+#Step 10. Recalculate all sample values based on responses in R using package EnvStats inversePredictCalibrate:
+  #Sample Dataframe$nitrogen_wt_mg = inversePredictCalibrate(curve_fit_N, Sample Dataframe$nitrogen_response)
+#Step 11. Using nitrogen_wt_mg , carbon_wt_mg columns from the re-calculation above, then calculate weight percent: 
+        # nitrogen_wt_mg /sample_wt_mg x 100 = nitrogen_weight_percent
+        # carbon_wt_mg /sample_wt_mg x 100 = carbon_weight_percent
+#
+# 4. Apply QC flags ------------------------------------------------------------
+#TO DO:
+#Flag 2:
+  #below_detect rename to "outside cal curve"
+
+cat("Applying flags to", var, "data...")
+
 data_intermediate %>% 
   group_by(kit_id, transect_location, set) %>% 
   summarise(total_nitrogen_perc = mean(as.numeric(total_nitrogen_perc)),
-         total_carbon_perc = mean(as.numeric(total_carbon_perc)),
-         total_nitrogen_mg = mean(as.numeric(total_nitrogen_mg)),
-         total_carbon_mg = mean(as.numeric(total_carbon_mg)),
-         total_nitrogen_perc_min = min(total_nitrogen_perc),
-         total_carbon_perc_min = min(total_carbon_perc),
-         total_nitrogen_perc_max = max(total_nitrogen_perc),
-         total_carbon_perc_max = max(total_carbon_perc)) -> means_mins
+            total_carbon_perc = mean(as.numeric(total_carbon_perc)),
+            total_nitrogen_mg = mean(as.numeric(total_nitrogen_mg)),
+            total_carbon_mg = mean(as.numeric(total_carbon_mg)),
+            total_nitrogen_perc_min = min(total_nitrogen_perc),
+            total_carbon_perc_min = min(total_carbon_perc),
+            total_nitrogen_perc_max = max(total_nitrogen_perc),
+            total_carbon_perc_max = max(total_carbon_perc)) -> means_mins
 
 data_intermediate %>% 
   distinct(kit_id, transect_location, .keep_all = TRUE) %>% 
@@ -151,21 +191,15 @@ data_intermediate %>%
          lod_tc_sd, lod_tn_average, lod_tn_sd, date_ran) %>% 
   right_join(means_mins, by = c("kit_id", "transect_location", "set")) -> data_processed
 
-#
-# 4. Apply QC flags ------------------------------------------------------------
-cat("Applying flags to", var, "data...")
-
 data_qc <- function(data) {
   data %>% 
     mutate(  #a = round(a, n_sig_figs),
            tn_flag_1 = ifelse(total_nitrogen_perc < f1_min | total_nitrogen_perc > f1_max, T, F),
            tc_flag_1 = ifelse(total_carbon_perc < f1_min | total_carbon_perc > f1_max, T, F),
-           tn_flag_2 = ifelse(total_nitrogen_mg < (lod_tn_sd * 3), T, F),
-           tc_flag_2 = ifelse(total_carbon_mg < (lod_tc_sd * 3), T, F),
-           tn_flag_3 = ifelse(total_nitrogen_perc_min < (0.5 * total_nitrogen_perc) |
-                              total_nitrogen_perc_max > (0.5 * total_nitrogen_perc), T, F),
-           tc_flag_3 = ifelse(total_carbon_perc_min < (0.5 * total_carbon_perc) |
-                              total_carbon_perc_max > (0.5 * total_carbon_perc), T, F)
+           tn_flag_3 = ifelse(total_nitrogen_perc_min < (0.05 * total_nitrogen_perc) |
+                              total_nitrogen_perc_max > (0.05 * total_nitrogen_perc), T, F),
+           tc_flag_3 = ifelse(total_carbon_perc_min < (0.05 * total_carbon_perc) |
+                              total_carbon_perc_max > (0.05 * total_carbon_perc), T, F)
            )
 }
 
@@ -205,11 +239,10 @@ data_qc %>%
 
 #
 # 5. Write cleaned data to drive -----------------------------------------------
-
-## We should add Sys.date or hardcode date so we know when the L0B was born
+  
 ## The file written out should be named following 
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
 #drive_upload(media = data_clean, path = data_path)
 
-write_csv(data_clean, "Data/Processed/EC1_Soil_TCTN_L0B_20220602.csv")
-
+write_csv(data_clean, paste0("Data/Processed/EC1_Soil_TCTN_L0B_",Sys.Date(),".csv"))
+ 

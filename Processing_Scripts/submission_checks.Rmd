@@ -1,12 +1,15 @@
 ---
 title: "submission checks"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
 date: "2022-10-21"
 ---
 
 #### Checks on Level 2 data before marking as "ready for submission" to ESS-DIVE
 
-#### Created October 21, 2022 \| Stephanie Pennington
+#### Created October 21, 2022 | Stephanie Pennington
 
 **Checks/formatting we need to do:**
 
@@ -16,20 +19,23 @@ date: "2022-10-21"
 4.  Check where each flagged value falls
 
 ```{r setup, include=FALSE}
-pacman::p_load(ggplot2, readr, dplyr, tidyr, kableExtra, data.table)
+pacman::p_load(ggplot2, readr, dplyr, tidyr, kableExtra, DT)
 
 files <- list.files("~/Desktop/EC1 ESS-DIVE Submission/", recursive = TRUE, full.names = TRUE)
 ```
 
-Are file names in the correct structure?
+# Are file names in the correct structure?
 
-    *[Campaign]\_[Sample Type]\_[Analyte]\_Level2.csv*
+`[Campaign]_[Sample Type]_[Analyte]_Level2.csv`
 
-```{r file-naming}
-basename(files)
+```{r file-naming, echo = FALSE}
+basename(files) %>% 
+  kable()
 ```
 
-```{r dupes-check, message = FALSE, include = TRUE}
+# Are there duplicate kit IDs?
+
+```{r dupes-check, echo = FALSE, message=FALSE}
 kit_check <- function(file_path) {
     df <- read_csv(file_path)
 
@@ -42,9 +48,12 @@ kit_check <- function(file_path) {
 
 lapply(files, kit_check) %>% bind_rows() -> dupes
 
+datatable(dupes)
 ```
 
-```{r na-check, message = FALSE, include = TRUE}
+# Are there nas in any column?
+
+```{r na-check, echo = FALSE, message=FALSE}
 
 
 na_check <- function(file_path) {
@@ -60,13 +69,29 @@ na_check <- function(file_path) {
 
 lapply(files, na_check) %>% bind_rows() -> na_checks
 
-
-# color.me <- which(na_checks$na_count > 0)
-# na_checks %>% 
-#   kable(booktabs = T) %>%
-#   kable_styling() %>%
-#   row_spec(color.me, bold = T, color = "white", background = "red")
+datatable(na_checks)
 
 ```
 
+# Have the files passed checks?
 
+```{r, echo = FALSE, message = FALSE}
+
+dupes %>% 
+  group_by(file, transect_location) %>% 
+  summarise(dupe_sum = sum(dupes)) %>% 
+  group_by(file) %>% 
+  summarise(dupe_sum = sum(dupe_sum)) -> dupes_sum
+
+na_checks %>% 
+  group_by(file) %>% 
+  summarise(na_sum = sum(na_count)) %>% 
+  left_join(dupes_sum, by = "file") %>% 
+  mutate('Pass/Fail' = case_when(na_sum | dupe_sum > 0 ~ "Fail",
+                                 na_sum | dupe_sum == 0 ~ "Pass")) %>% 
+  select(file, 'Pass/Fail') %>% 
+  datatable() %>% 
+  formatStyle(
+  'Pass/Fail',backgroundColor = styleEqual(c("Pass", "Fail"), c('aquamarine', 'lightcoral')))
+
+```
