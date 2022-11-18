@@ -1,10 +1,19 @@
-# FTICRRR: fticr results in R
-# Kaizad F. Patel
-# October 2020
+## EXCHANGE-FTICR
+##
+## This is a data processing script for EXCHANGE, a sub-project of the DOE-funded 
+## COMPASS project (https://compass.pnnl.gov/). 
+##
+## This script imports and processes FTICR data obtained from Formularity 
+## 
+## Created: November 2022
+## Kaizad F. Patel
+
+## These functions have been modified from the `fticrrr` package and workflow: 
+## https://github.com/kaizadp/fticrrr
 
 ################################################## #
 
-# `functions_processing.R`
+# `fticrrr-functions-initial-processing.R`
 
 ################################################## #
 
@@ -12,16 +21,20 @@
 ## (a) processing FTICR reports generated in Formularity
 ## -- (a1) filtering peaks 
 ## -- (a2) computing indices, element composition, class assignment for metadata 
-## -- (a3) cleaning the data file and creating a longform version 
-## -- (a4) converting peak intensities into presence/absence
-## (b) computing relative abundance by compound class, for each core
+## -- (a3) blank-correcting the data
+
+
+## NOTE: These data contain intensities, which are not recommended when analyzing the data
+## We recommend converting these intensities to presence/absence data (0/1) before further analysis.
+## Refer to the functions in `b-fticrrr-functions-advanced-processing.R` for these functions.
+## See these papers for more information on processing and analyzing FTICR data:
+#### 1.
+#### 2.
+#### 3.
 
 # INSTRUCTIONS:
-## source this file in the `fticr_drake_plan.R` file, do not run the script here.
+## source this file in the `water_fticr.R` file, do not run the script here.
 ## This script can (generally) be used as is for most data that follow this format. No modifications needed 
-
-## 20-Nov-2020 edit: `data_presence2` file is unique to this experiment because of the shitty sample nomenclature.
-
 
 ################################################## #
 ################################################## #
@@ -81,16 +94,6 @@ assign_class_seidel = function(meta_clean, meta_indices){
     dplyr::select(Mass, Class, Class_detailed)
 }
 
-## for data file
-compute_presence = function(dat){
-  dat %>% 
-    pivot_longer(-("Mass"), values_to = "presence", names_to = "sample_name") %>% 
-    # convert intensities to presence==1/absence==0  
-    dplyr::mutate(presence = if_else(presence>0,1,0)) %>% 
-    # keep only peaks present
-    filter(presence>0)
-}
-
 ## LEVEL II FUNCTIONS ------------------------------------------------------
 
 make_fticr_meta = function(report){
@@ -141,47 +144,3 @@ make_fticr_data_intensities = function(report, sample_key){
   list(data_samples_blank_corrected = data_samples_blank_corrected,
        data_blanks = data_blanks)
 }
-
-make_fticr_data = function(report, sample_key){
-  fticr_report = (apply_filter_report(report))
-  mass_to_formula = make_fticr_meta(report)$meta_formula
-  
-  data_columns = fticr_report %>% dplyr::select(Mass, starts_with(c("Blank", "K")))
-  
-  data_presence = 
-    compute_presence(data_columns) %>% 
-    left_join(mass_to_formula, by = "Mass") %>% 
-    dplyr::select(formula, sample_name, presence)
-
-  data_long_key = 
-    data_presence %>% 
-    mutate(sample_name = str_remove_all(sample_name, "b")) %>% 
-    rename(kit_id = sample_name) %>% 
-    left_join(sample_key, by = "kit_id")
-  
-  data_long_key
-  
-}
-
-
-
-
-# 2. RELATIVE ABUNDANCE COMPUTE FUNCTIONS -------------------------------------------------
-compute_relabund_cores = function(fticr_data_longform, fticr_meta, TREATMENTS){
-  fticr_data_longform %>% 
-    # add the Class column to the data
-    left_join(dplyr::select(fticr_meta, formula, Class), by = "formula") %>% 
-    # calculate abundance of each Class as the sum of all counts
-    group_by(CoreID, Class, !!!TREATMENTS) %>%
-    dplyr::summarise(abund = sum(presence)) %>%
-    ungroup %>% 
-    # create a new column for total counts per core assignment
-    # and then calculate relative abundance  
-    group_by(CoreID, !!!TREATMENTS) %>% 
-    dplyr::mutate(total = sum(abund),
-                  relabund  = round((abund/total)*100,2))
-}
-
-
-
-# 3. MISC FUNCTIONS -------------------------------------------------------
