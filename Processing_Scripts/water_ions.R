@@ -226,7 +226,8 @@ process_data = function(raw_data, IONS){
     # pull the date run from the long `source` column
     mutate(date_run = str_extract(source, "[0-9]{8}"),
            date_run = lubridate::as_date(date_run)) %>% 
-    dplyr::select(Name, Amount, Ion, date_run) %>% 
+    rename(Area = `AreaµS*min`) %>% 
+    dplyr::select(Name, Amount, Area, Ion, date_run) %>% 
     mutate(Ion = str_remove_all(Ion, "_UV"),
            Ion = tolower(Ion)) %>% 
     force()
@@ -250,14 +251,134 @@ data_ions_processed = process_data(raw_data, IONS = all_ions)
 #
 # 4. Apply QC flags ------------------------------------------------------------
 
-# `apply_qc_flags`: applying flags to data points below the Limit of Detection
+
+
+## 4a. Calculate LODs ----------------------------------------------------------
+
+calculate_lods = function(data_ions_processed, z, directory_slope){
+  
+  # This function will calculate the Limits of Detection (LOD) for each analyte, for each run
+  
+  # Definitions & Calculations:
+  # 1. LOD = limit of detection 
+  # calculated from Harris et al.  ("Quantitative Chemical Analysis" book) 
+  # & Harvey et al. ("Modern Analytical Chemistry 2.0") 
+  # 2. (SA)DL= Signal Analyte Detection Limit
+  # 3. mean = average blank signal
+  # 4. z = confidence interval (3 = 99%)
+  # 5. sd = standard deviation of blank signals
+  # 6. m = slope of calibration curve
+  
+  # (SA)DL = mean + sd
+  # [LOD] = (SA)DL / m 
+  
+  # get blanks from `data_ions_processed`
+  blanks = 
+    data_ions_processed %>% 
+    filter(grepl("blank", Name, ignore.case = TRUE)) %>% 
+    filter(!grepl("CondBlank", Name)) %>% #Remove conditioning blanks 
+    filter(!Name %in% c("Blank1", "Blank2", "Blank3", "Blank4")) %>% #remove carryover blanks 
+    force()
+  
+  # calculate averages and SD for blank areas
+  blanks_summary = 
+    blanks %>% 
+    group_by(Ion, date_run) %>% 
+    dplyr::summarise(mean = mean(Area, na.rm = TRUE),
+                     sd = sd(Area, na.rm = TRUE)) %>% 
+    replace(is.na(.), 0) %>% 
+    mutate(SADL = mean + (z * sd))
+  
+  # import slope of the standard curve for each ion
+  import_slopes = function(directory_slope){
+    
+    ## a. Create a list of files to download
+    files <- 
+      drive_ls(slope.directory) %>% 
+      filter(grepl("_Slope_", name))
+    
+    ## b. Download files to local (don't worry, we'll delete em in a sec)
+    lapply(files$id, drive_download, overwrite = TRUE)
+    
+    ## c. pull a list of file names
+    ## then read all files and combine
+    
+    filePaths <- files$name
+    dat <- do.call(rbind, lapply(filePaths, function(path) {
+      # then add a new column `source` to denote the file name
+      df <- readxl::read_xls(path, skip = 7)
+      df[["source"]] <- rep(path, nrow(df))
+      df}))
+    
+    ## d. delete the temporary files
+    file.remove(c(files$name))  
+    
+    ## e. output
+    dat
+  }
+  raw_slopes = import_slopes(directory_slope)
+  
+  assign_slopes = function(raw_slopes, IONS){
+    # identify the rows that contain ions names
+    label_rows = which(grepl(paste(IONS, collapse = "|"), dat$`Peak Name`))
+    
+    # make this a dataframe/tibble
+    label_rows_df = 
+      label_rows %>% 
+      as_tibble() %>%
+      dplyr::rename(Row_number = value)  %>%
+      mutate(label = TRUE, 
+             Row_number = as.character(Row_number))
+    
+    # now join this to the dataframe
+    slope_new <-  dat %>% 
+      tibble::rownames_to_column("Row_number") %>% 
+      right_join(label_rows_df) %>% 
+      dplyr::select(-Row_number, -label)
+    
+    # preliminary processing to make it tidy
+    slope_new_processed = 
+      slope_new %>% 
+      mutate_at(vars(-'Peak Name', -source, -Cal.Type, -Points, -Offset, -Slope, -Curve, -Coeff.Det., -Eval.Type), as.numeric) %>% 
+      mutate(Date_Run.1 = str_extract(source, "[0-9]{8}"),
+             date_run = lubridate::as_date(Date_Run.1)) %>% 
+      dplyr::select('Peak Name', Slope, date_run) %>% 
+      force()
+    
+    slope_new_processed
+    
+  }
+  
+  #output from slope file needs to be Ion, Slope, Date
+  m.run = assign_slopes(raw_slopes,IONS = all_ions) %>% 
+    rename(Ion = `Peak Name`) %>% 
+    mutate(Ion = tolower(Ion))
+  
+  #LOD.run = SADL_cal / m.run 
+  
+  data_m_sadl <- 
+    m.run %>% 
+    left_join(blanks_summary, by = c("Ion","date_run")) %>% 
+    filter(!is.na(Slope)) %>% 
+    mutate(LOD_ppm = SADL / as.numeric(Slope)) %>% 
+    dplyr::select(Ion, date_run, LOD_ppm)
+  
+  data_m_sadl
+  #save(data_m_sadl, file="LODs_byrun_COMPASS.rda")
+
+  
+}
+
+ions_lods = calculate_lods(data_ions_processed, 
+                          z = 3, 
+                          directory_slope = "https://drive.google.com/drive/u/1/folders/1pf5oxzg15uB0twTl76sEGD0Ayan8ckBy")
+
+
+## 4b. `apply_qc_flags`: applying QC flags -------------------------------------
+## apply flags to data points below the Limit of Detection and above Calibration
 
 apply_qc_flags = function(data_ions_processed, QC_DATA){
   # we will apply two flags: (1) LOD, (2) above cal-curve
-  ions_lods_processed = 
-    QC_DATA %>% 
-    rename(Ion = Analyte) %>% 
-    mutate(Ion = str_remove_all(Ion, "_UV"))
   
   data_ions_standards = 
     data_ions_processed %>% 
@@ -269,7 +390,7 @@ apply_qc_flags = function(data_ions_processed, QC_DATA){
                      calib_max = max(Amount))
   data_ions_qc = 
     data_ions_processed %>% 
-    left_join(ions_lods_processed %>% dplyr::select(Ion, LOD_ppm)) %>%
+    left_join(QC_DATA %>% dplyr::select(Ion, date_run, LOD_ppm)) %>%
     left_join(data_ions_standards) %>% 
     mutate(flag = case_when(Amount  < LOD_ppm ~ "below detect",
                             Amount  > calib_max ~ "above calibration")) %>% 
@@ -414,6 +535,7 @@ format_df = function(data_ions_corrected){
     pivot_longer(-c(Name, date_run, Ion)) %>% 
     mutate(name2 = paste0(Ion, "_", name)) %>% 
     dplyr::select(-Ion, -name) %>% 
+    distinct %>% 
     pivot_wider(names_from = "name2", values_from = "value") %>% 
     separate(Name, sep = "_", into = c("campaign", "kit_id")) %>% 
     mutate(transect_location = "Water") %>% 
@@ -431,7 +553,7 @@ data_ions_final_all_dilutions = format_df(data_ions_corrected_all_dilutions)
 #
 # 5. Export cleaned data --------------------------------------------------
 
-data_ions_final %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221012_WITH_dilutions.csv", row.names = FALSE)
-data_ions_final_all_dilutions %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221012_WITH_ALL_dilutions.csv", row.names = FALSE)
+data_ions_final %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_dilutions.csv", row.names = FALSE)
+data_ions_final_all_dilutions %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_ALL_dilutions.csv", row.names = FALSE)
 
 data_ions_qc %>% write.csv("TEMP-EC1-ions-not-dilution-corrected_2022-10-12.csv", row.names = FALSE)
