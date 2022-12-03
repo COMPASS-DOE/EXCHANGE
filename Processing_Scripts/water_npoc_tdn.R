@@ -44,7 +44,7 @@ read_data <- function(data){
            npoc_raw = `Result(NPOC)`, 
            tdn_raw = `Result(TN)`) %>% 
     select(sample_name, npoc_raw, tdn_raw) %>% 
-    mutate(date = lubridate::ymd(date))
+    mutate(date = date)
 }
 
 
@@ -92,6 +92,17 @@ npoc_blank_corrected <- npoc_raw %>%
          tdn_mgl = tdn_raw - tdn_blank)
 
 
+# 5b. get calibration ranges for NPOC ----
+## some runs had calibration curves of 0-30 ppm, and some 0-50 ppm
+## we need to determine the upper calibration limit for each run
+
+npoc_standards = 
+  npoc_raw %>% 
+  filter(grepl("STD", sample_name) & grepl("NPOC", sample_name)) %>% 
+  rename(npoc_calib_upper_limit = npoc_raw) %>% 
+  dplyr::select(date, npoc_calib_upper_limit)
+
+
 # 6. Clean data ----------------------------------------------------------------
 
 ## Helper function to calculate mean if numeric, otherwise first (needed to 
@@ -111,8 +122,10 @@ npoc_raw_flags <- npoc_duplicates_removed %>%
   ## First, round each parameter to proper significant figures
   mutate(npoc_mgl = round(npoc_mgl, 2), 
          tdn_mgl = round(tdn_mgl, 3)) %>% 
+  ## join the `npoc_standards` to get the upper range
+  left_join(npoc_standards) %>% 
   ## Second, add flags for outside LOD
-  mutate(npoc_flag = ifelse(npoc_mgl < lod_npoc | npoc_mgl > 30, "npoc outside range", NA), #per cal curve upper limit
+  mutate(npoc_flag = ifelse(npoc_mgl < lod_npoc | npoc_mgl > npoc_calib_upper_limit, "npoc outside range", NA), #per cal curve upper limit
          tdn_flag = ifelse(tdn_mgl < lod_tdn | tdn_mgl > 3, "tdn outside range", NA))
 
 npoc <- npoc_raw_flags %>% 
