@@ -44,7 +44,7 @@ read_data <- function(data){
            npoc_raw = `Result(NPOC)`, 
            tdn_raw = `Result(TN)`) %>% 
     select(sample_name, npoc_raw, tdn_raw) %>% 
-    mutate(date = date)
+    mutate(date = lubridate::ymd(date))
 }
 
 
