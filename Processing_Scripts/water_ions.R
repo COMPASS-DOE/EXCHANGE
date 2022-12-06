@@ -226,7 +226,7 @@ process_data = function(raw_data, IONS){
     # pull the date run from the long `source` column
     mutate(date_run = str_extract(source, "[0-9]{8}"),
            date_run = lubridate::as_date(date_run)) %>% 
-    rename(Area = `AreaµS*min`) %>% 
+    rename(Area = "AreaµS*min") %>% 
     dplyr::select(Name, Amount, Area, Ion, date_run) %>% 
     mutate(Ion = str_remove_all(Ion, "_UV"),
            Ion = tolower(Ion)) %>% 
@@ -255,7 +255,7 @@ data_ions_processed = process_data(raw_data, IONS = all_ions)
 
 ## 4a. Calculate LODs ----------------------------------------------------------
 
-calculate_lods = function(data_ions_processed, z, directory_slope){
+calculate_lods = function(data_ions_processed, z, IONS, directory_slope){
   
   # This function will calculate the Limits of Detection (LOD) for each analyte, for each run
   
@@ -294,7 +294,7 @@ calculate_lods = function(data_ions_processed, z, directory_slope){
     
     ## a. Create a list of files to download
     files <- 
-      drive_ls(slope.directory) %>% 
+      drive_ls(directory_slope) %>% 
       filter(grepl("_Slope_", name))
     
     ## b. Download files to local (don't worry, we'll delete em in a sec)
@@ -320,7 +320,7 @@ calculate_lods = function(data_ions_processed, z, directory_slope){
   
   assign_slopes = function(raw_slopes, IONS){
     # identify the rows that contain ions names
-    label_rows = which(grepl(paste(IONS, collapse = "|"), dat$`Peak Name`))
+    label_rows = which(grepl(paste(IONS, collapse = "|"), raw_slopes$`Peak Name`))
     
     # make this a dataframe/tibble
     label_rows_df = 
@@ -331,7 +331,7 @@ calculate_lods = function(data_ions_processed, z, directory_slope){
              Row_number = as.character(Row_number))
     
     # now join this to the dataframe
-    slope_new <-  dat %>% 
+    slope_new <-  raw_slopes %>% 
       tibble::rownames_to_column("Row_number") %>% 
       right_join(label_rows_df) %>% 
       dplyr::select(-Row_number, -label)
@@ -371,6 +371,7 @@ calculate_lods = function(data_ions_processed, z, directory_slope){
 
 ions_lods = calculate_lods(data_ions_processed, 
                           z = 3, 
+                          IONS = all_ions,
                           directory_slope = "https://drive.google.com/drive/u/1/folders/1pf5oxzg15uB0twTl76sEGD0Ayan8ckBy")
 
 
