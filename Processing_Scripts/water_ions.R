@@ -78,7 +78,8 @@ import_data_OLD = function(FILEPATH){
 # raw_data <- import_data(FILEPATH = "data/ions/ions_data_without_dilution_correction")
 
 # Import the Limits of Detection (LOD)
-ions_lods = read.csv("data/LODs/ions_LODs_2020_Oct_2022_April_COMPASS_Only.csv")
+# ions_lods = read.csv("data/LODs/ions_LODs_2020_Oct_2022_April_COMPASS_Only.csv")
+## not doing this here - LOD function is below
 
 # Import files from Google Drive
 
