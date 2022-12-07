@@ -193,7 +193,7 @@ process_data = function(raw_data, IONS){
   data_new = 
     raw_data %>% 
     rownames_to_column("Row_number") %>% 
-    left_join(label_rows_df) %>% 
+    left_join(label_rows_df, by = "Row_number") %>% 
     mutate(Ion = case_when(label ~ Amount)) %>% 
     # ^ this pulls the Ion name only for certain rows
     # use fill() to down-fill the values
@@ -206,18 +206,19 @@ process_data = function(raw_data, IONS){
   # but it is still horribly untidy
   
   # b. clean the dataframe -----
-  # create header by collapsing the header + first row
-  # new_header = 
-  #   data_new %>% 
-  #   colnames() %>% 
-  #   paste0(data_new[1,]) %>% 
-  #   str_remove_all("NA")
-  # # the "source" column has "source" with a lot more crap
-  # # use grepl to replace that full value with just "source"
-  # new_header = replace(new_header, grep("source", new_header), "source")
-  
-  # # set column names for the dataframe
-  # names(data_new) <- new_header  
+      
+      ### create header by collapsing the header + first row
+      ### new_header = 
+      ###   data_new %>% 
+      ###   colnames() %>% 
+      ###   paste0(data_new[1,]) %>% 
+      ###   str_remove_all("NA")
+      ### # the "source" column has "source" with a lot more crap
+      ### # use grepl to replace that full value with just "source"
+      ### new_header = replace(new_header, grep("source", new_header), "source")
+      ##
+      ### # set column names for the dataframe
+      ### names(data_new) <- new_header  
   
   # preliminary processing to make it tidy
   data_new_processed = 
@@ -227,7 +228,6 @@ process_data = function(raw_data, IONS){
     # pull the date run from the long `source` column
     mutate(date_run = str_extract(source, "[0-9]{8}"),
            date_run = lubridate::as_date(date_run)) %>% 
-    #rename(Area = "AreaµS*min") %>% 
     dplyr::select(Name, Amount, Area, Ion, date_run) %>% 
     mutate(Ion = str_remove_all(Ion, "_UV"),
            Ion = tolower(Ion)) %>% 
