@@ -161,6 +161,8 @@ cat("Calcuating", var, "data from cal curves...")
 #Step 1. filter nitrogen_response and carbon_response and date_ran in standards = Standards Dataframe
 # standards start with STD in sample column
 
+
+
 data_raw %>% 
   filter(grepl("STD", sample)) %>% 
   mutate(nitrogen_weight_percent = as.numeric(nitrogen_weight_percent),
@@ -250,7 +252,7 @@ t %>%
   ggplot(aes(x = carbon_wt_mg, y = carbon_response)) + 
   geom_point(aes(color = as.factor(date_run))) + 
   geom_text(data = p, aes(label = paste("n =", n)), x = 0.5, y = 12000) +
-  facet_wrap(~month_groups) +
+  facet_wrap(~month) +
   theme_linedraw() +
   labs(title = "Carbon Standards", x = "Carbon Weight (mg)", y = "Carbon Response")
 
@@ -307,7 +309,11 @@ samples_joined %>%
 ggplot(full_samples, aes(x = month, y = new_nitrogen_weight_percent)) + geom_point() + theme_minimal()
 ggplot(full_samples, aes(x = month, y = new_carbon_weight_percent)) + geom_point() + theme_minimal()
 
-full_samples %>% separate(sample_id, sep = "_", into = c("campaign", "kit_id", "transect_location", "misc"))
+full_samples %>% 
+  separate(sample_id, sep = "_", into = c("campaign", "kit_id", "transect_location", "misc")) %>% 
+  mutate(transect_location = case_when(transect_location == "WET" ~ "Wetland",
+                                       transect_location == "TRANS" ~ "Transition")) %>% 
+  select(campaign, kit_id, transect_location, new_nitrogen_weight_percent, new_carbon_weight_percent) -> df
 
 #
 # 4. Apply QC flags ------------------------------------------------------------
