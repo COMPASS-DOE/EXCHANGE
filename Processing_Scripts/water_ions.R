@@ -114,6 +114,7 @@ import_data = function(directory){
   dat
 }
 raw_data = import_data(directory)
+raw_data[raw_data == "n.a."] <- NA
 
 ## import the dilutions key
 dilutions_key_wide = read_sheet("1ekMFJrzE_1dAzfFuLrDfrRUzp2b66WAgE4LRNZEYGy0")
