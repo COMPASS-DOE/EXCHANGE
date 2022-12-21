@@ -74,7 +74,7 @@ compute_mol_formula = function(dat){
                   formula_p = if_else(P>0,paste0("P",P),as.character(NA)),
                   formula = paste0(formula_c,formula_h, formula_o, formula_n, formula_s, formula_p),
                   formula = str_replace_all(formula,"NA","")) %>% 
-    dplyr::select(Mass, formula)
+    dplyr::select(Mass, formula, C:P)
 }
 assign_class_seidel = function(meta_clean, meta_indices){
   meta_clean %>%
@@ -128,7 +128,7 @@ make_fticr_data_intensities = function(report, sample_key){
     dplyr::select(Mass, formula, starts_with("K"))
   
   data_blanks  = 
-    data_columns %>% 
+    fticr_report %>% 
     dplyr::select(Mass, ends_with("Eluate")) %>% 
     mutate(summary = rowSums(select(., starts_with("Blank"))),
            BLANK = summary > 0) %>% 
