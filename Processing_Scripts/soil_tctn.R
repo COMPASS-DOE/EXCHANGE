@@ -131,7 +131,7 @@ data_raw %>%
 #Step 1b. filter nitrogen_response and carbon_response and date_ran in checks = Checks Dataframe
 
 data_raw %>% 
-  filter(grepl("STD", sample)) %>% 
+  filter(grepl("CK", sample)) %>% 
   mutate(nitrogen_weight_percent = as.numeric(nitrogen_weight_percent),
          carbon_weight_percent = as.numeric(carbon_weight_percent),
          nitrogen_response = as.numeric(nitrogen_response),
@@ -276,7 +276,7 @@ curve_fit_C_ck <- function(x) {
   checks <- filter(checks_filtered, month == x)
 
   #checks
-  calibrate(carbon_response ~ carbon_wt_mg, checks, max.order = 2) -> w
+  calibrate(carbon_response ~ carbon_wt_mg, standards, max.order = 2) -> w
   as.data.frame(inversePredictCalibrate(w, checks$carbon_response)) %>% 
     mutate(month = x) %>% 
     rename(carbon_response = obs.y, predict_C_wt = pred.x)
