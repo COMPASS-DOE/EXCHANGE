@@ -559,4 +559,11 @@ data_ions_final_all_dilutions = format_df(data_ions_corrected_all_dilutions)
 data_ions_final %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_dilutions.csv", row.names = FALSE)
 data_ions_final_all_dilutions %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_ALL_dilutions.csv", row.names = FALSE)
 
+a = data_ions_final_all_dilutions %>%
+  ggplot() +
+  geom_jitter(aes(kit_id, chloride_ppm, color= chloride_keep, shape=chloride_flag)) +
+  scale_shape_manual(values=c(3, 16))
+
+  ggplotly(a)
+  
 data_ions_qc %>% write.csv("TEMP-EC1-ions-not-dilution-corrected_2022-10-12.csv", row.names = FALSE)
