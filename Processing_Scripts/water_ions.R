@@ -537,7 +537,7 @@ format_df = function(data_ions_corrected){
            Dilution = as.character(Dilution)) %>% 
     pivot_longer(-c(Name, date_run, Ion)) %>% 
     mutate(name2 = paste0(Ion, "_", name)) %>% 
-    dplyr::select(-Ion, -name) %>% 
+    dplyr::select(-Ion, -name, -date_run) %>% 
     distinct %>% 
     pivot_wider(names_from = "name2", values_from = "value") %>% 
     separate(Name, sep = "_", into = c("campaign", "kit_id")) %>% 
@@ -561,8 +561,8 @@ data_ions_final_all_dilutions %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L
 
 a = data_ions_final_all_dilutions %>%
   ggplot() +
-  geom_jitter(aes(kit_id, chloride_ppm, color= chloride_keep, shape=chloride_flag)) +
-  scale_shape_manual(values=c(3, 16))
+  geom_jitter(aes(kit_id, as.numeric(nitrate_dilution), color=nitrate_flag)) +
+  facet_wrap(~kit_id, scales = "free")
 
   ggplotly(a)
   
