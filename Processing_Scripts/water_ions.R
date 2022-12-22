@@ -114,6 +114,7 @@ import_data = function(directory){
   dat
 }
 raw_data = import_data(directory)
+raw_data[raw_data == "n.a."] <- NA
 
 ## import the dilutions key
 dilutions_key_wide = read_sheet("1ekMFJrzE_1dAzfFuLrDfrRUzp2b66WAgE4LRNZEYGy0")
@@ -548,7 +549,7 @@ format_df = function(data_ions_corrected){
            Dilution = as.character(Dilution)) %>% 
     pivot_longer(-c(Name, date_run, Ion)) %>% 
     mutate(name2 = paste0(Ion, "_", name)) %>% 
-    dplyr::select(-Ion, -name) %>% 
+    dplyr::select(-Ion, -name, -date_run) %>% 
     distinct %>% 
     pivot_wider(names_from = "name2", values_from = "value") %>% 
     separate(Name, sep = "_", into = c("campaign", "kit_id")) %>% 
@@ -570,4 +571,11 @@ data_ions_final_all_dilutions = format_df(data_ions_corrected_all_dilutions) # t
 data_ions_final %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_dilutions.csv", row.names = FALSE)
 #data_ions_final_all_dilutions %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_ALL_dilutions.csv", row.names = FALSE)
 
+a = data_ions_final_all_dilutions %>%
+  ggplot() +
+  geom_jitter(aes(kit_id, as.numeric(nitrate_dilution), color=nitrate_flag)) +
+  facet_wrap(~kit_id, scales = "free")
+
+  ggplotly(a)
+  
 data_ions_qc %>% write.csv("TEMP-EC1-ions-not-dilution-corrected_2022-10-12.csv", row.names = FALSE)
