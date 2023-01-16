@@ -51,7 +51,7 @@ loi_raw <- read_sheet(loi_path) %>%
 # 3. Process data --------------------------------------------------------------
 cat("Processing", var, "data...")
 
-## The formula for GWC is [(wt_crucible + wt_dry) - (wt_crucible + wt_combusted)] / 
+## The formula for LOI is [(wt_crucible + wt_dry) - (wt_crucible + wt_combusted)] / 
 ## [(crucible + dry) - (crucible)]
 loi_processed <- loi_raw %>% 
   mutate(campaign = "EC1", 
