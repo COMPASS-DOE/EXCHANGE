@@ -31,14 +31,54 @@ library(googledrive)
 #This is a temp file: Need to load in from google drive eventually...
 ion_concs_waters <- read.csv("./Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_dilutions.csv")
 
+#load in water quality datasets (pH, Alk)
+directory = "https://drive.google.com/drive/folders/1r3sP7tvhG2btZACvxZUdtrtSiLVGUUGp"
+
+## Create a function to read in data
+read_L0B_data <- function(data){
+  # read in data
+  read_csv(file = data)
+}
+
+# 3. Import data ---------------------------------------------------------------
+
+## Create a list of files to download
+files <- drive_ls(directory) %>% 
+  filter(grepl("WaterQuality", name))
+
+## Download files to local (don't worry, we'll delete em in a sec)
+lapply(files$name, drive_download, overwrite = TRUE)
+
+# 3. Import data ---------------------------------------------------------------
+
+## Read in data, filter to EC1 samples, and add sample name
+water_quality <- files$name %>% 
+  map(read_L0B_data) %>% 
+  bind_rows() 
+
+## Clean up local (delete downloaded files)
+file.remove(c(files$name))
+
 # First step is to convert all Ions to meq/L 
 
 ion_charge <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1kVCTdSTEdz_4RvuHCRPL-A-8g2wRrqJTHPSUzASTmn4/edit?usp=sharing")
 
-
 ion_concs_waters_charge <- cbind(ion_concs_waters,ion_charge)
+# [HCO−3] + 2[CO2−3] = H2CO3
+
+wq_charge <- ion_charge %>%
+  select(H_ppm_charge, )
 
 #meq = mg x # valence electrons / molecular weight 
+
+#Charge Balance = ∑(cations) = ∑(anions)
+
+#Cation-Anion Balance Difference = (∑eq cations - ∑eq anions) / (∑eq cations + ∑eq anions) x 100%
+
+Cation_Anion_Balance_Difference <- 
+  
+  #function(var){ 
+ # {{var}}/sum({{var}})*100 }
 
 ion_meq <- ion_concs_waters_charge %>% #convert everything to milliequivalents per L
   mutate(nitrate_meql = nitrate_ppm * nitrate_ppm_charge / nitrate_mw,
@@ -53,5 +93,17 @@ ion_meq <- ion_concs_waters_charge %>% #convert everything to milliequivalents p
          potassium_meql = potassium_ppm * potassium_ppm_charge / potassium_mw,
          sulfate_meql = sulfate_ppm * sulfate_ppm_charge / sulfate_mw,
          magnesium_meql = magnesium_ppm * magnesium_ppm_charge / magnesium_mw,
-         calcium_meql = calcium_ppm * calcium_ppm_charge / calcium_mw)
+         calcium_meql = calcium_ppm * calcium_ppm_charge / calcium_mw) %>%
+  select(kit_id, nitrate_meql:calcium_meql)
+
+
+ion_CABD <- ion_meq %>%
+  select(!kit_id)%>%
+  mutate(CABD = rowSums(., na.rm = TRUE))
  
+# summarize(across(where(is.numeric), mean, na.rm = T))
+
+water_quality_meq <- water_quality %>%
+  select(campaign, kit_id, transect_location, ph, alk_mgl_caco3) %>%
+  mutate(ph_meql = (10exp(-ph) * H_ppm_charge),
+         alk_meql= )
