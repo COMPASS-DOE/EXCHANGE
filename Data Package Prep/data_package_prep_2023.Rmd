@@ -1,0 +1,29 @@
+---
+title: "Data Package Prep"
+output: html_document
+date: "2023-01-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      error = FALSE)
+```
+
+
+## Kaizad
+### Water
+DOC, TDN
+
+### Sediment
+O@ time series
+Bulk density
+GWC
+LOI
+
+### Soil
+TCTN
+O2 time series
+BD
+GWC
+LOI
