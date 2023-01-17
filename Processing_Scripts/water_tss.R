@@ -34,10 +34,17 @@ say("Welcome to EXCHANGE!", by = "random")
 data_path <- "https://docs.google.com/spreadsheets/d/13MBZYTh3K8bsog27UZOx2mXUGflXMukapq7Zfsl1ooM/edit#gid=768038889" 
 titrator_path <- "https://docs.google.com/spreadsheets/d/1lP4ft29oknaR5Xthv3Qo29EZeco6R3WkRkH-TT_x1vc/edit#gid=1069041223"
 gsheet_tab <- "Sheet1"
+drive_download("https://drive.google.com/file/d/1auYnbc16eg6Dg6AzUJ_DNP5UOd2H-7Kl/view",
+                              "temp.csv", overwrite = TRUE)
+
+kit_metadata <- read_csv("temp.csv")
+unlink("temp.csv")
 
 ## Define constants
 f4_min = 4
 f4_max = 10000
+cond_cb <- 15
+cond_gl <- 0
 
 ## Define analyte
 var <- "TSS"
@@ -47,7 +54,13 @@ var <- "TSS"
 cat("Importing", var, "data...")
 
 ## read in titrator data
-titrator <- read_sheet(ss = titrator_path, range = "Data")
+read_sheet(ss = titrator_path, range = "Data") %>% 
+  left_join(kit_metadata, by = "kit_id") %>% 
+  # we had missing titrator data for conductivity, so we used average conductivity by region from the other
+  # available titrator data
+  mutate(avg_cond = case_when(region == "Greak Lakes" ~ cond_gl,
+                              region == "Chesapeake Bay" ~ cond_cb),
+         spcond_mscm = ifelse(is.na(spcond_mscm), avg_cond, spcond_mscm)) -> titrator
 
 ## read in raw data
 data_raw <- read_sheet(ss = data_path, range = gsheet_tab, skip = 5,
