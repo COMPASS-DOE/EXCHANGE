@@ -43,8 +43,8 @@ unlink("temp.csv")
 ## Define constants
 f4_min = 4
 f4_max = 10000
-cond_cb <- 15
-cond_gl <- 0
+cond_cb <- 17
+cond_gl <- 0.5
 
 ## Define analyte
 var <- "TSS"
