@@ -10,8 +10,6 @@
 ## Created: 2022-04-01
 ## Stephanie Pennington
 ##
-# ############# #
-# ############# #
 
 #
 # 1. Setup ---------------------------------------------------------------------
@@ -35,7 +33,6 @@ say("Welcome to EXCHANGE!", by = "random")
 
 ## URL for data
 directory <- "https://drive.google.com/drive/folders/1OVhQADClTIcfMtbJenoWfCD8fnODx_it" 
-
 
 ## Define constants
 f1_min <- 0
@@ -98,10 +95,26 @@ import_data = function(directory){
 
 data_raw = import_data(directory)
 
-data_raw = data_raw %>% mutate(
+data_raw %>% mutate(
   date_run = str_extract(source, "[0-9]{1}_[0-9]{2}_[0-9]{4}|[0-9]{2}_[0-9]{2}_[0-9]{4}"),
-  date_run = mdy(str_replace_all(date_run, fixed("_"), "-")))
+  date_run = mdy(str_replace_all(date_run, fixed("_"), "-")),
+  month = as.character(month(date_run, label = TRUE, abbr = FALSE)),
+  month_groups = ifelse(month == "September", "August", month),
+  nitrogen_weight_percent = as.numeric(nitrogen_weight_percent),
+  carbon_weight_percent = as.numeric(carbon_weight_percent),
+  nitrogen_response = as.numeric(nitrogen_response),
+  carbon_response = as.numeric(carbon_response),
+  nitrogen_wt_mg = as.numeric(nitrogen_wt_mg),
+  carbon_wt_mg = as.numeric(carbon_wt_mg),
+  sample_wt_mg = as.numeric(sample_wt_mg)) -> data_primitive
 
+data_primitive -> data# %>% 
+  # filter out September data for now
+ # filter(month != "September") -> data
+
+data_primitive %>% 
+  # filter out September data for now
+  filter(month == "September") -> september_data
 
 #
 # 3. Process data --------------------------------------------------------------
@@ -119,34 +132,22 @@ cat("Calcuating", var, "data from cal curves...")
 #Step 1. filter nitrogen_response and carbon_response and date_ran in standards = Standards Dataframe
 # standards start with STD in sample column
 
-data_raw %>% 
-  filter(grepl("STD", sample)) %>% 
-  mutate(nitrogen_weight_percent = as.numeric(nitrogen_weight_percent),
-         carbon_weight_percent = as.numeric(carbon_weight_percent),
-         nitrogen_response = as.numeric(nitrogen_response),
-         carbon_response = as.numeric(carbon_response),
-         nitrogen_wt_mg = as.numeric(nitrogen_wt_mg),
-         carbon_wt_mg = as.numeric(carbon_wt_mg)) -> standards_df
+data %>% filter(grepl("STD", sample)) -> standards_df
 
 #Step 1b. filter nitrogen_response and carbon_response and date_ran in checks = Checks Dataframe
 
-data_raw %>% 
-  filter(grepl("CK", sample)) %>% 
-  mutate(nitrogen_weight_percent = as.numeric(nitrogen_weight_percent),
-         carbon_weight_percent = as.numeric(carbon_weight_percent),
-         nitrogen_response = as.numeric(nitrogen_response),
-         carbon_response = as.numeric(carbon_response),
-         nitrogen_wt_mg = as.numeric(nitrogen_wt_mg),
-         carbon_wt_mg = as.numeric(carbon_wt_mg)) -> checks_df
+data %>% filter(grepl("CK", sample)) %>% 
+  mutate(type = str_extract(sample_id, "CK_[A-Z]*"),
+         type_perc_C = case_when(type == "CK_AN" ~ 71.09,
+                                 type == "CK_AP" ~ 70.56,
+                                 type == "CK_C" ~ 4.4),
+         type_perc_N = case_when(type == "CK_AN" ~ 10.36,
+                                 type == "CK_AP" ~ 4.84,
+                                 type == "CK_N" ~ 6.06)) -> checks_df
 
 #Step 2. filter nitrogen_response and carbon_response and date_ran in samples = Sample Dataframe
 
-data_raw  %>% 
-  filter(grepl("EC1", sample)) %>% 
-  mutate(nitrogen_weight_percent = as.numeric(nitrogen_weight_percent),
-         carbon_weight_percent = as.numeric(carbon_weight_percent),
-         nitrogen_response = as.numeric(nitrogen_response),
-         carbon_response = as.numeric(carbon_response)) -> samples_df
+data %>% filter(grepl("EC1", sample)) -> samples_df
 
 #Step 3. filtering samples outside of range between the response values for 0.1mg to 6mg in Standards Dataframe per date_ran
 
@@ -188,8 +189,6 @@ standards_df %>%
          carbon_weight_percent > standard_c - standard_c_prop,
          nitrogen_weight_percent > standard_n - standard_n_prop,
          nitrogen_weight_percent < standard_n + standard_n_prop) %>% 
-  mutate(month = as.character(month(date_run, label = TRUE, abbr = FALSE)),
-       month_groups = ifelse(month == "September", "August", month)) %>% 
   group_by(month) -> t
 
 nrow(standards_df) - nrow(t) -> row_change_2
@@ -297,6 +296,31 @@ checks_filtered %>%
   left_join(N_chks, by = c("nitrogen_response", "month")) %>% 
   left_join(C_chks, by = c("carbon_response", "month")) -> checks_joined
 
+#------
+#Reverse-calculate sample weights using Acetanilide fraction
+
+standards_df %>% mutate(
+  reverse_C_wt = sample_wt_mg * 0.7109,
+  reverse_N_wt = sample_wt_mg * 0.1036
+) -> reverse_standards
+
+d_groups <- unique(reverse_standards$date_run)
+
+curve_fit_date <- function(x, type) {
+  
+  standards <- filter(t, date_run == x)
+  checks <- filter(checks_filtered, date_run == x)
+  
+  #checks
+  calibrate(carbon_response ~ carbon_wt_mg, standards, max.order = 2) -> w
+  as.data.frame(inversePredictCalibrate(w, checks$carbon_response)) %>% 
+    mutate(month = x) %>% 
+    rename(carbon_response = obs.y, predict_C_wt = pred.x)
+  
+}
+#------
+
+
 #Step 11. Using nitrogen_wt_mg , carbon_wt_mg columns from the re-calculation above, then calculate weight percent: 
         # nitrogen_wt_mg /sample_wt_mg x 100 = nitrogen_weight_percent
         # carbon_wt_mg /sample_wt_mg x 100 = carbon_weight_percent
@@ -314,8 +338,8 @@ checks_joined %>%
 ggplot(full_samples, aes(x = month, y = new_nitrogen_weight_percent)) + geom_point() + theme_minimal()
 ggplot(full_samples, aes(x = month, y = new_carbon_weight_percent)) + geom_point() + theme_minimal()
 
-ggplot(full_checks, aes(x = month, y = new_nitrogen_weight_percent)) + geom_point() + theme_minimal()
-ggplot(full_checks, aes(x = month, y = new_carbon_weight_percent)) + geom_point() + theme_minimal()
+ggplot(full_checks, aes(x = month, y = new_nitrogen_weight_percent)) + geom_point(aes(color = type)) + theme_minimal()
+ggplot(full_checks, aes(x = month, y = new_carbon_weight_percent)) + geom_point(aes(color = type)) + theme_minimal()
 
 
 full_samples %>% 
@@ -415,5 +439,5 @@ data_qc %>%
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
 #drive_upload(media = data_clean, path = data_path)
 
-write_csv(data_clean, paste0("Data/Processed/EC1_Soil_TCTN_L0B_",Sys.Date(),".csv"))
+#rite_csv(data_clean, paste0("Data/Processed/EC1_Soil_TCTN_L0B_",Sys.Date(),".csv"))
  
