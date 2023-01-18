@@ -7,23 +7,159 @@ date: "2023-01-17"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE,
                       warning = FALSE,
-                      error = FALSE)
+                      error = FALSE,
+                      message = FALSE)
+
+library(tidyverse)
+library(plotly)
+```
+
+---
+
+FOLLOW-UP:
+
+1. soil-ghg: Site -> Transect; type -> treatment
+
+---
+
+
+```{r import}
+
+import_files = function(FILEPATH){
+  
+  filePaths <- list.files(path = FILEPATH, pattern = ".csv", full.names = TRUE)
+  
+    do.call(bind_rows, lapply(filePaths, function(path){
+      # then add a new column `source` to denote the file name
+      df <- 
+        read.csv(path, header = TRUE, check.names = FALSE) %>% 
+        mutate(source = basename(path))
+      df}))
+  
+}
+
+kit_metadata = read.csv("Data/ESS-DIVE Submission/ec1-metadata/ec1_metadata_kitlevel.csv") %>% dplyr::select(kit_id, site_name, region)
+reorder_transect = function(dat){
+  dat %>% 
+    mutate(transect_location = factor(transect_location, levels = c("upland", "transition", "wetland")))
+}
+
+
+soil_combined = import_files(FILEPATH = "Data/ESS-DIVE Submission/ec1-soil")
+soil_combined_long = 
+  soil_combined %>% 
+  pivot_longer(-c(campaign, kit_id, transect_location, source, site, type)) %>% 
+  mutate(transect_location = case_when(is.na(transect_location) ~ site, TRUE ~ transect_location),
+         transect_location = tolower(transect_location)) %>% 
+  dplyr::select(-site) %>% 
+  rename(treatment = type) %>% 
+  filter(!is.na(value)) %>% 
+  left_join(kit_metadata) %>% 
+  reorder_transect()
+
+sediment_combined = import_files(FILEPATH = "Data/ESS-DIVE Submission/ec1-sediment")
+sediment_combined_long = 
+  sediment_combined %>% 
+  pivot_longer(-c(campaign, kit_id, transect_location, source, site, type)) %>% 
+  mutate(transect_location = case_when(is.na(transect_location) ~ site, TRUE ~ transect_location),
+         transect_location = tolower(transect_location)) %>% 
+  dplyr::select(-site) %>% 
+  rename(treatment = type) %>% 
+  filter(!is.na(value)) %>% 
+  left_join(kit_metadata) %>% 
+  mutate(transect_location = "sediment")
+
+
+water_combined = import_files(FILEPATH = "Data/ESS-DIVE Submission/ec1-water")
+water_combined_long = 
+  water_combined %>% 
+  pivot_longer(-c(campaign, kit_id, transect_location, source)) %>% 
+  mutate(transect_location = tolower(transect_location)) %>% 
+  filter(!is.na(value)) %>% 
+  left_join(kit_metadata) %>% 
+  mutate(transect_location = "water")
+
+
+```
+
+```{r summary_fns}
+plot_data = function(data, TITLE){
+  p = 
+    data %>% 
+    ggplot(aes(x = region, y = value, color = transect_location,
+               text = paste("Kit:", kit_id, 
+                            "\nSite:", site_name, 
+                            "\nValue:", round(value, 2)),
+               group = transect_location))+
+    geom_point(position = position_dodge(width = 0.3))+
+    facet_wrap(~source + name, scales = "free_y")+
+    labs(title = TITLE)
+  
+    ggplotly(p, tooltip = "text")
+  
+}
+
+summarize_data = function(data){
+  data %>% 
+    group_by(source, name, region) %>% 
+    dplyr::summarise(mean = round(mean(value),3),
+                     median = round(median(value),3),
+                     min = round(min(value),3),
+                     max = round(max(value),3),
+                     n = n()) 
+  
+}
+
+```
+
+---
+
+### Water
+
+```{r water, fig.height=7, fig.width=11}
+
+plot_data(data = water_combined_long, TITLE = "Water")
+
+summarize_data(data = water_combined_long) %>% knitr::kable()
 ```
 
 
-## Kaizad
-### Water
-DOC, TDN
+---
 
 ### Sediment
-O@ time series
-Bulk density
-GWC
-LOI
+
+```{r sediment, fig.height=7, fig.width=11}
+
+plot_data(data = sediment_combined_long, TITLE = "Sediment")
+
+summarize_data(data = sediment_combined_long) %>% knitr::kable()
+```
+
+
+---
 
 ### Soil
-TCTN
-O2 time series
-BD
-GWC
-LOI
+
+
+
+```{r soil, fig.height=7, fig.width=11}
+
+plot_data(data = soil_combined_long, TITLE = "Soil")
+
+summarize_data(data = soil_combined_long) %>% knitr::kable()
+```
+
+---
+
+## Session Info 
+
+<details>
+  <summary> Session Info </summary>
+
+Date run: `r Sys.Date()`
+
+```{r}
+sessionInfo()
+```
+
+</details>
