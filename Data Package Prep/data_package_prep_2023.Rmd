@@ -16,9 +16,9 @@ library(plotly)
 
 ---
 
-FOLLOW-UP:
+### FOLLOW-UP ACTION ITEMS:
 
-1. soil-ghg: Site -> Transect; type -> treatment
+1. soil-ghg and sediment-ghg: Site -> Transect; type -> treatment
 
 ---
 
@@ -140,14 +140,50 @@ summarize_data(data = sediment_combined_long) %>% knitr::kable()
 
 ### Soil
 
-
-
 ```{r soil, fig.height=7, fig.width=11}
 
 plot_data(data = soil_combined_long, TITLE = "Soil")
 
 summarize_data(data = soil_combined_long) %>% knitr::kable()
 ```
+
+---
+
+---
+
+
+2023-01-17, KFP comments:
+
+**soil**
+
+- BD: 
+  - K049 upland (Saugatuch) is high for CB, at 1.74 
+- GHG/pCH4: 
+  - K050 wetland (Kimages) is high, at 20.68
+  - K015 upland (Taskinas) is high, at 13.68
+- GHG/pCO2:
+  - K015 upland (Taskinas) is high, at 208251
+- GHG/pN2O
+  - K018 (Goodwin) and K034 (King's Creek) uplands are high, at > 500
+  - K019 (Boy Scout) upland is high, at 590
+- LOI: there is a group in CB that is higher than the rest: 
+  - K039 T and W, 
+  - K047 W 
+  - K008 T
+- O2 drawdown:
+  - K059 transition (Blackwater) is higher than other transitions
+- pH
+  - K013 upland (Wigwam Bay) is higher than the rest, at 7.56
+  
+**sediment**
+
+- GHG/pCH4: K021 (Magee Marsh) is way higher than the rest, at 114
+- GHG/pN2O: K021 (Magee Marsh) is way higher than the other CB, at 16.49
+- O2 drawdown: very high spread, with K030 (St. Jones Reserve) the highest, at 48
+
+
+
+---
 
 ---
 
