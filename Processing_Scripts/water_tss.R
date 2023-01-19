@@ -112,13 +112,14 @@ cat("Applying flags to", var, "data...")
 data_qc <- function(data) {
   data %>% 
     mutate(`negative filter mass` = ifelse(total_filter_mass_g < 0, T, F),
+           `used average conductivity` = ifelse(kit_id %in% c("K014", "K057"), T, F),
            #flag_3 = ifelse(total_bottom_filter_g > 0, T, F),
            `outside range` = ifelse(tss_mg_perl < f4_min | tss_mg_perl > f4_max, T, F)
            ) 
 }
 
 data_qc(data_processed) %>% 
-  pivot_longer(cols = c(`negative filter mass`,`outside range`), names_to = "tss_flag",
+  pivot_longer(cols = c(`negative filter mass`,`outside range`, `used average conductivity`), names_to = "tss_flag",
                values_to = "vals") %>% 
   filter(vals == TRUE) %>% select(-vals) %>% 
   group_by(kit_id, transect_location) %>% 
@@ -137,4 +138,4 @@ data_processed %>%
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
 #drive_upload(media = data_clean, path = data_path)
 
-write_csv(data_clean, "Data/Processed/EC1_Water_TSS_L0B_20220531.csv")
+write_csv(data_clean, "Data/Processed/EC1_Water_TSS_L0B_20220119.csv")
