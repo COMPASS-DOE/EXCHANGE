@@ -569,7 +569,8 @@ data_ions_final_all_dilutions = format_df(data_ions_corrected_all_dilutions) # t
 # 5. Export cleaned data --------------------------------------------------
 
 data_ions_final %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_dilutions.csv", row.names = FALSE)
-#data_ions_final_all_dilutions %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_ALL_dilutions.csv", row.names = FALSE)
+data_ions_final_all_dilutions %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_ALL_dilutions.csv", row.names = FALSE)
+  
 
 a = data_ions_final_all_dilutions %>%
   ggplot() +
@@ -579,3 +580,5 @@ a = data_ions_final_all_dilutions %>%
   ggplotly(a)
   
 data_ions_qc %>% write.csv("TEMP-EC1-ions-not-dilution-corrected_2022-10-12.csv", row.names = FALSE)
+file.remove("TEMP-ions_readme_compiled_2022-10-12.csv")
+file.remove("TEMP-EC1-ions-not-dilution-corrected_2022-10-12.csv")
