@@ -549,7 +549,7 @@ format_df = function(data_ions_corrected){
            Dilution = as.character(Dilution)) %>% 
     pivot_longer(-c(Name, date_run, Ion)) %>% 
     mutate(name2 = paste0(Ion, "_", name)) %>% 
-    dplyr::select(-Ion, -name, -date_run) %>% 
+    dplyr::select(-Ion, -name) %>% 
     distinct %>% 
     pivot_wider(names_from = "name2", values_from = "value") %>% 
     separate(Name, sep = "_", into = c("campaign", "kit_id")) %>% 
