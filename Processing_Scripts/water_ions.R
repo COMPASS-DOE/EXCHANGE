@@ -114,6 +114,7 @@ import_data = function(directory){
   dat
 }
 raw_data = import_data(directory)
+raw_data[raw_data == "n.a."] <- NA
 
 ## import the dilutions key
 dilutions_key_wide = read_sheet("1ekMFJrzE_1dAzfFuLrDfrRUzp2b66WAgE4LRNZEYGy0")
@@ -171,7 +172,7 @@ dilutions_key = process_dilutions_data(dilutions_key_wide)
 # `process_data`: this function will assign ions and tidy the dataframe
 # input parameters are (a) the dataframe being cleaned and (b) the ions in question.
 
-process_data = function(raw_data, IONS){
+process_data = function(raw_data, readme_data, IONS){
   
   # The input data are in shitty, non-tidy format, with multi-line headers and multiple chunks of data per dataframe.  
   # This function assigns the ions and turns it into tidy format, then cleans/processes the dataframe
@@ -233,7 +234,29 @@ process_data = function(raw_data, IONS){
            Ion = tolower(Ion)) %>% 
     force()
   
-  data_new_processed
+  # now, format the readme data so we can join with the processed file
+  readme_data2 = 
+    readme_data %>% 
+    rename(Name = `Sample Name`) %>% 
+    mutate(date_run = str_extract(source, "[0-9]{8}"),
+           date_run = lubridate::as_date(date_run)) %>% 
+    dplyr::select(date_run, Name, Action, Dilution) %>% 
+    force()
+  
+  data_new_processed_readme = 
+    data_new_processed %>% 
+    left_join(readme_data2, by = c("Name", "date_run")) %>% 
+    mutate(REMOVE = case_when(Action == "Omit_cations" & Ion %in% c("lithium", "sodium", "ammonium",
+                                                                    "potassium", "magnesium", "calcium") ~ TRUE,
+                              Action == "Omit_anions" & Ion %in% c("chloride", "bromide", "sulfate", "phosphate", "fluoride") ~ TRUE,
+                              Action == "Omit_UV" & Ion %in% c("nitrite", "nitrate") ~ TRUE,
+                              Action == "Omit" ~ TRUE
+    )) %>% 
+    #  filter(!Action %in% "Omit") %>%
+    filter(is.na(REMOVE)) %>% 
+    dplyr::select(-REMOVE)
+ 
+  data_new_processed_readme
   # This file has all the processed data for all the samples/standards/blanks run on the machine.
   # Some samples were run multiple times, at varying dilutions
   # We will use the Readme file to map these dilutions later, 
@@ -247,7 +270,7 @@ process_data = function(raw_data, IONS){
 all_ions = c("Lithium", "Sodium", "Ammonium", "Potassium", "Magnesium", "Calcium", "Nitrite", "Nitrate",
              "Chloride", "Bromide", "Sulfate", "Phosphate", "Fluoride")
 
-data_ions_processed = process_data(raw_data, IONS = all_ions)
+data_ions_processed = process_data(raw_data, readme_data, IONS = all_ions)
 
 #
 # 4. Apply QC flags ------------------------------------------------------------
@@ -387,7 +410,7 @@ apply_qc_flags = function(data_ions_processed, QC_DATA){
     filter(grepl("A-", Name) | grepl("C-", Name)) %>% 
     filter(!grepl("CK", Name)) %>%
     filter(!is.na(Amount)) %>% 
-    group_by(Ion, date_run) %>% 
+    group_by(Ion, date_run, Action, Dilution) %>% 
     dplyr::summarise(calib_min = min(Amount),
                      calib_max = max(Amount))
   data_ions_qc = 
@@ -397,7 +420,7 @@ apply_qc_flags = function(data_ions_processed, QC_DATA){
     mutate(flag = case_when(Amount  < LOD_ppm ~ "below detect",
                             Amount  > calib_max ~ "above calibration")) %>% 
     rename(ppm = Amount) %>% 
-    dplyr::select(Name, date_run, Ion, ppm, flag) %>% 
+    dplyr::select(Name, date_run, Ion, ppm, flag, Action, Dilution) %>% 
     filter(ppm >= 0)
   
 }
@@ -413,7 +436,7 @@ data_ions_qc = apply_qc_flags(data_ions_processed, QC_DATA = ions_lods)
 #  (b) compiled readme file, which contains data for dilutions, etc.,
 #  (c) and the dilutions key, which tells us which dilutions we want to keep for each sample/ion
 
-do_corrections = function(data_ions_qc, readme_data, dilutions_key){
+do_corrections = function(data_ions_qc, dilutions_key){
   
   # 1. blank corrections ----
   samples_and_blanks = 
@@ -444,23 +467,15 @@ do_corrections = function(data_ions_qc, readme_data, dilutions_key){
   # 2. dilution correction ----
   options(scipen = 50)
   
-  readme_data2 = 
-    readme_data %>% 
-    rename(Name = `Sample Name`) %>% 
-    mutate(date_run = str_extract(source, "[0-9]{8}"),
-           date_run = lubridate::as_date(date_run)) %>% 
-    dplyr::select(date_run, Name, Action, Dilution) %>% 
-    force()
-  
   samples_dilution_corrected = 
     samples_blank_corrected %>% 
-    # bring in the readme file to assign diliutions to each sample
-    left_join(readme_data2, by = c("Name", "date_run")) %>% 
-    filter(!Action %in% "Omit") %>%
     # bring in the dilutions key to determine which dilutions to keep
     left_join(dilutions_key %>% mutate(keep = TRUE), 
               by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution")) %>% 
     filter(keep) %>% 
+    group_by(Name, Ion, Dilution) %>% 
+    dplyr::mutate(keep = date_run == max(date_run)) %>% 
+   filter(keep) %>% 
     dplyr::select(-keep) %>% 
     # do the dilution correction
     mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
@@ -472,29 +487,26 @@ do_corrections = function(data_ions_qc, readme_data, dilutions_key){
   
   samples_dilution_corrected_ALLDILUTIONS = 
     samples_blank_corrected %>% 
-    # bring in the readme file to assign diliutions to each sample
-    left_join(readme_data2, by = c("Name", "date_run")) %>% 
-    filter(!Action %in% "Omit") %>%
     # bring in the dilutions key to determine which dilutions to keep
     left_join(dilutions_key %>% mutate(keep = TRUE), 
               by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution")) %>% 
-   # filter(keep) %>% 
-   #  dplyr::select(-keep) %>% 
     # do the dilution correction
     mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
     mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
            Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
-    dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Dilution, keep) %>% 
+    dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Action, Dilution, keep) %>% 
     filter(Amount_bl_dil_corrected > 0) %>% 
     mutate(keep = as.character(keep))
+  
+  
   
   list(samples_dilution_corrected = samples_dilution_corrected,
        samples_dilution_corrected_ALLDILUTIONS = samples_dilution_corrected_ALLDILUTIONS
   )
   
 }
-data_ions_corrected = do_corrections(data_ions_qc, readme_data, dilutions_key)$samples_dilution_corrected
-data_ions_corrected_all_dilutions = do_corrections(data_ions_qc, readme_data, dilutions_key)$samples_dilution_corrected_ALLDILUTIONS
+data_ions_corrected = do_corrections(data_ions_qc, dilutions_key)$samples_dilution_corrected
+data_ions_corrected_all_dilutions = do_corrections(data_ions_qc, dilutions_key)$samples_dilution_corrected_ALLDILUTIONS
 
 
 #
@@ -531,6 +543,7 @@ check_cal_curve_values = function(){
 format_df = function(data_ions_corrected){
   
   data_ions_corrected %>% 
+    ungroup() %>% 
     rename(ppm = Amount_bl_dil_corrected) %>% 
     mutate(ppm = as.character(ppm),
            Dilution = as.character(Dilution)) %>% 
@@ -548,8 +561,8 @@ format_df = function(data_ions_corrected){
   
   
 }
-data_ions_final = format_df(data_ions_corrected)
-data_ions_final_all_dilutions = format_df(data_ions_corrected_all_dilutions)
+data_ions_final = format_df(data_ions_corrected) # this includes only the results for the selected (correct) dilutions
+data_ions_final_all_dilutions = format_df(data_ions_corrected_all_dilutions) # this includes results for all dilutions (including the ones we want to exclude)
 
 
 #
@@ -557,5 +570,15 @@ data_ions_final_all_dilutions = format_df(data_ions_corrected_all_dilutions)
 
 data_ions_final %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_dilutions.csv", row.names = FALSE)
 data_ions_final_all_dilutions %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_ALL_dilutions.csv", row.names = FALSE)
+  
 
+a = data_ions_final_all_dilutions %>%
+  ggplot() +
+  geom_jitter(aes(kit_id, as.numeric(nitrate_dilution), color=nitrate_flag)) +
+  facet_wrap(~kit_id, scales = "free")
+
+  ggplotly(a)
+  
 data_ions_qc %>% write.csv("TEMP-EC1-ions-not-dilution-corrected_2022-10-12.csv", row.names = FALSE)
+file.remove("TEMP-ions_readme_compiled_2022-10-12.csv")
+file.remove("TEMP-EC1-ions-not-dilution-corrected_2022-10-12.csv")

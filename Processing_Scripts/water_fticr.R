@@ -39,6 +39,6 @@ fticr_blanks = make_fticr_data_intensities(report)$data_blanks
 #
 
 # 3.  Export processed data -----------------------------------------------
-fticr_data %>% write.csv("Data/Processed/EC1_Water_FTICR_L2_20221118.csv", row.names = FALSE)
-fticr_meta %>% write.csv("Data/Processed/EC1_Water_FTICR_meta_L2_20221118.csv", row.names = FALSE)
+fticr_data %>% write.csv("Data/Processed/EC1_Water_FTICR_L2_20221221.csv", row.names = FALSE)
+fticr_meta %>% write.csv("Data/Processed/EC1_Water_FTICR_meta_L2_20221221.csv", row.names = FALSE)
 

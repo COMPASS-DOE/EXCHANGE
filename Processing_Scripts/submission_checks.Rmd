@@ -4,12 +4,12 @@ output:
   html_document:
     toc: true
     toc_float: true
-date: "2022-10-21"
 ---
 
 #### Checks on Level 2 data before marking as "ready for submission" to ESS-DIVE
 
 #### Created October 21, 2022 | Stephanie Pennington
+#### Last ran: `r Sys.Date()`
 
 **Checks/formatting we need to do:**
 
@@ -21,7 +21,7 @@ date: "2022-10-21"
 ```{r setup, include=FALSE}
 pacman::p_load(ggplot2, readr, dplyr, tidyr, kableExtra, DT)
 
-files <- list.files("~/Desktop/EC1 ESS-DIVE Submission/", recursive = TRUE, full.names = TRUE)
+files <- list.files("~/Downloads/ESS-DIVE Submission/", recursive = TRUE, full.names = TRUE)
 ```
 
 # Are file names in the correct structure?
@@ -38,11 +38,22 @@ basename(files) %>%
 ```{r dupes-check, echo = FALSE, message=FALSE}
 kit_check <- function(file_path) {
     df <- read_csv(file_path)
-
-    df %>% 
+    
+    if("transect_location" %in% colnames(df)) {
+      df %>% 
       group_by(kit_id, transect_location) %>% 
       summarise(dupes = sum(duplicated(kit_id))) %>%  
       mutate(file = basename(file_path))
+    } else {
+      
+      df %>% 
+      group_by(kit_id) %>% 
+      summarise(dupes = sum(duplicated(kit_id))) %>%  
+      mutate(file = basename(file_path))
+      
+    }
+
+
     #tibble(file_name = basename(file_path), dupe_kitid = sum(duplicated(df$kit_id)))
 }
 
@@ -89,7 +100,7 @@ na_checks %>%
   left_join(dupes_sum, by = "file") %>% 
   mutate('Pass/Fail' = case_when(na_sum | dupe_sum > 0 ~ "Fail",
                                  na_sum | dupe_sum == 0 ~ "Pass")) %>% 
-  select(file, 'Pass/Fail') %>% 
+  select(file, 'Pass/Fail', na_sum, dupe_sum) %>% 
   datatable() %>% 
   formatStyle(
   'Pass/Fail',backgroundColor = styleEqual(c("Pass", "Fail"), c('aquamarine', 'lightcoral')))
