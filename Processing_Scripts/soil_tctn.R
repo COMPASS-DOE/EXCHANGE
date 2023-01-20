@@ -296,7 +296,6 @@ checks_filtered %>%
   left_join(N_chks, by = c("nitrogen_response", "month")) %>% 
   left_join(C_chks, by = c("carbon_response", "month")) -> checks_joined
 
-#------
 #Reverse-calculate sample weights using Acetanilide fraction
 
 standards_df %>% mutate(
@@ -306,20 +305,36 @@ standards_df %>% mutate(
 
 d_groups <- unique(reverse_standards$date_run)
 
-curve_fit_date <- function(x, type) {
+curve_fit_C_date <- function(x) {
   
-  standards <- filter(t, date_run == x)
-  checks <- filter(checks_filtered, date_run == x)
-  
-  #checks
-  calibrate(carbon_response ~ carbon_wt_mg, standards, max.order = 2) -> w
-  as.data.frame(inversePredictCalibrate(w, checks$carbon_response)) %>% 
-    mutate(month = x) %>% 
+  standards <- filter(reverse_standards, date_run == x)
+  data <- filter(samples_filtered, date_run == x)
+
+  calibrate(carbon_response ~ reverse_C_wt, standards, max.order = 3) -> w
+  as.data.frame(inversePredictCalibrate(w, data$carbon_response)) %>% 
+    mutate(date_run = x) %>% 
     rename(carbon_response = obs.y, predict_C_wt = pred.x)
   
 }
-#------
 
+curve_fit_N_date <- function(x) {
+  
+  standards <- filter(reverse_standards, date_run == x)
+  data <- filter(samples_filtered, date_run == x)
+  
+  calibrate(nitrogen_response ~ reverse_N_wt, standards, max.order = 3) -> w
+  as.data.frame(inversePredictCalibrate(w, data$nitrogen_response)) %>% 
+    mutate(date_run = x) %>% 
+    rename(nitrogen_response = obs.y, predict_N_wt = pred.x)
+  
+}
+
+lapply(d_groups, curve_fit_C_date) %>% bind_rows() -> C_reverse
+lapply(d_groups, curve_fit_N_date) %>% bind_rows() -> N_reverse
+
+samples_filtered %>% 
+  left_join(N_reverse, by = c("nitrogen_response", "date_run")) %>% 
+  left_join(C_reverse, by = c("carbon_response", "date_run")) -> reverse_joined
 
 #Step 11. Using nitrogen_wt_mg , carbon_wt_mg columns from the re-calculation above, then calculate weight percent: 
         # nitrogen_wt_mg /sample_wt_mg x 100 = nitrogen_weight_percent
