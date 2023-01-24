@@ -95,26 +95,21 @@ import_data = function(directory){
 
 data_raw = import_data(directory)
 
-data_raw %>% mutate(
-  date_run = str_extract(source, "[0-9]{1}_[0-9]{2}_[0-9]{4}|[0-9]{2}_[0-9]{2}_[0-9]{4}"),
-  date_run = mdy(str_replace_all(date_run, fixed("_"), "-")),
-  month = as.character(month(date_run, label = TRUE, abbr = FALSE)),
-  month_groups = ifelse(month == "September", "August", month),
-  nitrogen_weight_percent = as.numeric(nitrogen_weight_percent),
-  carbon_weight_percent = as.numeric(carbon_weight_percent),
-  nitrogen_response = as.numeric(nitrogen_response),
-  carbon_response = as.numeric(carbon_response),
-  nitrogen_wt_mg = as.numeric(nitrogen_wt_mg),
-  carbon_wt_mg = as.numeric(carbon_wt_mg),
-  sample_wt_mg = as.numeric(sample_wt_mg)) -> data_primitive
-
-data_primitive -> data# %>% 
-  # filter out September data for now
- # filter(month != "September") -> data
-
-data_primitive %>% 
-  # filter out September data for now
-  filter(month == "September") -> september_data
+data_raw %>% 
+  mutate(
+    date_run = str_extract(source, "[0-9]{1}_[0-9]{2}_[0-9]{4}|[0-9]{2}_[0-9]{2}_[0-9]{4}"),
+    date_run = mdy(str_replace_all(date_run, fixed("_"), "-")),
+    month = as.character(month(date_run, label = TRUE, abbr = FALSE)),
+    month_groups = ifelse(month == "September", "August", month),
+    nitrogen_weight_percent = as.numeric(nitrogen_weight_percent),
+    carbon_weight_percent = as.numeric(carbon_weight_percent),
+    nitrogen_response = as.numeric(nitrogen_response),
+    carbon_response = as.numeric(carbon_response),
+    nitrogen_wt_mg = as.numeric(nitrogen_wt_mg),
+    carbon_wt_mg = as.numeric(carbon_wt_mg),
+    sample_wt_mg = as.numeric(sample_wt_mg)) %>% 
+  separate(source, into = c("one", "two", "three", "four", "rep")) %>% 
+  select(-one, -two, -three, -four) -> data_primitive
 
 #
 # 3. Process data --------------------------------------------------------------
@@ -132,11 +127,11 @@ cat("Calcuating", var, "data from cal curves...")
 #Step 1. filter nitrogen_response and carbon_response and date_ran in standards = Standards Dataframe
 # standards start with STD in sample column
 
-data %>% filter(grepl("STD", sample)) -> standards_df
+data_primitive %>% filter(grepl("STD", sample)) -> standards_df
 
 #Step 1b. filter nitrogen_response and carbon_response and date_ran in checks = Checks Dataframe
 
-data %>% filter(grepl("CK", sample)) %>% 
+data_primitive %>% filter(grepl("CK", sample)) %>% 
   mutate(type = str_extract(sample_id, "CK_[A-Z]*"),
          type_perc_C = case_when(type == "CK_AN" ~ 71.09,
                                  type == "CK_AP" ~ 70.56,
@@ -147,180 +142,22 @@ data %>% filter(grepl("CK", sample)) %>%
 
 #Step 2. filter nitrogen_response and carbon_response and date_ran in samples = Sample Dataframe
 
-data %>% filter(grepl("EC1", sample)) -> samples_df
+data_primitive %>% filter(grepl("EC1", sample)) -> samples_df
 
-#Step 3. filtering samples outside of range between the response values for 0.1mg to 6mg in Standards Dataframe per date_ran
-
-standards_df %>% 
-  rename(n_response_standards = nitrogen_response, 
-         c_response_standards = carbon_response) %>% 
-  group_by(date_run) %>% 
-  summarise(min_n = min(n_response_standards),
-            max_n = max(n_response_standards),
-            min_c = min(c_response_standards),
-            max_c = max(c_response_standards)) -> standards_range
-
-samples_df %>% 
-  left_join(standards_range, by = "date_run") %>% 
-  filter(nitrogen_response < max_n, nitrogen_response > min_n,
-         carbon_response < max_c, carbon_response > min_c) %>% 
-  mutate(month = as.character(month(date_run, label = TRUE, abbr = FALSE))) -> samples_filtered
-
-checks_df %>% 
-  left_join(standards_range, by = "date_run") %>% 
-  filter(nitrogen_response < max_n, nitrogen_response > min_n,
-         carbon_response < max_c, carbon_response > min_c) %>% 
-  mutate(month = as.character(month(date_run, label = TRUE, abbr = FALSE))) -> checks_filtered
-
-nrow(data_raw) - nrow(samples_filtered) -> row_change
-cat(row_change, "rows were dropped")
-
-#Step 4. get range of responses from samples in each run (date_ran)
-
-summary(samples_filtered)
-
-#Step 5. Filter Standards Dataframe that are reading a weight percentage of C and N that are in line 
-# with what the standard should be reporting +/- 5% (Acetanilide_C_per = 71.09, Acetanilide_N_per = 10.36)
-
-# standard_c = 71.09, standard_c_prop = 3.5545
-# standard_n = 10.36, standard_n_prop = 0.518
-standards_df %>% 
-  filter(carbon_weight_percent < standard_c + standard_c_prop,
-         carbon_weight_percent > standard_c - standard_c_prop,
-         nitrogen_weight_percent > standard_n - standard_n_prop,
-         nitrogen_weight_percent < standard_n + standard_n_prop) %>% 
-  group_by(month) -> t
-
-nrow(standards_df) - nrow(t) -> row_change_2
-cat(row_change_2, "rows were dropped")
-
-#Step 6. make a linear plot to visually confirm the curve per date_ran is reasonable with good points as is 
-# (at min 3 points per curve, ideally as many as possible), no averaging by curve/weight level needed (if curves look wonky, 
-# need to average and/or drop points dates) x = weight, y = response
-t %>% 
-  summarise(n = n()) -> p
-
-mon <- unique(t$month)
-
-r2 <- function(mon) {
-  
-  t <- filter(t, month == mon)
-  m <- lm(nitrogen_response ~ nitrogen_wt_mg, data = t)
-  data.frame(month = mon, type = "N", r2 = summary(m)$r.squared)
-}
-
-lapply(mon, r2) -> y
-
-t %>% 
-  ggplot(aes(x = nitrogen_wt_mg, y = nitrogen_response)) + 
-  geom_point(aes(color = as.factor(date_run))) + 
-  geom_smooth(aes(group = month), method = "lm") +
-  geom_text(data = p, aes(label = paste("n =", n)), x = 0.1, y = 1000) +
-  facet_wrap(~month) +
-  theme_linedraw() +
-  labs(title = "Nitrogen Standards", x = "Nitrogen Weight (mg)", y = "Nitrogen Response")
-
-t %>% 
-  ggplot(aes(x = carbon_wt_mg, y = carbon_response)) + 
-  geom_point(aes(color = as.factor(date_run))) + 
-  geom_text(data = p, aes(label = paste("n =", n)), x = 0.5, y = 12000) +
-  facet_wrap(~month) +
-  theme_linedraw() +
-  labs(title = "Carbon Standards", x = "Carbon Weight (mg)", y = "Carbon Response")
-
-t_groups <- unique(t$month)
-
-curve_fit_N <- function(x) {
-  
-  standards <- filter(t, month == x)
-  samples <- filter(samples_filtered, month == x)
-
-#samples
-  calibrate(nitrogen_response ~ nitrogen_wt_mg, standards, max.order = 2) -> c
-  as.data.frame(inversePredictCalibrate(c, samples$nitrogen_response)) %>% 
-    mutate(month = x) %>% 
-    rename(nitrogen_response = obs.y, predict_N_wt = pred.x)
-  
-}
-
-curve_fit_N_ck <- function(x) {
-  
-  standards <- filter(t, month == x)
-  checks <- filter(checks_filtered, month == x)
-  
-  #checks
-  calibrate(nitrogen_response ~ nitrogen_wt_mg, standards, max.order = 2) -> w
-  as.data.frame(inversePredictCalibrate(w, checks$nitrogen_response)) %>% 
-    mutate(month = x) %>% 
-    rename(nitrogen_response = obs.y, predict_N_wt = pred.x)
-  
-}
-
-curve_fit_C <- function(x) {
-  
-  standards <- filter(t, month == x)
-  samples <- filter(samples_filtered, month == x)
-  
-#samples
-    calibrate(carbon_response ~ carbon_wt_mg, standards, max.order = 2) -> c
-  as.data.frame(inversePredictCalibrate(c, samples$carbon_response)) %>% 
-    mutate(month = x) %>% 
-    rename(carbon_response = obs.y, predict_C_wt = pred.x)
-  
-}
-
-curve_fit_C_ck <- function(x) {
-  
-  standards <- filter(t, month == x)
-  checks <- filter(checks_filtered, month == x)
-
-  #checks
-  calibrate(carbon_response ~ carbon_wt_mg, standards, max.order = 2) -> w
-  as.data.frame(inversePredictCalibrate(w, checks$carbon_response)) %>% 
-    mutate(month = x) %>% 
-    rename(carbon_response = obs.y, predict_C_wt = pred.x)
-  
-}
-
-lapply(t_groups, curve_fit_N) %>% bind_rows() -> N_vals
-lapply(t_groups, curve_fit_C) %>% bind_rows() -> C_vals
-
-lapply(t_groups, curve_fit_N_ck) %>% bind_rows() -> N_chks
-lapply(t_groups, curve_fit_C_ck) %>% bind_rows() -> C_chks
-
-samples_filtered %>% 
-  left_join(N_vals, by = c("nitrogen_response", "month")) %>% 
-  left_join(C_vals, by = c("carbon_response", "month")) -> samples_joined
-
-checks_filtered %>% 
-  left_join(N_chks, by = c("nitrogen_response", "month")) %>% 
-  left_join(C_chks, by = c("carbon_response", "month")) -> checks_joined
-
-#Reverse-calculate sample weights using Acetanilide fraction
+#Step 3. Reverse-calculate sample weights using Acetanilide fraction, these will be used to predict sample weights
 
 standards_df %>% mutate(
   reverse_C_wt = sample_wt_mg * 0.7109,
   reverse_N_wt = sample_wt_mg * 0.1036
 ) -> reverse_standards
 
-d_groups <- unique(reverse_standards$date_run)
 
-curve_fit_C_date <- function(x) {
+#Step 4. Calculate sample weights based on the reverse standards using the 'EnvStats' package
+
+curve_fit_N <- function(x) {
   
   standards <- filter(reverse_standards, date_run == x)
-  data <- filter(samples_filtered, date_run == x)
-
-  calibrate(carbon_response ~ reverse_C_wt, standards, max.order = 3) -> w
-  as.data.frame(inversePredictCalibrate(w, data$carbon_response)) %>% 
-    mutate(date_run = x) %>% 
-    rename(carbon_response = obs.y, predict_C_wt = pred.x)
-  
-}
-
-curve_fit_N_date <- function(x) {
-  
-  standards <- filter(reverse_standards, date_run == x)
-  data <- filter(samples_filtered, date_run == x)
+  data <- filter(samples_df, date_run == x)
   
   calibrate(nitrogen_response ~ reverse_N_wt, standards, max.order = 3) -> w
   as.data.frame(inversePredictCalibrate(w, data$nitrogen_response)) %>% 
@@ -329,52 +166,40 @@ curve_fit_N_date <- function(x) {
   
 }
 
-lapply(d_groups, curve_fit_C_date) %>% bind_rows() -> C_reverse
-lapply(d_groups, curve_fit_N_date) %>% bind_rows() -> N_reverse
+curve_fit_C <- function(x) {
+  
+  standards <- filter(reverse_standards, date_run == x)
+  data <- filter(samples_df, date_run == x)
+  
+  calibrate(carbon_response ~ reverse_C_wt, standards, max.order = 3) -> w
+  as.data.frame(inversePredictCalibrate(w, data$carbon_response)) %>% 
+    mutate(date_run = x) %>% 
+    rename(carbon_response = obs.y, predict_C_wt = pred.x)
+  
+}
 
-samples_filtered %>% 
+d_groups <- unique(reverse_standards$date_run) #grab dates run
+
+lapply(d_groups, curve_fit_C) %>% bind_rows() -> C_reverse
+lapply(d_groups, curve_fit_N) %>% bind_rows() -> N_reverse
+
+samples_df %>% 
   left_join(N_reverse, by = c("nitrogen_response", "date_run")) %>% 
   left_join(C_reverse, by = c("carbon_response", "date_run")) -> reverse_joined
 
-#Step 11. Using nitrogen_wt_mg , carbon_wt_mg columns from the re-calculation above, then calculate weight percent: 
-        # nitrogen_wt_mg /sample_wt_mg x 100 = nitrogen_weight_percent
-        # carbon_wt_mg /sample_wt_mg x 100 = carbon_weight_percent
+reverse_joined %>% 
+  separate(sample_id, into = c("campaign", "kit_id", "transect_location")) %>% 
+  select(campaign, kit_id, transect_location, date_run, rep, sample_wt_mg, predict_N_wt, nitrogen_response, predict_C_wt, carbon_response) %>% 
+  # round to 3 dec places (SP)
+  mutate(carbon_weight_perc = round((predict_C_wt / sample_wt_mg) * 100, 3),
+         nitrogen_weight_perc = round((predict_N_wt / sample_wt_mg) * 100, 3),
+         carbon_weight_mg = round(predict_C_wt, 3),
+         nitrogen_weight_mg = round(predict_N_wt, 3),
+         transect_location = case_when(transect_location == "UPL" ~ "upland",
+                                       transect_location == "TRANS" ~ "transition",
+                                       transect_location == "WET" ~ "wetland")) -> tctn_df
 
-samples_joined %>% 
-  ungroup() %>% 
-  mutate(new_nitrogen_weight_percent = predict_N_wt / as.numeric(sample_wt_mg) * 100,
-         new_carbon_weight_percent = predict_C_wt  /as.numeric(sample_wt_mg) * 100) -> full_samples
-
-checks_joined %>% 
-  ungroup() %>% 
-  mutate(new_nitrogen_weight_percent = predict_N_wt / as.numeric(sample_wt_mg) * 100,
-         new_carbon_weight_percent = predict_C_wt  /as.numeric(sample_wt_mg) * 100) -> full_checks
-
-ggplot(full_samples, aes(x = month, y = new_nitrogen_weight_percent)) + geom_point() + theme_minimal()
-ggplot(full_samples, aes(x = month, y = new_carbon_weight_percent)) + geom_point() + theme_minimal()
-
-ggplot(full_checks, aes(x = month, y = new_nitrogen_weight_percent)) + geom_point(aes(color = type)) + theme_minimal()
-ggplot(full_checks, aes(x = month, y = new_carbon_weight_percent)) + geom_point(aes(color = type)) + theme_minimal()
-
-
-full_samples %>% 
-  separate(sample_id, sep = "_", into = c("campaign", "kit_id", "transect_location", "misc")) %>% 
-  mutate(transect_location = case_when(transect_location == "WET" ~ "Wetland",
-                                       transect_location == "TRANS" ~ "Transition",
-                                       transect_location == "UPL" ~ "Upland")) %>% 
-  select(campaign, kit_id, transect_location, new_nitrogen_weight_percent, new_carbon_weight_percent) %>%
-  rename(total_nitrogen_perc = new_nitrogen_weight_percent, total_carbon_perc = new_carbon_weight_percent) -> df
-
-# Check with Check Standards:
-checks_df %>% 
-  filter(carbon_weight_percent < standard_c + standard_c_prop,
-         carbon_weight_percent > standard_c - standard_c_prop,
-         nitrogen_weight_percent > standard_n - standard_n_prop,
-         nitrogen_weight_percent < standard_n + standard_n_prop) %>% 
-  mutate(month = as.character(month(date_run, label = TRUE, abbr = FALSE)),
-         month_groups = ifelse(month == "September", "August", month)) %>% 
-  group_by(month) -> q
-
+## ----- NEED TO RESOLVE / CLEAN BELOW CODE -----
 
 # 4. Apply QC flags ------------------------------------------------------------
 #TO DO:
@@ -383,43 +208,52 @@ checks_df %>%
 
 cat("Applying flags to", var, "data...")
 
-df %>% 
-   group_by(kit_id, transect_location) %>% 
-   summarise(total_nitrogen_perc = mean(as.numeric(total_nitrogen_perc)),
-             total_carbon_perc = mean(as.numeric(total_carbon_perc)),
-            # total_nitrogen_mg = mean(as.numeric(total_nitrogen_mg)),
-            # total_carbon_mg = mean(as.numeric(total_carbon_mg)),
-             total_nitrogen_perc_min = min(total_nitrogen_perc),
-             total_carbon_perc_min = min(total_carbon_perc),
-             total_nitrogen_perc_max = max(total_nitrogen_perc),
-             total_carbon_perc_max = max(total_carbon_perc)) -> means_mins
- 
- df %>% 
-   distinct(kit_id, transect_location, .keep_all = TRUE) %>% 
-#   select(campaign, kit_id, transect_location, set, acidification, lod_tc_average, 
-#          lod_tc_sd, lod_tn_average, lod_tn_sd, date_ran) %>% 
-   right_join(means_mins, by = c("kit_id", "transect_location")) -> data_processed
+# Calculate minimum response standards for each date_run (flag 2)
+reverse_standards %>% 
+  group_by(date_run) %>% 
+  summarise(min_c = min(reverse_C_wt),
+            min_n = min(reverse_N_wt)) -> mins
+
+# Calculate median predicted percentages by rep (flag 3)
+tctn_df %>% 
+  group_by(kit_id, transect_location, rep) %>% 
+  summarise(median_c = median(carbon_weight_perc),
+            median_n = median(nitrogen_weight_perc)) %>% 
+  mutate(range_c = median_c * 0.10,
+         range_n = median_n * 0.10) -> medians
 
 ### @Steph: We need to drop the outlier here ###
-data_qc <- function(data) {
-  data %>% 
-    mutate(  #a = round(a, n_sig_figs),
-           tn_flag_1 = ifelse(total_nitrogen_perc < f1_min | total_nitrogen_perc > f1_max, T, F),
-           tc_flag_1 = ifelse(total_carbon_perc < f1_min | total_carbon_perc > f1_max, T, F),
-           tn_flag_3 = ifelse(total_nitrogen_perc_min < (0.05 * total_nitrogen_perc) |
-                              total_nitrogen_perc_max > (0.05 * total_nitrogen_perc), T, F),
-           tc_flag_3 = ifelse(total_carbon_perc_min < (0.05 * total_carbon_perc) |
-                              total_carbon_perc_max > (0.05 * total_carbon_perc), T, F)
-           )
+data_qc <- function(df){
+
+  df %>% 
+    left_join(mins, by = "date_run") %>% 
+    left_join(medians, by = c("kit_id", "transect_location", "rep")) %>% 
+    mutate(
+           tn_flag_1 = ifelse(nitrogen_weight_perc < f1_min | nitrogen_weight_perc > f1_max, T, F),
+           tc_flag_1 = ifelse(carbon_weight_perc < f1_min | carbon_weight_perc > f1_max, T, F)) %>% 
+    group_by(date_run) %>% 
+    mutate(
+           tn_flag_2 = ifelse(nitrogen_weight_mg < min_n, T, F),
+           tc_flag_2 = ifelse(carbon_weight_mg < min_c, T, F)) %>% 
+    ungroup() %>% 
+    group_by(kit_id, transect_location, rep) %>% 
+    mutate(
+           tn_flag_3 = ifelse(nitrogen_weight_perc < (median_n - range_n) | nitrogen_weight_perc > (median_n + range_n), T, F),
+           tc_flag_3 = ifelse(carbon_weight_perc < (median_c - range_c) | carbon_weight_perc > (median_c + range_c), T, F)
+           # TC_FLAG_2 = VALUE < MIN(STANDARD RESPONSE FOR C/N FROM DATE_RUN), TRUE
+           # tn_flag_3 = ifelse(VALUE < (MEDIAN * 0.10)
+           #                    VALUE > (MEDIAN * 0.10), FLAG TRUE
+           ) %>% 
+    ungroup()
 }
 
-data_qc <- data_qc(means_mins)
+data_qc <- data_qc(tctn_df)
 
 data_qc %>% 
   pivot_longer(cols = starts_with("tn"), names_to = "tn_flag",
                values_to = "tn_vals") %>% 
   filter(tn_vals == TRUE) %>% select(-tn_vals) %>%  
-  group_by(kit_id, transect_location) %>%
+  group_by(kit_id, transect_location, rep) %>%
   mutate(tn_flag = case_when(tn_flag == "tn_flag_1" ~ "outside range",
                              tn_flag == "tn_flag_2" ~ "below detect",
                              tn_flag == "tn_flag_3" ~ "rep outlier")) %>% 
@@ -430,22 +264,20 @@ data_qc %>%
   pivot_longer(cols = starts_with("tc"), names_to = "tc_flag",
                values_to = "tc_vals") %>% 
   filter(tc_vals == TRUE) %>% select(-tc_vals) %>% 
-  group_by(kit_id, transect_location) %>%
+  group_by(kit_id, transect_location, rep) %>%
     mutate(tc_flag = case_when(tc_flag == "tc_flag_1" ~ "outside range",
                                tc_flag == "tc_flag_2" ~ "below detect",
                                tc_flag == "tc_flag_3" ~ "rep outlier")) %>% 
     summarise(tc_flag = toString(tc_flag)) %>% 
-    left_join(tn_flags, by = c("kit_id", "transect_location")) -> flags
+    left_join(tn_flags, by = c("kit_id", "transect_location", "rep")) -> flags
   
   
-  data_qc %>% 
-    left_join(flags, by = c("kit_id", "transect_location")) %>% 
-    select(campaign, kit_id, transect_location, acidification, total_nitrogen_perc, 
-         total_carbon_perc, tn_flag, tc_flag) %>% 
-    mutate(total_carbon_perc = round(total_carbon_perc, 2),
-           total_nitrogen_perc = round(total_nitrogen_perc, 2)) %>% 
-    rename(tc_perc = total_carbon_perc,
-           tn_perc = total_nitrogen_perc)-> data_clean
+data_qc %>% 
+    left_join(flags, by = c("kit_id", "transect_location", "rep")) %>% 
+    select(campaign, kit_id, transect_location, rep, nitrogen_weight_perc, 
+           carbon_weight_perc, tn_flag, tc_flag) %>% 
+    rename(tc_perc = carbon_weight_perc,
+           tn_perc = nitrogen_weight_perc)-> data_clean
 
 #
 # 5. Write cleaned data to drive -----------------------------------------------
