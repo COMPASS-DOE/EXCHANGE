@@ -86,12 +86,16 @@ data_raw %>%
 
 processed_interim %>% 
   filter(grepl("Blank", kit_id)) %>% 
+  filter(kit_id != "Blank 1") %>% # blank outlier
   ungroup() %>% 
-  summarise(blank_avg_g = mean(total_filter_mass_g)) -> blank_avg_g
+  summarise(blank_avg_g = mean(total_filter_mass_g),
+            blank_avg_vol_l = mean(sample_weight_g) / 1000) %>% 
+  mutate(blank_avg_mg = blank_avg_g * 1000,
+         tss_blank_mgl = blank_avg_mg / blank_avg_vol_l) -> blank_avg
 
 processed_interim %>% 
   filter(!grepl("Blank", kit_id)) %>% 
-  bind_cols(blank_avg_g) %>% 
+  bind_cols(blank_avg) %>% 
 #  mutate(total_filter_mass_g = ifelse(total_bottom_filter_g > 0, 
 #                                      total_filter_mass_g - total_bottom_filter_g,
 #                                      total_filter_mass_g)) %>% 
@@ -103,7 +107,8 @@ processed_interim %>%
          CT= gsw_CT_from_t(SA, t = 18.5, 0),
          density_water = gsw_rho(SA, CT, 0),
          volume_filtered_ml = sample_weight_g / (density_water / 1000),
-         tss_mg_perl = ((total_filter_mass_g / volume_filtered_ml) * 1000 * 1000) - blank_avg_g) -> data_processed
+         # have to convert ml to L and g to mg
+         tss_mg_perl = ((total_filter_mass_g / volume_filtered_ml) * 1000 * 1000)) -> data_processed
  
 #
 # 4. Apply QC flags ------------------------------------------------------------
