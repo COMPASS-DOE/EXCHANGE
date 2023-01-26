@@ -113,14 +113,17 @@ import_data = function(directory){
   ## e. output
   dat
 }
+
 raw_data = import_data(directory)
 raw_data[raw_data == "n.a."] <- NA
 
 ## import the dilutions key
 dilutions_key_wide = read_sheet("1ekMFJrzE_1dAzfFuLrDfrRUzp2b66WAgE4LRNZEYGy0")
+run_log_withdates = read_sheet("https://docs.google.com/spreadsheets/d/1hazGv03RroD2tKmZgwE6DOmCYDRqMtMl6C7U6TLQ1go/edit?usp=sharing")
 
 ## import the readme files
 directory_readme = "https://drive.google.com/drive/u/1/folders/1PAa6Gtnthn9gUw5QhiyLOSLsBN1j7fpc"
+
 import_readme = function(directory_readme){
   
   ## a. Create a list of files to download
@@ -163,11 +166,16 @@ process_dilutions_data = function(dilutions_key_wide){
   dilutions_key_wide %>% 
     pivot_longer(cols = ends_with("_dilution"),
                  names_to = "Ion",
-                 values_to = "Dilution") %>% 
+                 values_to = "dilution") %>% 
     mutate(Ion = str_remove(Ion, "_dilution"))
 }
-dilutions_key = process_dilutions_data(dilutions_key_wide)
 
+dilutions_key_nodate = process_dilutions_data(dilutions_key_wide)
+
+run_log_long = run_log_withdates %>% pivot_longer(cols= -"kit_id", names_sep = "_", names_to = c(".value", "run")) %>% na.omit()
+
+dilutions_key = left_join(dilutions_key_nodate, run_log_long, by = c("kit_id","dilution"))  %>%
+  mutate(date_run = lubridate::ymd(rundate)) %>% select(-c(run,rundate))
 
 # `process_data`: this function will assign ions and tidy the dataframe
 # input parameters are (a) the dataframe being cleaned and (b) the ions in question.
@@ -424,6 +432,7 @@ apply_qc_flags = function(data_ions_processed, QC_DATA){
     filter(ppm >= 0)
   
 }
+
 data_ions_qc = apply_qc_flags(data_ions_processed, QC_DATA = ions_lods)
 
 
@@ -463,52 +472,105 @@ do_corrections = function(data_ions_qc, dilutions_key){
     mutate(blank_mean_ppm = replace_na(blank_mean_ppm,0)) %>% 
     mutate(Amount_bl_corrected = ppm - blank_mean_ppm)
   
-  #
-  # 2. dilution correction ----
-  options(scipen = 50)
-  
-  samples_dilution_corrected = 
-    samples_blank_corrected %>% 
-    # bring in the dilutions key to determine which dilutions to keep
-    left_join(dilutions_key %>% mutate(keep = TRUE), 
-              by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution")) %>% 
-    filter(keep) %>% 
-    group_by(Name, Ion, Dilution) %>% 
-    dplyr::mutate(keep = date_run == max(date_run)) %>% 
-   filter(keep) %>% 
-    dplyr::select(-keep) %>% 
-    # do the dilution correction
-    mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
-    mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
-           Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
-    dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Dilution) %>% 
-    filter(Amount_bl_dil_corrected > 0)
-  
-  
-  samples_dilution_corrected_ALLDILUTIONS = 
-    samples_blank_corrected %>% 
-    # bring in the dilutions key to determine which dilutions to keep
-    left_join(dilutions_key %>% mutate(keep = TRUE), 
-              by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution")) %>% 
-    # do the dilution correction
-    mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
-    mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
-           Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
-    dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Action, Dilution, keep) %>% 
-    filter(Amount_bl_dil_corrected > 0) %>% 
-    mutate(keep = as.character(keep))
-  
-  
-  
-  list(samples_dilution_corrected = samples_dilution_corrected,
-       samples_dilution_corrected_ALLDILUTIONS = samples_dilution_corrected_ALLDILUTIONS
-  )
+  # #
+  # # 2. dilution correction ----
+   options(scipen = 50)
+  # isolate the ones run at the same dilution level multiple times
+   samples_dilution_corrected_problem_children = 
+     samples_blank_corrected %>% 
+  #   # bring in the dilutions key to determine which dilutions to keep for which ion
+     left_join(dilutions_key, by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution" = "dilution", "date_run")) %>% 
+     group_by(Name, Ion, Dilution) %>% 
+     filter(n()>1, is.na(flag)) %>%
+     mutate(max = max(Amount_bl_corrected),
+            min = min(Amount_bl_corrected),
+            mean = mean(Amount_bl_corrected),
+            percent_diff = ((((max - min) / mean) * 100 )),
+            check = if_else(percent_diff > 5 , "FLAG", as.character(mean)),
+            keep = date_run == max(date_run),
+            value = if_else(check == "FLAG" & keep == "TRUE", Amount_bl_corrected, mean )) #might need a case_when here. it seems to be pulling the wrong things when first is false and second is true
+   
+   samples_dilution_corrected_unique = 
+     samples_blank_corrected %>% 
+     #   # bring in the dilutions key to determine which dilutions to keep for which ion
+     right_join(dilutions_key, by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution" = "dilution", "date_run")) %>% 
+     group_by(Name, Ion, Dilution) %>% 
+     filter(n()==1) 
+   
+   
+  #   dplyr::mutate(keep = date_run == max(date_run)) %>% 
+  #   filter(keep) %>% 
+  #   dplyr::select(-keep) %>% 
+     
+     
+  #   # do the dilution correction
+  #   mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
+  #   mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
+  #          Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
+  #   dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Dilution) %>% 
+  #   filter(Amount_bl_dil_corrected > 0)
+  # 
+  # 
+  # samples_dilution_corrected_ALLDILUTIONS = 
+  #   samples_blank_corrected %>% 
+  #   # bring in the dilutions key to determine which dilutions to keep
+  #   left_join(dilutions_key, by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution" = "dilution")) %>% 
+  #   # do the dilution correction
+  #   mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
+  #   mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
+  #          Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
+  #   dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Action, Dilution, keep) %>% 
+  #   filter(Amount_bl_dil_corrected > 0))
+  # 
+  # 
+  # 
+  # list(samples_dilution_corrected = samples_dilution_corrected,
+  #      samples_dilution_corrected_ALLDILUTIONS = samples_dilution_corrected_ALLDILUTIONS
+  # )
   
 }
-data_ions_corrected = do_corrections(data_ions_qc, dilutions_key)$samples_dilution_corrected
+
+data_ions_corrected = do_corrections(data_ions_qc, dilutions_key)
+
+$samples_dilution_corrected
 data_ions_corrected_all_dilutions = do_corrections(data_ions_qc, dilutions_key)$samples_dilution_corrected_ALLDILUTIONS
 
+# 6. final formatting ----------------------------------------------------
 
+# `format_df`: format the dataframe to a more legible format in wideform, with a flag column for each ion
+
+format_df = function(data_ions_corrected){
+  
+  data_ions_corrected %>% 
+    ungroup() %>% 
+    rename(ppm = Amount_bl_dil_corrected) %>% 
+    mutate(ppm = as.character(ppm),
+           Dilution = as.character(Dilution)) %>% 
+    pivot_longer(-c(Name, date_run, Ion)) %>% 
+    mutate(name2 = paste0(Ion, "_", name)) %>% 
+    dplyr::select(-Ion, -name) %>% 
+    distinct %>% 
+    pivot_wider(names_from = "name2", values_from = "value") %>% 
+    separate(Name, sep = "_", into = c("campaign", "kit_id")) %>% 
+    mutate(transect_location = "Water") %>% 
+    dplyr::select(campaign, kit_id, transect_location, everything()) %>% 
+    mutate(across(ends_with("_ppm"), as.numeric)) %>% 
+    janitor::clean_names() %>% 
+    arrange(kit_id)
+  
+  
+}
+
+data_ions_final = format_df(data_ions_corrected) # this includes only the results for the selected (correct) dilutions
+data_ions_final_all_dilutions = format_df(data_ions_corrected_all_dilutions) # this includes results for all dilutions (including the ones we want to exclude)
+
+
+#
+# 5. Export cleaned data --------------------------------------------------
+
+data_ions_final %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_dilutions.csv", row.names = FALSE)
+data_ions_final_all_dilutions %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_ALL_dilutions.csv", row.names = FALSE)
+  
 #
 # xx. other functions -----------------------------------------------------
 
@@ -535,50 +597,15 @@ check_cal_curve_values = function(){
 }
 
 
-#
-# 6. final formatting ----------------------------------------------------
-
-# `format_df`: format the dataframe to a more legible format in wideform, with a flag column for each ion
-
-format_df = function(data_ions_corrected){
-  
-  data_ions_corrected %>% 
-    ungroup() %>% 
-    rename(ppm = Amount_bl_dil_corrected) %>% 
-    mutate(ppm = as.character(ppm),
-           Dilution = as.character(Dilution)) %>% 
-    pivot_longer(-c(Name, date_run, Ion)) %>% 
-    mutate(name2 = paste0(Ion, "_", name)) %>% 
-    dplyr::select(-Ion, -name) %>% 
-    distinct %>% 
-    pivot_wider(names_from = "name2", values_from = "value") %>% 
-    separate(Name, sep = "_", into = c("campaign", "kit_id")) %>% 
-    mutate(transect_location = "Water") %>% 
-    dplyr::select(campaign, kit_id, transect_location, everything()) %>% 
-    mutate(across(ends_with("_ppm"), as.numeric)) %>% 
-    janitor::clean_names() %>% 
-    arrange(kit_id)
-  
-  
-}
-data_ions_final = format_df(data_ions_corrected) # this includes only the results for the selected (correct) dilutions
-data_ions_final_all_dilutions = format_df(data_ions_corrected_all_dilutions) # this includes results for all dilutions (including the ones we want to exclude)
-
-
-#
-# 5. Export cleaned data --------------------------------------------------
-
-data_ions_final %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_dilutions.csv", row.names = FALSE)
-data_ions_final_all_dilutions %>% write.csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221202_WITH_ALL_dilutions.csv", row.names = FALSE)
-  
-
+# Plottings 
 a = data_ions_final_all_dilutions %>%
   ggplot() +
-  geom_jitter(aes(kit_id, as.numeric(nitrate_dilution), color=nitrate_flag)) +
-  facet_wrap(~kit_id, scales = "free")
+  geom_point(aes(kit_id, as.numeric(nitrate_ppm)))
 
   ggplotly(a)
   
+#QC stuff
 data_ions_qc %>% write.csv("TEMP-EC1-ions-not-dilution-corrected_2022-10-12.csv", row.names = FALSE)
 file.remove("TEMP-ions_readme_compiled_2022-10-12.csv")
+
 file.remove("TEMP-EC1-ions-not-dilution-corrected_2022-10-12.csv")
