@@ -446,7 +446,6 @@ data_ions_qc = apply_qc_flags(data_ions_processed, QC_DATA = ions_lods)
 #  (c) and the dilutions key, which tells us which dilutions we want to keep for each sample/ion
 
 do_corrections = function(data_ions_qc, dilutions_key){
-  
   # 1. blank corrections ----
   samples_and_blanks = 
     data_ions_qc %>% 
@@ -479,60 +478,67 @@ do_corrections = function(data_ions_qc, dilutions_key){
    samples_dilution_corrected_problem_children = 
      samples_blank_corrected %>% 
   #   # bring in the dilutions key to determine which dilutions to keep for which ion
-     left_join(dilutions_key, by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution" = "dilution", "date_run")) %>% 
+     right_join(dilutions_key, by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution" = "dilution", "date_run")) %>% 
      group_by(Name, Ion, Dilution) %>% 
-     filter(n()>1, is.na(flag)) %>%
+     filter(n()>1, is.na(flag)) %>% #removing samples with flags
      mutate(max = max(Amount_bl_corrected),
             min = min(Amount_bl_corrected),
             mean = mean(Amount_bl_corrected),
             percent_diff = ((((max - min) / mean) * 100 )),
             check = if_else(percent_diff > 5 , "FLAG", as.character(mean)),
-            keep = date_run == max(date_run),
-            value = if_else(check == "FLAG" & keep == "TRUE", Amount_bl_corrected, mean )) #might need a case_when here. it seems to be pulling the wrong things when first is false and second is true
+            keep = if_else(date_run == max(date_run) & check == "FLAG", as.character(Amount_bl_corrected), check),
+            flag = if_else(duplicated(keep, fromLast =TRUE) | duplicated(keep), "replicates averaged", "NA" )) %>%
+     filter(keep != "FLAG") %>%
+     distinct(Name, Ion, Dilution, keep, .keep_all = TRUE) %>%
+     select(Name, date_run, Ion, Dilution, flag, keep) %>%
+     rename(Amount_bl_corrected = keep) %>%
+     mutate(flag =na_if(flag, "NA"),
+            Amount_bl_corrected = as.numeric(Amount_bl_corrected))
+   
+   
+   # value = if_else(check == "FLAG" & keep == "NO", Amount_bl_corrected, mean)
    
    samples_dilution_corrected_unique = 
      samples_blank_corrected %>% 
      #   # bring in the dilutions key to determine which dilutions to keep for which ion
      right_join(dilutions_key, by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution" = "dilution", "date_run")) %>% 
      group_by(Name, Ion, Dilution) %>% 
-     filter(n()==1) 
+     filter(n()==1) %>%
+     select(Name, date_run, Ion, Dilution,flag, Amount_bl_corrected)
    
-   
-  #   dplyr::mutate(keep = date_run == max(date_run)) %>% 
-  #   filter(keep) %>% 
-  #   dplyr::select(-keep) %>% 
-     
+
+   samples_blank_corrected_dups_corrected = bind_rows(samples_dilution_corrected_problem_children, samples_dilution_corrected_unique)  
      
   #   # do the dilution correction
-  #   mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
-  #   mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
-  #          Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
-  #   dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Dilution) %>% 
-  #   filter(Amount_bl_dil_corrected > 0)
+   samples_dilution_corrected = samples_blank_corrected_dups_corrected %>%
+     mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
+     mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
+            Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
+     dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Dilution) %>% 
+     filter(Amount_bl_dil_corrected > 0)
   # 
   # 
-  # samples_dilution_corrected_ALLDILUTIONS = 
-  #   samples_blank_corrected %>% 
+  samples_dilution_corrected_ALLDILUTIONS = 
+     samples_blank_corrected %>% 
   #   # bring in the dilutions key to determine which dilutions to keep
-  #   left_join(dilutions_key, by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution" = "dilution")) %>% 
+    left_join(dilutions_key, by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution" = "dilution", "date_run")) %>% 
   #   # do the dilution correction
-  #   mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
-  #   mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
-  #          Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
-  #   dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Action, Dilution, keep) %>% 
-  #   filter(Amount_bl_dil_corrected > 0))
+     mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
+     mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
+            Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
+     dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Action, Dilution) %>% 
+     filter(Amount_bl_dil_corrected > 0)
   # 
   # 
   # 
-  # list(samples_dilution_corrected = samples_dilution_corrected,
-  #      samples_dilution_corrected_ALLDILUTIONS = samples_dilution_corrected_ALLDILUTIONS
-  # )
+   list(samples_dilution_corrected = samples_dilution_corrected,
+        samples_dilution_corrected_ALLDILUTIONS = samples_dilution_corrected_ALLDILUTIONS
+   )
   
 }
 
-data_ions_corrected = do_corrections(data_ions_qc, dilutions_key)
+data_ions_corrected = do_corrections(data_ions_qc, dilutions_key)$samples_dilution_corrected
 
-$samples_dilution_corrected
 data_ions_corrected_all_dilutions = do_corrections(data_ions_qc, dilutions_key)$samples_dilution_corrected_ALLDILUTIONS
 
 # 6. final formatting ----------------------------------------------------
@@ -540,7 +546,6 @@ data_ions_corrected_all_dilutions = do_corrections(data_ions_qc, dilutions_key)$
 # `format_df`: format the dataframe to a more legible format in wideform, with a flag column for each ion
 
 format_df = function(data_ions_corrected){
-  
   data_ions_corrected %>% 
     ungroup() %>% 
     rename(ppm = Amount_bl_dil_corrected) %>% 
@@ -548,7 +553,7 @@ format_df = function(data_ions_corrected){
            Dilution = as.character(Dilution)) %>% 
     pivot_longer(-c(Name, date_run, Ion)) %>% 
     mutate(name2 = paste0(Ion, "_", name)) %>% 
-    dplyr::select(-Ion, -name) %>% 
+    dplyr::select(-Ion, -name, -date_run) %>% 
     distinct %>% 
     pivot_wider(names_from = "name2", values_from = "value") %>% 
     separate(Name, sep = "_", into = c("campaign", "kit_id")) %>% 
@@ -556,6 +561,8 @@ format_df = function(data_ions_corrected){
     dplyr::select(campaign, kit_id, transect_location, everything()) %>% 
     mutate(across(ends_with("_ppm"), as.numeric)) %>% 
     janitor::clean_names() %>% 
+    mutate(flag = case_when(is.na(ends_with("_ppm")) ~ "below detect")) %>% #COME BACK HERE TO FIX NAs introduced by not detecting
+    #maybe try this with stringr instead of ends_with???
     arrange(kit_id)
   
   
