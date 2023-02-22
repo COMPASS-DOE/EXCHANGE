@@ -53,11 +53,14 @@ cat("Processing", var, "data...")
 
 ## The formula for LOI is [(wt_crucible + wt_dry) - (wt_crucible + wt_combusted)] / 
 ## [(crucible + dry) - (crucible)]
+#100-[ash wt (g)/soil wt(g)x 100]
+#pre-ignition weight - post-ignition weight 
 loi_processed <- loi_raw %>% 
   mutate(campaign = "EC1", 
          kit_id = str_match(sample_id, "K0\\d\\d")[,1], 
          transect_location = str_to_title(str_match(sample_id, "[:alpha:]{6,10}")), 
-         loi_perc = ((wt_crucible_dry_g - wt_crucible_combusted_g) / (wt_crucible_dry_g - wt_crucible_g)) * 100) %>% 
+         loi_perc = (((wt_crucible_dry_g - wt_crucible_combusted_g) / (wt_crucible_dry_g - wt_crucible_g)) * 100),
+         loi_per_2 = (100-((wt_crucible_combusted_g - wt_crucible_g)/(wt_crucible_dry_g - wt_crucible_g)* 100))) %>% #checking math with different equation 
   dplyr::select(campaign, kit_id, transect_location, loi_perc)
 
 #
