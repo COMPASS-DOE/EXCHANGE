@@ -213,7 +213,7 @@ process_data = function(raw_data, readme_data, IONS){
     rownames_to_column("Row_number") %>% 
     left_join(label_rows_df, by = "Row_number") %>% 
     mutate(Ion = case_when(label ~ Amount),
-           flag = case_when(!is.na(Area) & is.na(Amount) ~ "below instrument detection")) %>% 
+           flag = case_when(is.na(Amount)  ~ "below instrument detection")) %>% 
     # ^ this pulls the Ion name only for certain rows
     # use fill() to down-fill the values
     # it will down-fill until it hits the next non-empty cell
@@ -269,10 +269,16 @@ process_data = function(raw_data, readme_data, IONS){
                               Action == "Omit_anions" & Ion %in% c("chloride", "bromide", "sulfate", "phosphate", "fluoride") ~ TRUE,
                               Action == "Omit_UV" & Ion %in% c("nitrite", "nitrate") ~ TRUE,
                               Action == "Omit" ~ TRUE
-    )) %>% 
+    ),
+    Action_original = Action,
+    Action = case_when(str_detect(Action_original, "correct") ~ "blank correct")
+    ) %>% 
+    group_by(date_run) %>%
+    mutate(Action = case_when(Action == "blank correct" ~ "blank correct")) %>%
+    fill(Action, .direction = c("updown")) %>%
     #  filter(!Action %in% "Omit") %>%
-    filter(is.na(REMOVE)) %>% 
-    dplyr::select(-REMOVE)
+    filter(is.na(REMOVE), Name != "Name") %>% 
+    dplyr::select(-REMOVE, -Action_original)
  
   data_new_processed_readme
   # This file has all the processed data for all the samples/standards/blanks run on the machine.
@@ -280,7 +286,7 @@ process_data = function(raw_data, readme_data, IONS){
   # We will use the Readme file to map these dilutions later, 
   # and then pick only the dilutions we want.
   # --> see the `do_corrections()` function
- 
+
 }
 
 # Now, run the function
@@ -431,7 +437,7 @@ apply_qc_flags = function(data_ions_processed, QC_DATA){
     data_ions_processed %>% 
     filter(grepl("A-", Name) | grepl("C-", Name)) %>% 
     filter(!grepl("CK", Name)) %>%
-    filter(!is.na(Amount)) %>% 
+    filter(!is.na(Amount)) %>% #getting rid of NAs in the curves, because they aren't used for the curve calculations 
     group_by(Ion, date_run, Action, Dilution) %>% 
     dplyr::summarise(calib_min = min(Amount),
                      calib_max = max(Amount))
@@ -439,13 +445,11 @@ apply_qc_flags = function(data_ions_processed, QC_DATA){
     data_ions_processed %>% 
     left_join(QC_DATA %>% dplyr::select(Ion, date_run, LOD_ppm)) %>%
     left_join(data_ions_standards) %>% 
-    mutate(flag = case_when(Amount  < LOD_ppm ~ "below detect",
+    mutate(flag = case_when(Amount  < LOD_ppm ~ "below limit of detection",
                             Amount  > calib_max ~ "above calibration",
                             TRUE ~ flag)) %>% 
     rename(ppm = Amount) %>% 
     dplyr::select(Name, date_run, Ion, ppm, flag, Action, Dilution)
-   # filter(ppm >= 0)
-  browser()
 }
 
 #Run Function: 
@@ -476,14 +480,14 @@ do_corrections = function(data_ions_qc, dilutions_key){
     samples_and_blanks %>% 
     filter(sample_type == "Blank") %>% 
     group_by(Ion, date_run) %>% 
-    dplyr::summarise(blank_mean_ppm = mean(ppm))
+    dplyr::summarise(blank_mean_ppm = mean(ppm, na.rm = TRUE)) 
     
   samples_blank_corrected = 
     samples_and_blanks %>% 
     filter(sample_type == "Sample") %>% 
     left_join(blank_mean, by = c("Ion", "date_run")) %>% 
     mutate(blank_mean_ppm = replace_na(blank_mean_ppm,0)) %>% 
-    mutate(Amount_bl_corrected = ppm - blank_mean_ppm)
+    mutate(Amount_bl_corrected = ppm - blank_mean_ppm) #### WHAT DO WE DO ABOUT BLANK CORRECTIONS WITH NEGS????
   
   # #
   # # 2. dilution correction ----
