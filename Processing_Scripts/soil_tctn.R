@@ -95,6 +95,8 @@ import_data = function(directory){
 
 data_raw = import_data(directory)
 
+data_raw[data_raw == "N/A"] <- NA # replace "N/A" with NA
+
 data_raw %>% 
   mutate(
     date_run = str_extract(source, "[0-9]{1}_[0-9]{2}_[0-9]{4}|[0-9]{2}_[0-9]{2}_[0-9]{4}"),
@@ -188,7 +190,12 @@ samples_df %>%
   left_join(C_reverse, by = c("carbon_response", "date_run")) -> reverse_joined
 
 reverse_joined %>% 
-  separate(sample_id, into = c("campaign", "kit_id", "transect_location")) %>% 
+  separate(sample_id, into = c("campaign", "kit_id", "transect_location", "extra_rep")) %>% 
+  mutate(extra_rep = case_when(extra_rep == "REP4" ~ "R4",
+                               TRUE ~ extra_rep),
+         extra_rep = toupper(extra_rep),
+         rep = case_when(!is.na(extra_rep) ~ extra_rep,
+                         TRUE ~ rep)) %>%
   select(campaign, kit_id, transect_location, date_run, rep, sample_wt_mg, predict_N_wt, nitrogen_response, predict_C_wt, carbon_response) %>% 
   # round to 3 dec places (SP)
   mutate(carbon_weight_perc = round((predict_C_wt / sample_wt_mg) * 100, 3),
@@ -236,7 +243,7 @@ data_qc <- function(df){
            tn_flag_2 = ifelse(nitrogen_weight_mg < min_n, T, F),
            tc_flag_2 = ifelse(carbon_weight_mg < min_c, T, F)) %>% 
     ungroup() %>% 
-    group_by(kit_id, transect_location, rep) %>% 
+    group_by(kit_id, transect_location) %>% 
     mutate(
            tn_flag_3 = ifelse(nitrogen_weight_perc < (median_n - range_n) | nitrogen_weight_perc > (median_n + range_n), T, F),
            tc_flag_3 = ifelse(carbon_weight_perc < (median_c - range_c) | carbon_weight_perc > (median_c + range_c), T, F)
