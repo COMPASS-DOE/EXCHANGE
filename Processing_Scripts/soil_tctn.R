@@ -221,9 +221,9 @@ reverse_standards %>%
   summarise(min_c = min(reverse_C_wt),
             min_n = min(reverse_N_wt)) -> mins
 
-# Calculate median predicted percentages by rep (flag 3)
+# Calculate median predicted percentages by kit_id, transect_location (flag 3)
 tctn_df %>% 
-  group_by(kit_id, transect_location, rep) %>% 
+  group_by(kit_id, transect_location) %>% 
   summarise(median_c = median(carbon_weight_perc),
             median_n = median(nitrogen_weight_perc)) %>% 
   mutate(range_c = median_c * 0.10,
@@ -234,7 +234,7 @@ data_qc <- function(df){
 
   df %>% 
     left_join(mins, by = "date_run") %>% 
-    left_join(medians, by = c("kit_id", "transect_location", "rep")) %>% 
+    left_join(medians, by = c("kit_id", "transect_location")) %>% 
     mutate(
            tn_flag_1 = ifelse(nitrogen_weight_perc < f1_min | nitrogen_weight_perc > f1_max, T, F),
            tc_flag_1 = ifelse(carbon_weight_perc < f1_min | carbon_weight_perc > f1_max, T, F)) %>% 
