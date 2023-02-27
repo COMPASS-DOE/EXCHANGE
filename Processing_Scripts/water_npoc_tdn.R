@@ -111,6 +111,7 @@ npoc_raw$date <- as.numeric(npoc_raw$date)
 raw_data_LOD_list <- list()
 
 ## for loop to determine which LOD the instrument runs fall within
+## this is done by calculating which LOD period start date is closest to the date of the instrument run
 for (a in 1:length(unique(npoc_raw$date))) {
   
   ## pull focus date
@@ -206,7 +207,7 @@ blanks_final <- blanks_LOD_corrected %>%
 samples_blank_corrected <- samples %>% 
   mutate(campaign = "EC1", 
          kit_id = substr(sample_name, 5, 9), 
-         transect_location = "water") %>% 
+         transect_location = "Water") %>% 
   # join blank information with dataset
   inner_join(select(blanks_final, date, npoc_blank, tdn_blank), by = "date") %>% 
   # calculate blank corrected npoc/tdn values
@@ -219,7 +220,7 @@ samples_blank_corrected <- samples %>%
 # 8b. Check Data Against ReadMe Action Items -----------------------------------
 
 ## the readme files contain "Action" column - some samples needed TDN values
-## ... replaced from a subsequent instrument run for just TN
+## replaced from a subsequent instrument run for just TN
 samples_readme_action <- samples_blank_corrected %>%
   left_join(readmes_filtered, by = c("sample_name", "date")) %>%
   # if the action reads "Replace TN", make tdn_mgl NA
@@ -227,63 +228,84 @@ samples_readme_action <- samples_blank_corrected %>%
                           NA,
                           tdn_mgl)) %>%
   select(-action)
-  
 
+
+# 8c. Flag Data Against LOD and Cal Curve Upper Limits -------------------------
+
+## join cal curve data frame and compare values to LOD and upper limits to add flags
+npoc_bc_flagged <- samples_readme_action %>% 
+  ## First, round each parameter to proper significant figures
+  mutate(npoc_mgl = round(npoc_mgl, 2), 
+         tdn_mgl = round(tdn_mgl, 3)) %>% 
+  ## join with the cal curve information
+  left_join(cal_curve, by = "date") %>%
+  ## Second, add flags for outside LOD
+  mutate(npoc_flag = ifelse(npoc_mgl > npoc_calib_upper_limit, "npoc outside calibration curve range", NA), #per cal curve upper limit
+       tdn_flag = ifelse(tdn_mgl > tdn_calib_upper_limit, "tdn outside calibration curve range", NA),
+       npoc_lod_flag = ifelse(npoc_mgl < LOD_NPOC, "npoc below limit of detection", NA),
+       tdn_lod_flag = ifelse(tdn_mgl < LOD_TN, "tdn below limit of detection", NA)) %>%
+  ## combine flags into one column since one sample will not be below the LOD and above the cal curve at the same time
+  mutate(npoc_flag = ifelse(!is.na(npoc_lod_flag), npoc_lod_flag, npoc_flag),
+         tdn_flag = ifelse(!is.na(tdn_lod_flag), tdn_lod_flag, tdn_flag)) %>%
+  select(campaign:tdn_mgl, npoc_flag, tdn_flag)
+
+  
 # 9. Clean data ----------------------------------------------------------------
 
-## Helper function to calculate mean if numeric, otherwise first (needed to 
-## preserve dates, which are different for duplicated kits)
+## Helper function to calculate mean if numeric, otherwise preserve the value of
+## the first observation (needed to preserve dates, which are different for duplicated kits)
 mean_if_numeric <- function(x){
   ifelse(is.numeric(x), mean(x, na.rm = TRUE), first(x))
 }
 
 ## Another step before finalizing is taking care of pesky duplicates from reruns
-npoc_duplicates_removed <- samples_readme_action %>% 
-  select(campaign, transect_location, kit_id, date, npoc_mgl, tdn_mgl) %>% 
+npoc_duplicates_removed <- npoc_bc_flagged %>%  
+  ## make sure date is back to a character variable so no math is done
+  mutate(date = as.character(date)) %>%
   group_by(kit_id) %>% 
   summarize(across(everything(), .f = mean_if_numeric))
-## NEED TO FIX THIS - averaging the date because those variables are numeric!!
 
-## Flag the data based on LOD and calibration curve
-npoc_raw_flags <- npoc_duplicates_removed %>% 
-  ## First, round each parameter to proper significant figures
-  mutate(npoc_mgl = round(npoc_mgl, 2), 
-         tdn_mgl = round(tdn_mgl, 3)) %>% 
-  ## join with prelim samples data to pull LOD information
-  left_join(select(samples_readme_action, campaign, kit_id, transect_location, date, LOD_NPOC, LOD_TN),
-            by = c("campaign", "kit_id", "transect_location", "date")) %>% 
-  ## join with the cal curve information
-  left_join(cal_curve, by = "date")
-  ## Second, add flags for outside LOD
-  mutate(npoc_flag = ifelse(npoc_mgl < lod_npoc | npoc_mgl > npoc_calib_upper_limit, "npoc outside range", NA), #per cal curve upper limit
-         tdn_flag = ifelse(tdn_mgl < lod_tdn | tdn_mgl > 3, "tdn outside range", NA))
-
-npoc <- npoc_raw_flags %>% 
+## Finalize Dataset
+npoc <- npoc_duplicates_removed %>% 
   select(date, campaign, kit_id, transect_location, npoc_mgl, tdn_mgl, contains("_flag"))
 
-# 8b. Check Values Against Limits of Calibration Curve -------------------------
 
-# add flag for if samples are below corresponding LOD
-mutate(npoc_LOD_flag = ifelse(npoc_mgl < LOD_NPOC,
-                              "below LOD",
-                              NA),
-       tdn_LOD_flag = ifelse(tdn_mgl < LOD_TN,
-                             "below LOD",
-                             NA)) %>%
-  ## some runs had calibration curves of 0-30 ppm, and some 0-50 ppm for NPOC
-  ## compare NPOC and TDN values to the upper limits of their cal curve and flag if they are over that
-  samples_bc_calcurve <- samples_blank_corrected %>%
-  inner_join(cal_curve, by = "date") %>%
-  mutate(npoc_cal_flag = ifelse(npoc_mgl > npoc_calib_upper_limit,
-                                "outside of cal curve",
-                                NA),
-         tdn_cal_flag = ifelse(tdn_mgl > tdn_calib_upper_limit,
-                               "outside of cal curve",
-                               NA)) %>%
-  select(-npoc_calib_upper_limit, -tdn_calib_upper_limit)
-# 7. Write data ----------------------------------------------------------------
-date_updated <- "20220601"
+# 10. Compare Data to Samples Received -----------------------------------------
 
-write_csv(npoc, paste0("Data/Processed/EC1_Water_NPOC_TDN_L0B_", date_updated, ".csv"))
+## set location of the metadata file
+metadata_directory <- "https://drive.google.com/drive/folders/1IQUq_sD-Jama7ajaZl1zW_9zlWfyCohn"
+
+## pull desired metadata file
+metadata_file <- drive_ls(metadata_directory) %>%
+  filter(grepl("KitLevel", name)) %>%
+  pull(name)
+
+## download metadata file
+drive_download(metadata_file, overwrite = T)
+
+## read in metadata file and edit dataframe
+samples_collected <- read_csv(metadata_file) %>%
+  select(kit_id, samples_collected) %>%
+  ## determine if a surface water was collected for a kit
+  mutate(Water = ifelse(str_detect(samples_collected, "Water"), T, F)) %>%
+  pivot_longer(cols = Water, names_to = "transect_location", values_to = "collected")
+
+## remove downloaded file to clean up local directory
+file.remove(metadata_file)
+
+## merge with finalized npoc dataset to compare collected vs samples run
+samples_collected_measured <- samples_collected %>%
+  left_join(select(npoc, kit_id, transect_location, npoc_mgl),
+            by = c("kit_id", "transect_location")) %>%
+  mutate(npoc_tdn_measured = ifelse(!is.na(npoc_mgl),T,F)) %>%
+  select(-npoc_mgl)
+
+## write out dataframe
+write_csv(samples_collected_measured, file = "npoc_samples_collectedvsmeasured.csv")
+
+
+# 11. Write L0B data -----------------------------------------------------------
+
+write_csv(npoc, paste0("Data/Processed/EC1_Water_NPOC_TDN_L0B_", Sys.Date(), ".csv"))
 
 
