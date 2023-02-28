@@ -496,7 +496,7 @@ do_corrections = function(data_ions_qc, dilutions_key){
    TRUE ~ flag))
     
   
-  # #
+  # # WHYYYY
   # # 2. dilution correction ----
    options(scipen = 50)
   # isolate the ones run at the same dilution level multiple times
@@ -505,16 +505,17 @@ do_corrections = function(data_ions_qc, dilutions_key){
   #   # bring in the dilutions key to determine which dilutions to keep for which ion
      right_join(dilutions_key, by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution" = "dilution", "date_run")) %>% 
      group_by(Name, Ion, Dilution) %>% 
-     filter(n()>1, is.na(flag)) %>% #removing samples with flags
+     filter(n()>1) %>% 
      mutate(max = max(Amount_bl_corrected),
             min = min(Amount_bl_corrected),
             mean = mean(Amount_bl_corrected),
             percent_diff = ((((max - min) / mean) * 100 )),
-            check = if_else(percent_diff > 5 , "FLAG", as.character(mean)),
-            keep = if_else(date_run == max(date_run) & check == "FLAG", as.character(Amount_bl_corrected), check),
-            flag = if_else(duplicated(keep, fromLast =TRUE) | duplicated(keep), "replicates averaged", "NA" )) %>%
-     filter(keep != "FLAG") %>%
+            check = if_else(percent_diff > 5 | is.na(ppm), "FLAG", as.character(mean)),
+            keep = if_else(date_run == max(date_run) & check == "FLAG" | !is.na(Amount_bl_corrected), as.character(Amount_bl_corrected), check),
+            flag_reps = if_else(duplicated(keep, fromLast =TRUE, incomparables = NA) | duplicated(keep, incomparables = NA), "replicates averaged", "NA" )) %>%
+     filter(is.na(keep) | keep != "FLAG") %>%
      distinct(Name, Ion, Dilution, keep, .keep_all = TRUE) %>%
+     unite(col = "flag", c("flag", "flag_reps"), sep= ", ", na.rm = TRUE, remove = TRUE) %>%
      select(Name, date_run, Ion, Dilution, flag, keep) %>%
      rename(Amount_bl_corrected = keep) %>%
      mutate(flag =na_if(flag, "NA"),
@@ -558,6 +559,7 @@ do_corrections = function(data_ions_qc, dilutions_key){
   #  list(samples_dilution_corrected = samples_dilution_corrected,
   #       samples_dilution_corrected_ALLDILUTIONS = samples_dilution_corrected_ALLDILUTIONS
   # )
+
 }
 
 #Run Function:
@@ -598,6 +600,7 @@ format_df = function(data_ions_corrected){
 
 #Run Function: 
 data_ions_final = format_df(data_ions_corrected) # this includes only the results for the selected (correct) dilutions
+
 
 #data_ions_final_all_dilutions = format_df(data_ions_corrected_all_dilutions) # this includes results for all dilutions (including the ones we want to exclude)
 
