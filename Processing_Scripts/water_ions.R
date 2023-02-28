@@ -21,7 +21,7 @@
 ## 
 ## Created: 2022-02-20
 ## Kaizad F. Patel
-## Updated by AMP 2023-02-21
+## Updated by AMP & SP 2023-02-21
 # ############# #
 # ############# #
 
@@ -160,8 +160,6 @@ import_readme = function(directory_readme){
 
 #import read mes:
 readme_data = import_readme(directory_readme)
-
-# readme_data %>% write_csv("TEMP-ions_readme_compiled_2022-10-12.csv")
 
 #
 # 3. Process data ---------------------------------------------------------
@@ -428,10 +426,10 @@ ions_lods = calculate_lods(data_ions_processed,
 ## 4b. `apply_qc_flags`: applying QC flags -------------------------------------
 ## apply flags to data points below the Limit of Detection and above Calibration
 
-### COME BACK HERE######
+
 #Create Function: 
 apply_qc_flags = function(data_ions_processed, QC_DATA){
-  # we will apply two flags: (1) LOD, (2) above cal-curve
+  # we will apply two flags before blank corrections: (1) LOD, (2) above cal-curve
   
   data_ions_standards = 
     data_ions_processed %>% 
@@ -460,7 +458,7 @@ data_ions_qc = apply_qc_flags(data_ions_processed, QC_DATA = ions_lods)
 
 # `do_corrections`: this function will apply blank and dilution corrections
 # input parameters are:
-#  (a) the processed_data dataframe with qc flags, 
+#  (a) the processed_data dataframe with qc flags (data_ions_qc), 
 #  (b) compiled readme file, which contains data for dilutions, etc.,
 #  (c) and the dilutions key, which tells us which dilutions we want to keep for each sample/ion
 
@@ -470,13 +468,13 @@ do_corrections = function(data_ions_qc, dilutions_key){
   samples_and_blanks = 
     data_ions_qc %>% 
     filter(grepl("EC1_", Name) | grepl("Blank", Name)) %>% 
-    filter(!Name %in% c("Blank1", "Blank2", "Blank3", "Blank4")) %>% 
+    filter(!Name %in% c("Blank1", "Blank2", "Blank3", "Blank4")) %>% #filter out conditioning blanks & blanks after curve
     filter(!grepl("CondBlank", Name)) %>% 
     # assign sample or blank
     mutate(sample_type = case_when(grepl("Blank", Name) ~ "Blank",
                                    grepl("EC1_", Name) ~ "Sample")) 
   
-  blank_mean = 
+  blank_mean = #Mean of blanks for each run 
     samples_and_blanks %>% 
     filter(sample_type == "Blank") %>% 
     group_by(Ion, date_run) %>% 
@@ -486,8 +484,17 @@ do_corrections = function(data_ions_qc, dilutions_key){
     samples_and_blanks %>% 
     filter(sample_type == "Sample") %>% 
     left_join(blank_mean, by = c("Ion", "date_run")) %>% 
-    mutate(blank_mean_ppm = replace_na(blank_mean_ppm,0)) %>% 
-    mutate(Amount_bl_corrected = ppm - blank_mean_ppm) #### WHAT DO WE DO ABOUT BLANK CORRECTIONS WITH NEGS????
+    mutate(blank_mean_ppm = replace_na(blank_mean_ppm,0),
+           ppm= case_when(grepl("below limit of detection", flag) ~ NA_real_,
+                          TRUE ~ ppm)) %>% 
+    mutate(Amount_bl_corrected = ppm - blank_mean_ppm) %>%
+    mutate(Amount_bl_corrected = case_when(Amount_bl_corrected <= 0 ~ NA_real_, 
+                                     TRUE ~ Amount_bl_corrected),
+   flag = case_when(is.na(Amount_bl_corrected) & is.na(ppm) ~ flag,
+                          is.na(Amount_bl_corrected)  & !is.na(ppm) ~ "below blank",
+                    is.na(flag) & grepl("blank correct", Action) ~ "blank corrected",
+   TRUE ~ flag))
+    
   
   # #
   # # 2. dilution correction ----
@@ -531,27 +538,28 @@ do_corrections = function(data_ions_qc, dilutions_key){
    samples_dilution_corrected = samples_blank_corrected_dups_corrected %>%
      mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
      mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
-            Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
-     dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Dilution) %>% 
-     filter(Amount_bl_dil_corrected > 0)
+            Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3),
+            flag_dilution = case_when(Dilution > 1 ~ "dilution correction")) %>% 
+     dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, flag_dilution, Dilution) %>%
+     pivot_longer(cols = contains("flag"), values_to = "flag", names_to = "not_needed") %>%
+     summarise(flag = toString(flag)) # NEED TO ADD GROUP HERE
   # 
   # 
-  samples_dilution_corrected_ALLDILUTIONS = 
-     samples_blank_corrected %>% 
-  #   # bring in the dilutions key to determine which dilutions to keep
-    left_join(dilutions_key, by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution" = "dilution", "date_run")) %>% 
-  #   # do the dilution correction
-     mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
-     mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
-            Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
-     dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Action, Dilution) %>% 
-     filter(Amount_bl_dil_corrected > 0)
-  # 
-  # 
-  # 
-   list(samples_dilution_corrected = samples_dilution_corrected,
-        samples_dilution_corrected_ALLDILUTIONS = samples_dilution_corrected_ALLDILUTIONS
-   )
+  # samples_dilution_corrected_ALLDILUTIONS = 
+  #    samples_blank_corrected %>% 
+  # #   # bring in the dilutions key to determine which dilutions to keep
+  #   left_join(dilutions_key, by = c("Name" = "kit_id", "Ion" = "Ion", "Dilution" = "dilution", "date_run")) %>% 
+  # #   # do the dilution correction
+  #    mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
+  #    mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
+  #           Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3)) %>% 
+  #    dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, Action, Dilution) 
+  # # 
+  # # 
+  # # 
+  #  list(samples_dilution_corrected = samples_dilution_corrected,
+  #       samples_dilution_corrected_ALLDILUTIONS = samples_dilution_corrected_ALLDILUTIONS
+  # )
   browser()
 }
 
