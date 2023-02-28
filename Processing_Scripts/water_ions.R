@@ -539,11 +539,9 @@ do_corrections = function(data_ions_qc, dilutions_key){
      mutate(Amount_bl_dil_corrected = Amount_bl_corrected * Dilution) %>% 
      mutate(Amount_bl_dil_corrected = as.numeric(Amount_bl_dil_corrected),
             Amount_bl_dil_corrected = round(Amount_bl_dil_corrected, 3),
-            flag_dilution = case_when(Dilution > 1 ~ "dilution correction")) %>% 
+            flag_dilution = case_when(Dilution > 1 ~ "dilution corrected")) %>% 
      dplyr::select(Name, date_run, Ion, Amount_bl_dil_corrected, flag, flag_dilution, Dilution) %>%
-     pivot_longer(cols = contains("flag"), values_to = "flag", names_to = "not_needed") %>%
-     summarise(flag = toString(flag)) # NEED TO ADD GROUP HERE
-  # 
+     unite(col = "flag", c("flag", "flag_dilution"), sep= ", ", na.rm = TRUE, remove = TRUE)
   # 
   # samples_dilution_corrected_ALLDILUTIONS = 
   #    samples_blank_corrected %>% 
@@ -560,11 +558,10 @@ do_corrections = function(data_ions_qc, dilutions_key){
   #  list(samples_dilution_corrected = samples_dilution_corrected,
   #       samples_dilution_corrected_ALLDILUTIONS = samples_dilution_corrected_ALLDILUTIONS
   # )
-  browser()
 }
 
 #Run Function:
-data_ions_corrected = do_corrections(data_ions_qc, dilutions_key)$samples_dilution_corrected
+data_ions_corrected = do_corrections(data_ions_qc, dilutions_key)
 
 #data_ions_corrected_all_dilutions = do_corrections(data_ions_qc, dilutions_key)$samples_dilution_corrected_ALLDILUTIONS
 
@@ -578,27 +575,23 @@ format_df = function(data_ions_corrected){
   data_ions_corrected %>% 
     ungroup() %>% 
     rename(ppm = Amount_bl_dil_corrected) %>% 
-    mutate(ppm = as.character(ppm),
-           Dilution = as.character(Dilution)) 
-  
-    #pivot_longer(-c(Name, date_run, Ion)) %>% 
-   # mutate(name2 = paste0(Ion, "_", name)) %>% 
-   # dplyr::select(-Ion, -name, -date_run) %>% 
-   # distinct 
-  
-
-    #pivot_wider(names_from = "name2", values_from = "value") %>% 
-   # separate(Name, sep = "_", into = c("campaign", "kit_id")) %>% 
-   # mutate(transect_location = "Water") %>% 
-   # dplyr::select(campaign, kit_id, transect_location, everything()) %>% 
-   # mutate(across(ends_with("_ppm"), as.numeric)) %>% 
-   # janitor::clean_names() %>% 
+     mutate(ppm = as.character(ppm),
+            Dilution = as.character(Dilution)) %>%
+    pivot_longer(-c(Name, date_run, Ion)) %>% 
+    mutate(name2 = paste0(Ion, "_", name)) %>% 
+    dplyr::select(-Ion, -name, -date_run) %>% 
+    pivot_wider(names_from = "name2", values_from = "value") %>% 
+    separate(Name, sep = "_", into = c("campaign", "kit_id")) %>% 
+    mutate(transect_location = "Water") %>% 
+    dplyr::select(campaign, kit_id, transect_location, everything()) %>% 
+    mutate(across(ends_with("_ppm"), as.numeric)) %>% 
+    janitor::clean_names() %>% 
    # mutate(bromide_flag = case_when(bromide_ppm == NA ~ "below detect"))
     
     #mutate(across(ends_with("_flag"), 
   #          case_when(ends_with("_ppm") == NA ~ "below detect"))) %>% #COME BACK HERE TO FIX NAs introduced by not detecting
     #maybe try this with stringr instead of ends_with???
-   # arrange(kit_id)
+    arrange(kit_id)
   
   
 }
