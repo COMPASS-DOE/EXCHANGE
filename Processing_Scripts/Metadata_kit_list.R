@@ -44,6 +44,8 @@ drive_download(metadata_file, overwrite = T)
 # make a dataframe
 metadata_collected_raw <- read_csv(metadata_file) 
 
+sample_kit <- read_csv("~/Downloads/metadata_collected - sample_kit.csv")
+
 #delete file on the local
 file.remove(metadata_file)
 
@@ -61,14 +63,19 @@ metadata_collected <- metadata_collected_raw %>%
          Upland = ifelse(str_detect(samples_collected, "Upland"), T, F)) %>%
   pivot_longer(cols = c(Water, Sediment, Wetland, Transition, Upland),
                names_to = "transect_location", values_to = "collected") %>%
-  mutate(sample_type= case_when(str_detect(transect_location, "Upland") ~ "Soil",
-                                str_detect(transect_location, "Wetland") ~ "Soil",
-                                str_detect(transect_location, "Transition") ~ "Soil",
-                                str_detect(transect_location, "Water") ~ "Water",
-                                str_detect(transect_location, "Sediment") ~ "Sediment"),
-         campaign = "EC1") %>%
+  mutate(sample_type= case_when(str_detect(transect_location, "Upland") ~ "soil",
+                                str_detect(transect_location, "Wetland") ~ "soil",
+                                str_detect(transect_location, "Transition") ~ "soil",
+                                str_detect(transect_location, "Water") ~ "water",
+                                str_detect(transect_location, "Sediment") ~ "sediment"),
+         campaign = "EC1",
+         transect_location = tolower(transect_location)) %>%
 select(-samples_collected) %>%
-select(campaign, kit_id, transect_location, sample_type, collected)
+select(campaign, kit_id, transect_location, sample_type, collected) %>% 
+  left_join(sample_kit, by = c("transect_location", "sample_type")) %>% 
+  mutate(collected = case_when(kit_id == "K014" & transect_location == "wetland" & sample_method == "jar" ~ TRUE, # confirmed via Kit Tracking Sheet
+                               
+                               TRUE ~ collected))
 
 # 3. Export cleaned metadata --------------------------------------------------
 cat("Exporting", var, "...")
