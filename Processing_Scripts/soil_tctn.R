@@ -204,7 +204,8 @@ reverse_joined %>%
          nitrogen_weight_mg = round(predict_N_wt, 3),
          transect_location = case_when(transect_location == "UPL" ~ "upland",
                                        transect_location == "TRANS" ~ "transition",
-                                       transect_location == "WET" ~ "wetland")) -> tctn_df
+                                       transect_location == "WET" ~ "wetland")) %>% 
+  select(-predict_N_wt, -predict_C_wt) -> tctn_df
 
 ## ----- NEED TO RESOLVE / CLEAN BELOW CODE -----
 
@@ -216,6 +217,7 @@ reverse_joined %>%
 cat("Applying flags to", var, "data...")
 
 # Calculate minimum response standards for each date_run (flag 2)
+##NEED TO MAKE A NOTE ABT WHY WE USED WEIGHTS AND NOT RESPONSES
 reverse_standards %>% 
   group_by(date_run) %>% 
   summarise(min_c = min(reverse_C_wt),
@@ -229,7 +231,6 @@ tctn_df %>%
   mutate(range_c = median_c * 0.10,
          range_n = median_n * 0.10) -> medians
 
-### @Steph: We need to drop the outlier here ###
 data_qc <- function(df){
 
   df %>% 
@@ -262,7 +263,7 @@ data_qc %>%
   filter(tn_vals == TRUE) %>% select(-tn_vals) %>%  
   group_by(kit_id, transect_location, rep) %>%
   mutate(tn_flag = case_when(tn_flag == "tn_flag_1" ~ "outside range",
-                             tn_flag == "tn_flag_2" ~ "below detect",
+                             tn_flag == "tn_flag_2" ~ "rep below detect",
                              tn_flag == "tn_flag_3" ~ "rep outlier")) %>% 
   summarise(tn_flag = toString(tn_flag)) -> tn_flags
   
@@ -272,19 +273,50 @@ data_qc %>%
                values_to = "tc_vals") %>% 
   filter(tc_vals == TRUE) %>% select(-tc_vals) %>% 
   group_by(kit_id, transect_location, rep) %>%
-    mutate(tc_flag = case_when(tc_flag == "tc_flag_1" ~ "outside range",
-                               tc_flag == "tc_flag_2" ~ "below detect",
-                               tc_flag == "tc_flag_3" ~ "rep outlier")) %>% 
+  mutate(tc_flag = case_when(tc_flag == "tc_flag_1" ~ "outside range",
+                             tc_flag == "tc_flag_2" ~ "rep below detect",
+                             tc_flag == "tc_flag_3" ~ "rep outlier")) %>% 
     summarise(tc_flag = toString(tc_flag)) %>% 
     left_join(tn_flags, by = c("kit_id", "transect_location", "rep")) -> flags
   
-  
+flags %>% 
+  select(-rep) %>% 
+  pivot_longer(cols = contains("flag"), names_to = "flag", values_to = "value") %>% 
+  separate_longer_delim(cols = value, delim = ", ") %>% 
+  group_by(kit_id, transect_location, flag) %>% 
+  distinct(value) %>% 
+  filter(!is.na(value)) %>% 
+  pivot_wider(names_from = "flag", values_from = "value", values_fn = toString) %>% 
+  rename(tc_flag_notes = tc_flag, tn_flag_notes = tn_flag) -> flag_notes
+
 data_qc %>% 
     left_join(flags, by = c("kit_id", "transect_location", "rep")) %>% 
     select(campaign, kit_id, transect_location, rep, nitrogen_weight_perc, 
            carbon_weight_perc, tn_flag, tc_flag) %>% 
     rename(tc_perc = carbon_weight_perc,
-           tn_perc = nitrogen_weight_perc)-> data_clean
+           tn_perc = nitrogen_weight_perc) %>% 
+    mutate(tn_perc = case_when(grepl("rep outlier", tn_flag) ~ NA,
+                               grepl("rep below detect", tn_flag) ~ NA,
+                               TRUE ~ tn_perc),
+           tc_perc = case_when(grepl("rep outlier", tc_flag) ~ NA,
+                               grepl("rep below detect", tc_flag) ~ NA,
+                               TRUE ~ tc_perc)) %>%
+    group_by(campaign, kit_id, transect_location) %>% 
+    summarise(tc_n = sum(!is.na(tc_perc)),
+              tn_n = sum(!is.na(tn_perc)),
+              tc_perc = round(mean(tc_perc, na.rm = TRUE), digits = 3),
+              tn_perc = round(mean(tn_perc, na.rm = TRUE), digits = 3)) %>% 
+    mutate(tc_flag = case_when(tc_n < 3 ~ "< 3 replicates used",
+                               tc_perc == "NaN" ~ "no replicates used"),
+           tn_flag = case_when(tn_n < 3 ~ "< 3 replicates used",
+                               tn_perc == "NaN" ~ "no replicates used")) %>% 
+    left_join(flag_notes, by = c("kit_id", "transect_location")) %>% 
+  unite(col = tc_flag, c("tc_flag", "tc_flag_notes"), sep = ", ", na.rm = TRUE) %>% 
+  unite(col = tn_flag, c("tn_flag", "tn_flag_notes"), sep = ", ", na.rm = TRUE) %>% 
+  select(-tc_n, -tn_n) -> data_clean
+
+data_clean[data_clean == "NaN"] <- NA # replace NaN with NA
+data_clean[data_clean == ""] <- NA # replace empty cells with NA
 
 #
 # 5. Write cleaned data to drive -----------------------------------------------
