@@ -21,7 +21,9 @@ output:
 ```{r setup, include=FALSE}
 pacman::p_load(ggplot2, readr, dplyr, tidyr, kableExtra, DT)
 
-files <- list.files("~/Downloads/ESS-DIVE Submission/", recursive = TRUE, full.names = TRUE)
+directory = "https://drive.google.com/drive/folders/15lCh6C6bHZmbXsrRfKczQXsJHNihKJza"
+
+files <- googledrive::drive_ls(directory, recursive = TRUE)
 ```
 
 # Are file names in the correct structure?

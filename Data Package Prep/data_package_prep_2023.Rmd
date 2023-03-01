@@ -24,28 +24,56 @@ library(plotly)
 
 
 ```{r import}
-
 import_files = function(FILEPATH){
   
-  filePaths <- list.files(path = FILEPATH, pattern = ".csv", full.names = TRUE)
+  ## a. Create a list of files to download
+  files <- 
+    googledrive::drive_ls(FILEPATH, pattern = ".csv")
   
+  ## b. Download files to local (don't worry, we'll delete em in a sec)
+  lapply(files$id, googledrive::drive_download, overwrite = TRUE)
+  
+  filePaths <- files$name
+  dat <- 
     do.call(bind_rows, lapply(filePaths, function(path){
       # then add a new column `source` to denote the file name
-      df <- 
-        read.csv(path, header = TRUE, check.names = FALSE) %>% 
-        mutate(source = basename(path))
+      df <-   read.csv(path, header = TRUE, check.names = FALSE) %>% 
+         mutate(source = basename(path))
       df}))
+
+  ## d. delete the temporary files
+  file.remove(c(files$name))  
   
+  ## e. output
+  dat
 }
 
-kit_metadata = read.csv("Data/ESS-DIVE Submission/ec1-metadata/ec1_metadata_kitlevel.csv") %>% dplyr::select(kit_id, site_name, region)
+
+ #import_files = function(FILEPATH){
+#   
+#   filePaths <- googledrive::drive_ls(path = FILEPATH, pattern = ".csv", full.names = TRUE)
+#     lapply(files$id, drive_download, overwrite = TRUE)
+#     do.call(bind_rows, lapply(filePaths, function(path){
+#       # then add a new column `source` to denote the file name
+#       df <- 
+#         read.csv(path, header = TRUE, check.names = FALSE) %>% 
+#         mutate(source = basename(path))
+#       df}))
+#   
+# }
+
+
+ kit_metadata = import_files(FILEPATH = "https://drive.google.com/drive/folders/1xy9nsTpbiSk-KXrcDEeFQ7gg4350DuH-") 
+# 
+# kit_metadata = kit_metadata %>% dplyr::select(kit_id, site_name, region)
+
 reorder_transect = function(dat){
   dat %>% 
-    mutate(transect_location = factor(transect_location, levels = c("upland", "transition", "wetland")))
-}
+     mutate(transect_location = factor(transect_location, levels = c("upland", "transition", "wetland")))
+ }
 
 
-soil_combined = import_files(FILEPATH = "Data/ESS-DIVE Submission/ec1-soil")
+soil_combined = import_files(FILEPATH = "https://drive.google.com/drive/folders/1y5a3l0IFp29ofLZC6LGy5E_WSgL5b3qy")
 soil_combined_long = 
   soil_combined %>% 
   pivot_longer(-c(campaign, kit_id, transect_location, source, site, type)) %>% 
@@ -57,7 +85,7 @@ soil_combined_long =
   left_join(kit_metadata) %>% 
   reorder_transect()
 
-sediment_combined = import_files(FILEPATH = "Data/ESS-DIVE Submission/ec1-sediment")
+sediment_combined = import_files(FILEPATH = "https://drive.google.com/drive/folders/14F17xAEvwHgZBHXyhdIwW_8jg14-QZgN")
 sediment_combined_long = 
   sediment_combined %>% 
   pivot_longer(-c(campaign, kit_id, transect_location, source, site, type)) %>% 
@@ -70,7 +98,7 @@ sediment_combined_long =
   mutate(transect_location = "sediment")
 
 
-water_combined = import_files(FILEPATH = "Data/ESS-DIVE Submission/ec1-water")
+water_combined = import_files(FILEPATH = "https://drive.google.com/drive/folders/1kBJUcn_OOCIJa8itDuqq4qahO-CH0K5U")
 water_combined_long = 
   water_combined %>% 
   pivot_longer(-c(campaign, kit_id, transect_location, source)) %>% 

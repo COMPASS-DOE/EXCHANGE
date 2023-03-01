@@ -1,0 +1,56 @@
+kit_id,samples_collected,transect_location,collected,npoc_tdn_measured
+K001,"Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,FALSE,FALSE
+K004,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K007,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,FALSE
+K008,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K009,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K010,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K011,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K012,"Water, Sediment, Soil - Wetland",Water,TRUE,TRUE
+K013,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K014,"Water, Sediment",Water,TRUE,TRUE
+K015,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K016,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K017,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K018,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K019,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K020,"Water, Soil - Upland",Water,TRUE,TRUE
+K021,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K022,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K023,"Water, Sediment, Soil - Wetland, Soil - Upland",Water,TRUE,TRUE
+K024,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K025,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K026,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K027,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,FALSE
+K029,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K030,"Water, Sediment, Soil - Upland, Soil - Wetland",Water,TRUE,TRUE
+K033,"Water, Sediment, Soil - Wetland, Soil - Upland",Water,TRUE,TRUE
+K034,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K035,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K036,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K037,"Water, Sediment, Soil - Wetland",Water,TRUE,TRUE
+K038,"Water, Sediment, Soil - Wetland, Soil - Upland",Water,TRUE,TRUE
+K039,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K040,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K041,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K042,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K043,"Water, Sediment",Water,TRUE,TRUE
+K044,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K045,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K046,"Water, Sediment, Soil - Wetland, Soil - Upland",Water,TRUE,TRUE
+K047,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K048,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K049,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K050,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K051,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K052,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil-Upland",Water,TRUE,TRUE
+K053,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K054,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K055,Upland soil,Water,FALSE,TRUE
+K056,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K057,Water,Water,TRUE,TRUE
+K058,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K059,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K060,"Water, Sediment, Soil - Wetland",Water,TRUE,TRUE
+K061,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
+K062,"Water, Sediment, Soil - Wetland, Soil - Transition, Soil - Upland",Water,TRUE,TRUE
