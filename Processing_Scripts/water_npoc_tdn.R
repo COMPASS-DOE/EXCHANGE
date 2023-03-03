@@ -4,7 +4,7 @@
 ## 
 ## Created: 2022-01-15 (Updated 2022-03-30 with Opal Otenburg)
 ## Peter Regier
-## Updated: 2023-02-23 by Julia McElhinny for EXCHANGE
+## Updated: 2023-02-23 by Julia McElhinny
 ##
 
 
@@ -73,7 +73,7 @@ lapply(readmes$name, drive_download, overwrite = TRUE)
 
 ## Get full file name of the TOC-L LOD information
 LOD_file <- drive_ls(directory) %>%
-  filter(grepl("LOD", name))
+  filter(grepl("MCRL_LOD", name))
 
 ## Download LOD file
 drive_download(LOD_file$name, overwrite = TRUE)
@@ -101,7 +101,8 @@ file.remove(c(files$name, LOD_file$name, readmes$name))
 # 5. Set up LOD and Join with Raw Data -----------------------------------------
 
 ## edit column names of LOD data frame for easier reference
-colnames(LOD) <- c("Date_LOD_run", "LOD_Start_Date", "LOD_End_Date", "LOD_NPOC", "LOD_TN", "LOD_DIC", "LOD_TSS")
+colnames(LOD) <- c("Date_LOD_run", "LOD_Start_Date", "LOD_End_Date", "LOD_NPOC", "LOD_TN", 
+                   "LOD_DIC", "LOD_TSS", "Instrument_Notes")
 
 ## make date columns numeric for math later
 LOD$Date_LOD_run <- as.numeric(LOD$Date_LOD_run)
@@ -239,7 +240,7 @@ npoc_bc_flagged <- samples_readme_action %>%
          tdn_mgl = round(tdn_mgl, 3)) %>% 
   ## join with the cal curve information
   left_join(cal_curve, by = "date") %>%
-  ## Second, add flags for outside LOD
+  ## Second, add flags for outside LOD (LOD info is still part of this data frame from previous edits)
   mutate(npoc_flag = ifelse(npoc_mgl > npoc_calib_upper_limit, "npoc outside calibration curve range", NA), #per cal curve upper limit
        tdn_flag = ifelse(tdn_mgl > tdn_calib_upper_limit, "tdn outside calibration curve range", NA),
        npoc_lod_flag = ifelse(npoc_mgl < LOD_NPOC, "npoc below limit of detection", NA),
@@ -260,7 +261,7 @@ mean_if_numeric <- function(x){
 
 ## Another step before finalizing is taking care of pesky duplicates from reruns
 npoc_duplicates_removed <- npoc_bc_flagged %>%  
-  ## make sure date is back to a character variable so no math is done
+  ## make sure date is back to a character variable so no math is done on the date
   mutate(date = as.character(date)) %>%
   group_by(kit_id) %>% 
   summarize(across(everything(), .f = mean_if_numeric))
