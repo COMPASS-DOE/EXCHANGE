@@ -46,7 +46,7 @@ data_raw <- googlesheets4::read_sheet(data_path)
 soil_pH_data_processed = 
   data_raw %>% 
   filter(is.na(Notes)) %>% 
-  mutate(specific_conductance_us_cm = Conductivity_uS_cm/ (1 + 0.02 * (Temp_C - 25)),
+  mutate(specific_conductance_us_cm = Conductivity_uS_cm/ (1 + 0.02 * (Temp_C - 25)), # conversion from raw cond to specific cond
          specific_conductance_us_cm = signif(specific_conductance_us_cm, digits = 3)) %>% 
   mutate(Transect_location = tolower(Transect_location),
          Transect_location = factor(Transect_location, levels = c("upland", "transition", "wetland"))) %>% 
@@ -65,7 +65,7 @@ soil_pH_qc =
                              ph > 14 ~ "above range"),
          specific_conductance_flag = case_when(specific_conductance_us_cm < 0 ~ "below range",
                                                specific_conductance_us_cm > 9999 ~ "above range")) %>% 
-  dplyr::select(-starts_with("ph"), -starts_with("specific_conductance"), starts_with("ph"), starts_with("specific_conductance")) %>% 
+  dplyr::select(-starts_with("ph"), -starts_with("specific_conductance"), starts_with("ph"), starts_with("specific_conductance"), -date_run) %>% 
   janitor::clean_names()
   
 
