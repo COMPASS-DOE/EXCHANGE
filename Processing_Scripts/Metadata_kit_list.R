@@ -73,8 +73,11 @@ metadata_collected <- metadata_collected_raw %>%
 select(-samples_collected) %>%
 select(campaign, kit_id, transect_location, sample_type, collected) %>% 
   left_join(sample_kit, by = c("transect_location", "sample_type")) %>% 
-  mutate(collected = case_when(kit_id == "K014" & transect_location == "wetland" & sample_method == "jar" ~ TRUE, # confirmed via Kit Tracking Sheet
-                               
+  # next, we need to make manual edits by sample method based on kit tracking sheet
+  mutate(collected = case_when(kit_id == "K014" & transect_location == "wetland" & sample_method == "jar" ~ TRUE, # collected sample for jar wetland
+                               kit_id == "K027" & sample_method == "jar" ~ FALSE, # jars compromised after arrival
+                               kit_id == "K052" & transect_location == "wetland" & sample_method %in% c("jar", "bag") ~ FALSE, # did not sample wetland jar or bag
+                               kit_id == "K060" & transect_location == "wetland" & sample_method %in% c("jar", "bag") ~ FALSE, # did not sample wetland jar or bag
                                TRUE ~ collected))
 
 # 3. Export cleaned metadata --------------------------------------------------
