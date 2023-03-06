@@ -72,7 +72,13 @@ soil_pH_qc =
 #
 # 5. Export cleaned data --------------------------------------------------
 
-soil_pH_qc %>% googlesheets4::drive_upload("/EC1_Soil_pH_L0B_20220531.csv", row.names = FALSE)
+soil_pH_qc %>% write.csv(paste0("./ec1_soil_ph_cond_l0B_", Sys.Date(), ".csv"), row.names = FALSE)
+
+L0Bdirectory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
+
+drive_upload(media = paste0("./ec1_soil_ph_cond_l0B_", Sys.Date(), ".csv"), name= paste0("ec1_soil_ph_cond_l0B_", Sys.Date(), ".csv"), path = L0Bdirectory )
+
+file.remove(paste0("./ec1_soil_ph_cond_l0B_", Sys.Date(), ".csv"))
 
 # 6. Check with Metadata for missing: 
 
