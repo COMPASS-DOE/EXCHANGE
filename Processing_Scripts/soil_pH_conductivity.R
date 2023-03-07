@@ -80,6 +80,16 @@ drive_upload(media = paste0("./ec1_soil_ph_cond_l0B_", Sys.Date(), ".csv"), name
 
 file.remove(paste0("./ec1_soil_ph_cond_l0B_", Sys.Date(), ".csv"))
 
-# 6. Check with Metadata for missing: 
+# 6. Check with Metadata for missing:
 
+source("./Processing_Scripts/Metadata_kit_list.R")
+source("./Processing_Scripts/jars_metadata.R")
+
+metadata_collected %>%
+  filter(sample_type == "soil", sample_method == "jar") -> meta_filter
+
+soil_pH_qc %>%
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>%
+  full_join(jars_clean, by = c("campaign", "kit_id", "transect_location")) %>%
+  filter(collected == TRUE & is.na(ph) | collected == FALSE & !is.na(ph)) -> check_these
 
