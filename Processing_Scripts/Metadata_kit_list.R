@@ -44,7 +44,7 @@ drive_download(metadata_file, overwrite = T)
 # make a dataframe
 metadata_collected_raw <- read_csv(metadata_file) 
 
-sample_kit <- read_csv("~/Downloads/metadata_collected - sample_kit.csv")
+sample_kit <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/18JlGJzeQaqtkTPJyuzsAZWB8fuhcyDZ8ZekGUlanCQ8/edit#gid=549612035")
 
 #delete file on the local
 file.remove(metadata_file)
@@ -72,7 +72,7 @@ metadata_collected <- metadata_collected_raw %>%
          transect_location = tolower(transect_location)) %>%
 select(-samples_collected) %>%
 select(campaign, kit_id, transect_location, sample_type, collected) %>% 
-  left_join(sample_kit, by = c("transect_location", "sample_type")) %>% 
+  left_join(sample_kit, by = c("transect_location", "sample_type"), multiple = "all") %>% 
   mutate(collected = case_when(kit_id == "K014" & transect_location == "wetland" & sample_method == "jar" ~ TRUE, # confirmed via Kit Tracking Sheet
                                
                                TRUE ~ collected))
