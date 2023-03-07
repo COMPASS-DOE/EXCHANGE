@@ -1,14 +1,16 @@
 ## This is a data processing script for EXCHANGE, a sub-project of THE DOE-funded 
 ## COMPASS project (https://compass.pnnl.gov/). 
 ##
-## This script imports raw data for gravimetric water content (GWC) measured by 
-## drying ~5g of field-moist soils/sediments in an oven at 105C for >24 hours at 
+## This script imports raw data for gravimetric water content (GWC) aka soil moisture content.
+## This was measured by drying ~5g of field-moist soils/sediments in an oven at 105C for >24 hours at 
 ## MCRL, then reweighing to determine mass of water lost.
 ## This script exports clean, Level 0B QC'ed data. 
 ## Data are read in from the COMPASS Google Drive.
 ## 
 ## Created: 2022-04-06
 ## Peter Regier
+## Updated: 2023-03-07
+## Allison Myers-Pigg & Stephanie Pennington
 ##
 # ############# #
 # ############# #
@@ -22,7 +24,6 @@ require(pacman)
 pacman::p_load(cowsay, 
                tidyverse, 
                cowplot,
-               grattantheme, 
                googlesheets4, # read_sheet 
                googledrive) # drive_upload
 
@@ -30,7 +31,7 @@ pacman::p_load(cowsay,
 say("Welcome to EXCHANGE!", by = "random")
 
 ## URL for data
-gwc_path = "https://docs.google.com/spreadsheets/d/1Osig5zxzW3l9z_1Bb0zNW2tfTdJ60hsh78qMvjgclQE/edit#gid=0"
+gwc_path = "https://docs.google.com/spreadsheets/d/11sr5S6VTS7K0rcQXq-QNZkImdLxwm3cY5lvLvaExvk8/edit#gid=0"
 
 ## Define constants (we are not defining a maximum value for GWC)
 gwc_min = 0
@@ -43,43 +44,86 @@ var <- "gwc"
 cat("Importing", var, "data...")
 
 ## read in raw data.
-gwc_raw <- read_sheet(gwc_path) %>% 
-  filter(`duplicate to ignore` == FALSE)
+gwc_raw <- read_sheet(gwc_path) %>%
+  rename(date_ran = `...1`)
 
 #
 # 3. Process data --------------------------------------------------------------
 cat("Processing", var, "data...")
 
-## The formula for GWC is [(wt_crucible + wt_moist) - (wt_crucible + wt_dry)] / 
-## [(crucible + dry) - (crucible)]
+#Soil Dry Basis 
+#Equation: dry moisture content (%) = (Total Weight - Total Dry Weight) * 100 / (Total Dry Weight - pan weight)
+
+#Soil Wet Basis 
+#Equation: wet moisture content (%) = (Total Weight - Total Dry Weight) * 100 / (Total Weight - pan weight)
+
+#Equations from Reddy et al., 2013 Chapter 3 in Methods in Biogeochemistry of Wetlands 
+# https://doi.org/10.2136/sssabookser10.c3 
+
 gwc_processed <- gwc_raw %>% 
   mutate(campaign = "EC1",
-         kit_id = str_match(sample_id, "K0\\d\\d")[,1], 
-         transect_location = str_to_title(str_match(sample_id, "[:alpha:]{6,10}")), 
-         gwc_perc = ((wt_crucible_moist_g - wt_crucible_dry_g) / (wt_crucible_dry_g - wt_crucible_g))* 100) %>% 
-  dplyr::select(campaign, kit_id, transect_location, gwc_perc)
+         kit_id = str_match(sample_id, "K0\\d\\d")[,1],
+         transect_location = str_to_lower(str_match(sample_id, "[:alpha:]{6,10}")), 
+         moisturecontent_perc_drywtbasis = ((wt_crucible_moist_g - wt_crucible_dry_g) / (wt_crucible_dry_g - wt_crucible_g))* 100,
+         moisturecontent_perc_wetwtbasis = ((wt_crucible_moist_g - wt_crucible_dry_g) / (wt_crucible_moist_g - wt_crucible_g))* 100) %>% 
+  dplyr::select(-c(sample_id:notes, date_ran))
 
-#
+
+
 # 4. Apply QC flags ------------------------------------------------------------
 cat("Applying flags to", var, "data...")
 
 clean_data <- function(data) {
   data %>% 
-    mutate(gwc_perc = round(gwc_perc, 0)) %>% 
-    mutate(gwc_flag = ifelse(gwc_perc < gwc_min, "outside range", NA)) 
+    mutate(gwc_flag = ifelse(moisturecontent_perc_drywtbasis < gwc_min | moisturecontent_perc_wetwtbasis < gwc_min, "outside range", NA)) %>%
+    group_by(campaign, kit_id, transect_location) %>%
+    mutate(duplicate = case_when(n() > 1 ~ "replicates averaged"),
+           moisturecontent_perc_drywtbasis = mean(moisturecontent_perc_drywtbasis),
+           moisturecontent_perc_wetwtbasis = mean(moisturecontent_perc_wetwtbasis),
+           moisturecontent_perc_drywtbasis = round(moisturecontent_perc_drywtbasis, 0),
+           moisturecontent_perc_wetwtbasis = round(moisturecontent_perc_wetwtbasis, 0),) %>%
+    unite(gwc_flag, duplicate, sep = ", ", na.rm = TRUE) %>%
+    distinct()
 }
 
-gwc <- clean_data(gwc_processed) %>% 
-  filter(!is.na(gwc_perc))
+gwc_1 <- clean_data(gwc_processed)
+
+gwc_1[gwc_1 == ""] <- NA # replace empty cells with NA
+
+# Need to add flag for samples taken from a different source: 
+gwc <- gwc_1 %>%
+ mutate(gwc_flag = case_when(kit_id == "K029" & transect_location == "transition" ~ "sample taken from hyprop ring", #this is based on raw data notes and cross reference with kit tracking sheet
+                             kit_id == "K058" & transect_location == "wetland" ~ "sample taken from hyprop ring", #this is based on raw data notes and cross reference with kit tracking sheet
+                             kit_id == "K060" & transect_location == "wetland" ~ "sample taken from hyprop ring", #this is based on raw data notes and cross reference with kit tracking sheet
+                             TRUE ~ gwc_flag))
 
 #
-# 5. Write cleaned data to drive -----------------------------------------------
+# 5. Export cleaned data --------------------------------------------------
 
-date_updated <- "20220714"
+gwc %>% write.csv(paste0("./ec1_soil_gwc_l0B_", Sys.Date(), ".csv"), row.names = FALSE)
 
-write_csv(gwc, paste0("Data/Processed/L0B/EC1_Soil_GWC_L0B_", date_updated, ".csv"))
+L0Bdirectory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
 
-## Check for duplicates
-gwc %>% 
-  group_by(kit_id, transect_location) %>% 
-  filter(n() > 1) 
+drive_upload(media = paste0("./ec1_soil_gwc_l0B_", Sys.Date(), ".csv"), name= paste0("ec1_soil_gwc_l0B_", Sys.Date(), ".csv"), path = L0Bdirectory)
+
+file.remove(paste0("./ec1_soil_gwc_l0B_", Sys.Date(), ".csv"))
+
+# 6. Check with Metadata for missing:
+
+source("./Processing_Scripts/Metadata_kit_list.R")
+
+#Bags
+bags_inventory = googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1wTvUj0aIPZ31-cw1mYXk86sJDkL4yeO9KRx0ALn7QKc/edit#gid=0") %>% 
+  select(campaign, kit_id, transect_location, does_bag_exist, notes)
+
+metadata_collected %>%
+  filter(sample_method == "bag") -> meta_filter
+
+gwc %>%
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location"))  %>%
+  full_join(bags_inventory, by = c("campaign", "kit_id", "transect_location"))  %>%
+  filter(collected == TRUE & is.na(moisturecontent_perc_drywtbasis) | collected == FALSE & !is.na(moisturecontent_perc_drywtbasis)) -> check_these
+
+View(check_these)
+
+could_rerun <- check_these %>% filter(does_bag_exist == TRUE)
