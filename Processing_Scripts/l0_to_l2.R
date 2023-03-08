@@ -130,7 +130,7 @@ write_csv(o2_l2_soil, "Data/Processed/L2/EC1_Soil_OxygenDrawdown_L2_20221004.csv
 pH_l2 <- 
   pH_l0 %>% 
   filter(is.na(ph_flag) & is.na(specific_conductance_flag)) %>% 
-  select(-ph_flag, -specific_conductance_flag)
+  select(campaign, kit_id, transect_location, ph, specific_conductance_us_cm)
 
 ## Write out
 write_csv(pH_l2, "Data/Processed/L2/EC1_Soil_pH_L2_20221012.csv")

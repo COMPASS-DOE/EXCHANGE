@@ -44,7 +44,7 @@ drive_download(metadata_file, overwrite = T)
 # make a dataframe
 metadata_collected_raw <- read_csv(metadata_file) 
 
-sample_kit <- read_csv("~/Downloads/metadata_collected - sample_kit.csv")
+sample_kit <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/18JlGJzeQaqtkTPJyuzsAZWB8fuhcyDZ8ZekGUlanCQ8/edit#gid=549612035")
 
 #delete file on the local
 file.remove(metadata_file)
@@ -73,8 +73,16 @@ metadata_collected <- metadata_collected_raw %>%
 select(-samples_collected) %>%
 select(campaign, kit_id, transect_location, sample_type, collected) %>% 
   left_join(sample_kit, by = c("transect_location", "sample_type")) %>% 
-  mutate(collected = case_when(kit_id == "K014" & transect_location == "wetland" & sample_method == "jar" ~ TRUE, # confirmed via Kit Tracking Sheet
-                               
+  # next, we need to make manual edits by sample method based on kit tracking sheet https://docs.google.com/spreadsheets/d/19F1oS-DBvxQlU1EYXtciYkhu6TNA7fuCQ0Ts2NRWQlk/edit?usp=sharing
+  mutate(collected = case_when(kit_id == "K014" & transect_location == "wetland" & sample_method == "jar" ~ TRUE, # collected sample for jar wetland
+                               kit_id == "K027" & sample_method == "jar" ~ FALSE, # jars compromised after arrival
+                               kit_id == "K052" & transect_location == "wetland" & sample_method %in% c("jar", "bag") ~ FALSE, # did not sample wetland jar or bag
+                               kit_id == "K060" & !transect_location == "sediment" & sample_method %in% c("jar", "bag") ~ FALSE, # did not sample jar or bag did not sample hyprop for transition or upland
+                               kit_id == "K060" & transect_location %in% c("transition","upland") & sample_method %in% c("hyprop") ~ FALSE, # did not sample hyprop for transition or upland
+                               kit_id == "K029" & sample_method %in% c("bag") ~ FALSE, # did not sample bags, put the jars inside the bags instead
+                               kit_id == "K056" & sample_method %in% c("bag") ~ FALSE, # did not sample bags, put the jars inside the bags instead
+                               kit_id == "K051" & transect_location == "sediment" & sample_method %in% c("jar", "bag") ~ FALSE, # did not sample sediment jar or bag
+                               kit_id == "K058" & sample_method %in% c("bag") ~ FALSE, # did not sample bags, put the jars inside the bags instead
                                TRUE ~ collected))
 
 # 3. Export cleaned metadata --------------------------------------------------
