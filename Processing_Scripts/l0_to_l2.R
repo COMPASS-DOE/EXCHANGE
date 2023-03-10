@@ -148,3 +148,9 @@ ions_l2 <-
   pivot_wider(name)
 
 }
+
+# Clean up and export TCTN
+
+tctn_full %>% 
+  filter(tc_flag != "sample not collected", tc_flag != "outside range", 
+         tn_flag != "sample not collected", tn_flag != "outside range") -> L2

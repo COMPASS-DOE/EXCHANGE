@@ -322,12 +322,35 @@ data_qc %>%
 data_clean[data_clean == "NaN"] <- NA # replace NaN with NA
 data_clean[data_clean == ""] <- NA # replace empty cells with NA
 
+# 5. Check with Metadata for missing:
+
+source("./Processing_Scripts/Metadata_kit_list.R")
+
+metadata_collected %>%
+  filter(sample_method == "jar", transect_location != "sediment")-> meta_filter
+
+data_clean %>%
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location"))  %>%
+  mutate(tc_flag = case_when(collected == FALSE & is.na(tc_perc) & is.na(tc_flag) ~ "sample not collected",
+                                  TRUE ~ tc_flag),
+         tn_flag = case_when(collected == FALSE & is.na(tn_perc) & is.na(tn_flag) ~ "sample not collected",
+                                  TRUE ~ tn_flag)) %>% 
+  select(-c(sample_type, sample_method, collected)) -> tctn_full
+
+
+  # filter(collected == TRUE & is.na(tc_perc) & is.na(tc_flag) | collected == FALSE & !is.na(tc_perc) | collected == FALSE & is.na(tc_perc) & !is.na(tc_flag) |
+  #          collected == TRUE & is.na(tn_perc) & is.na(tn_flag) | collected == FALSE & !is.na(tn_perc) | collected == FALSE & is.na(tn_perc) & !is.na(tn_flag) ) -> check_these
+
+View(check_these)
+
 #
-# 5. Write cleaned data to drive -----------------------------------------------
+# 6. Write cleaned data to drive -----------------------------------------------
   
 ## The file written out should be named following 
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
 #drive_upload(media = data_clean, path = data_path)
 
-#rite_csv(data_clean, paste0("Data/Processed/EC1_Soil_TCTN_L0B_",Sys.Date(),".csv"))
+write_csv(tctn_full, paste0("EC1_Soil_TCTN_L0B_",Sys.Date(),".csv"))
+
+
  
