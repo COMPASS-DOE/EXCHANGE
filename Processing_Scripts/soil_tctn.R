@@ -263,8 +263,8 @@ data_qc %>%
   filter(tn_vals == TRUE) %>% select(-tn_vals) %>%  
   group_by(kit_id, transect_location, rep) %>%
   mutate(tn_flag = case_when(tn_flag == "tn_flag_1" ~ "outside range",
-                             tn_flag == "tn_flag_2" ~ "rep below detect",
-                             tn_flag == "tn_flag_3" ~ "rep outlier")) %>% 
+                             tn_flag == "tn_flag_2" ~ "replicate below detect",
+                             tn_flag == "tn_flag_3" ~ "replicate outlier")) %>% 
   summarise(tn_flag = toString(tn_flag)) -> tn_flags
   
 
@@ -274,8 +274,8 @@ data_qc %>%
   filter(tc_vals == TRUE) %>% select(-tc_vals) %>% 
   group_by(kit_id, transect_location, rep) %>%
   mutate(tc_flag = case_when(tc_flag == "tc_flag_1" ~ "outside range",
-                             tc_flag == "tc_flag_2" ~ "rep below detect",
-                             tc_flag == "tc_flag_3" ~ "rep outlier")) %>% 
+                             tc_flag == "tc_flag_2" ~ "replicate below detect",
+                             tc_flag == "tc_flag_3" ~ "replicate outlier")) %>% 
     summarise(tc_flag = toString(tc_flag)) %>% 
     left_join(tn_flags, by = c("kit_id", "transect_location", "rep")) -> flags
   
@@ -295,25 +295,29 @@ data_qc %>%
            carbon_weight_perc, tn_flag, tc_flag) %>% 
     rename(tc_perc = carbon_weight_perc,
            tn_perc = nitrogen_weight_perc) %>% 
-    mutate(tn_perc = case_when(grepl("rep outlier", tn_flag) ~ NA,
-                               grepl("rep below detect", tn_flag) ~ NA,
+    mutate(tn_perc = case_when(grepl("replicate outlier", tn_flag) ~ NA,
+                               grepl("replicate below detect", tn_flag) ~ NA,
                                TRUE ~ tn_perc),
-           tc_perc = case_when(grepl("rep outlier", tc_flag) ~ NA,
-                               grepl("rep below detect", tc_flag) ~ NA,
+           tc_perc = case_when(grepl("replicate outlier", tc_flag) ~ NA,
+                               grepl("replicate below detect", tc_flag) ~ NA,
                                TRUE ~ tc_perc)) %>%
     group_by(campaign, kit_id, transect_location) %>% 
     summarise(tc_n = sum(!is.na(tc_perc)),
               tn_n = sum(!is.na(tn_perc)),
               tc_perc = round(mean(tc_perc, na.rm = TRUE), digits = 3),
               tn_perc = round(mean(tn_perc, na.rm = TRUE), digits = 3)) %>% 
-    mutate(tc_flag = case_when(tc_n < 3 ~ "< 3 replicates used",
+    mutate(tc_flag = case_when(tc_n < 3 & tc_n > 0 ~ "< 3 replicates used",
                                tc_perc == "NaN" ~ "no replicates used"),
-           tn_flag = case_when(tn_n < 3 ~ "< 3 replicates used",
+           tn_flag = case_when(tn_n < 3 & tn_n > 0 ~ "< 3 replicates used",
                                tn_perc == "NaN" ~ "no replicates used")) %>% 
     left_join(flag_notes, by = c("kit_id", "transect_location")) %>% 
-  unite(col = tc_flag, c("tc_flag", "tc_flag_notes"), sep = ", ", na.rm = TRUE) %>% 
-  unite(col = tn_flag, c("tn_flag", "tn_flag_notes"), sep = ", ", na.rm = TRUE) %>% 
-  select(-tc_n, -tn_n) -> data_clean
+    unite(col = tc_flag, c("tc_flag", "tc_flag_notes"), sep = ", ", na.rm = TRUE) %>% 
+    unite(col = tn_flag, c("tn_flag", "tn_flag_notes"), sep = ", ", na.rm = TRUE) %>% 
+    mutate(tc_flag = case_when(grepl("no replicates used", tc_flag) ~ "no replicates used",
+                            TRUE ~ tc_flag),
+           tn_flag = case_when(grepl("no replicates used", tn_flag) ~ "no replicates used",
+                                   TRUE ~ tn_flag)) %>% 
+    select(-tc_n, -tn_n) -> data_clean
 
 data_clean[data_clean == "NaN"] <- NA # replace NaN with NA
 data_clean[data_clean == ""] <- NA # replace empty cells with NA
