@@ -30,7 +30,7 @@ REPORT = "Data/fticr/fticr_surface_water.csv"
 # 2. source the functions --------------------------------------------------------
 source("Processing_Scripts/fticrrr-functions/a-fticrrr-functions-initial-processing.R")
 
-report = read.csv(REPORT)
+report = read.csv(REPORT) %>% rename(K001 = K001b, K004 = K004b)
 
 fticr_meta = make_fticr_meta(report)$meta2
 fticr_data = make_fticr_data_intensities(report)$data_samples_blank_corrected
@@ -39,6 +39,6 @@ fticr_blanks = make_fticr_data_intensities(report)$data_blanks
 #
 
 # 3.  Export processed data -----------------------------------------------
-fticr_data %>% write.csv("Data/Processed/EC1_Water_FTICR_L2_20221221.csv", row.names = FALSE)
-fticr_meta %>% write.csv("Data/Processed/EC1_Water_FTICR_meta_L2_20221221.csv", row.names = FALSE)
+fticr_data %>% write.csv("Data/Processed/EC1_Water_FTICR_L2_20230308.csv", row.names = FALSE)
+fticr_meta %>% write.csv("Data/Processed/EC1_Water_FTICR_meta_L2_20230308.csv", row.names = FALSE)
 

@@ -46,7 +46,7 @@ data_raw <- googlesheets4::read_sheet(data_path)
 soil_pH_data_processed = 
   data_raw %>% 
   filter(is.na(Notes)) %>% 
-  mutate(specific_conductance_us_cm = Conductivity_uS_cm/ (1 + 0.02 * (Temp_C - 25)),
+  mutate(specific_conductance_us_cm = Conductivity_uS_cm/ (1 + 0.02 * (Temp_C - 25)), # conversion from raw cond to specific cond
          specific_conductance_us_cm = signif(specific_conductance_us_cm, digits = 3)) %>% 
   mutate(Transect_location = tolower(Transect_location),
          Transect_location = factor(Transect_location, levels = c("upland", "transition", "wetland"))) %>% 
@@ -65,13 +65,30 @@ soil_pH_qc =
                              ph > 14 ~ "above range"),
          specific_conductance_flag = case_when(specific_conductance_us_cm < 0 ~ "below range",
                                                specific_conductance_us_cm > 9999 ~ "above range")) %>% 
-  dplyr::select(-starts_with("ph"), -starts_with("specific_conductance"), starts_with("ph"), starts_with("specific_conductance")) %>% 
+  dplyr::select(-starts_with("ph"), -starts_with("specific_conductance"), starts_with("ph"), starts_with("specific_conductance"), -date_run) %>% 
   janitor::clean_names()
   
 
 #
 # 5. Export cleaned data --------------------------------------------------
 
-soil_pH_qc %>% write.csv("Data/Processed/EC1_Soil_pH_L0B_20220531.csv", row.names = FALSE)
+soil_pH_qc %>% write.csv(paste0("./ec1_soil_ph_cond_l0B_", Sys.Date(), ".csv"), row.names = FALSE)
 
+L0Bdirectory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
 
+drive_upload(media = paste0("./ec1_soil_ph_cond_l0B_", Sys.Date(), ".csv"), name= paste0("ec1_soil_ph_cond_l0B_", Sys.Date(), ".csv"), path = L0Bdirectory )
+
+file.remove(paste0("./ec1_soil_ph_cond_l0B_", Sys.Date(), ".csv"))
+
+# 6. Check with Metadata for missing:
+
+source("./Processing_Scripts/Metadata_kit_list.R")
+source("./Processing_Scripts/jars_metadata.R")
+
+metadata_collected %>% 
+  filter(sample_type == "soil", sample_method == "jar") -> meta_filter
+
+soil_pH_qc %>% 
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
+  full_join(jars_clean, by = c("campaign", "kit_id", "transect_location")) %>% 
+  filter(collected == TRUE & is.na(ph) | collected == FALSE & !is.na(ph)) -> check_these
