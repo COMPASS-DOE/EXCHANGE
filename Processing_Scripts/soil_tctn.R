@@ -316,7 +316,12 @@ data_qc %>%
     mutate(tc_flag = case_when(grepl("no replicates used", tc_flag) ~ "no replicates used",
                             TRUE ~ tc_flag),
            tn_flag = case_when(grepl("no replicates used", tn_flag) ~ "no replicates used",
-                                   TRUE ~ tn_flag)) %>% 
+                                   TRUE ~ tn_flag),
+           # switch wetland and transition names due to a...
+           # ...sampling error: wetland soil was sampled and put into a jar labeled "transition" incorrectly
+           transect_location = case_when(kit_id == "K046" & transect_location == "transition" ~ "wetland", 
+                                         kit_id == "K046" & transect_location == "wetland" ~ "transition", 
+                                         TRUE ~ transect_location)) %>% 
     select(-tc_n, -tn_n) -> data_clean
 
 data_clean[data_clean == "NaN"] <- NA # replace NaN with NA
