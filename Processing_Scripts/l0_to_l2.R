@@ -149,8 +149,17 @@ ions_l2 <-
 
 }
 
-# Clean up and export TCTN
+# Clean up and export TCTN ------------------------------------
 
 tctn_full %>% 
-  filter(tc_flag != "sample not collected", tc_flag != "outside range", 
-         tn_flag != "sample not collected", tn_flag != "outside range") -> L2
+  mutate(remove = case_when(tc_flag == "sample not collected" ~ TRUE, 
+                            tc_flag == "outside range" ~ TRUE, 
+                            tn_flag == "sample not collected" ~ TRUE, 
+                            tn_flag == "outside range" ~ TRUE,
+                            tn_flag == "no replicates used" & tc_flag == "no replicates used" ~ TRUE,
+                            TRUE ~ FALSE)) %>% 
+  filter(remove == FALSE) %>% 
+  select(-c("tc_flag", "tn_flag", "remove")) -> L2
+
+# Write out
+write_csv(L2, "ec1_soil_tctn_L2.csv")
