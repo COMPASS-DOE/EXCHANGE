@@ -182,6 +182,7 @@ curve_fit_C <- function(x) {
 
 d_groups <- unique(reverse_standards$date_run) #grab dates run
 
+# run curve fit functions to predict new values based on the reverse standards
 lapply(d_groups, curve_fit_C) %>% bind_rows() -> C_reverse
 lapply(d_groups, curve_fit_N) %>% bind_rows() -> N_reverse
 
@@ -197,7 +198,7 @@ reverse_joined %>%
          rep = case_when(!is.na(extra_rep) ~ extra_rep,
                          TRUE ~ rep)) %>%
   select(campaign, kit_id, transect_location, date_run, rep, sample_wt_mg, predict_N_wt, nitrogen_response, predict_C_wt, carbon_response) %>% 
-  # round to 3 dec places (SP)
+  # round to 3 decimal places
   mutate(carbon_weight_perc = round((predict_C_wt / sample_wt_mg) * 100, 3),
          nitrogen_weight_perc = round((predict_N_wt / sample_wt_mg) * 100, 3),
          carbon_weight_mg = round(predict_C_wt, 3),
@@ -207,12 +208,7 @@ reverse_joined %>%
                                        transect_location == "WET" ~ "wetland")) %>% 
   select(-predict_N_wt, -predict_C_wt) -> tctn_df
 
-## ----- NEED TO RESOLVE / CLEAN BELOW CODE -----
-
 # 4. Apply QC flags ------------------------------------------------------------
-#TO DO:
-#Flag 2:
-  #below_detect rename to "outside cal curve"
 
 cat("Applying flags to", var, "data...")
 
@@ -247,16 +243,13 @@ data_qc <- function(df){
     group_by(kit_id, transect_location) %>% 
     mutate(
            tn_flag_3 = ifelse(nitrogen_weight_perc < (median_n - range_n) | nitrogen_weight_perc > (median_n + range_n), T, F),
-           tc_flag_3 = ifelse(carbon_weight_perc < (median_c - range_c) | carbon_weight_perc > (median_c + range_c), T, F)
-           # TC_FLAG_2 = VALUE < MIN(STANDARD RESPONSE FOR C/N FROM DATE_RUN), TRUE
-           # tn_flag_3 = ifelse(VALUE < (MEDIAN * 0.10)
-           #                    VALUE > (MEDIAN * 0.10), FLAG TRUE
-           ) %>% 
+           tc_flag_3 = ifelse(carbon_weight_perc < (median_c - range_c) | carbon_weight_perc > (median_c + range_c), T, F)) %>% 
     ungroup()
 }
 
 data_qc <- data_qc(tctn_df)
 
+# rename flags to descriptive names and combine
 data_qc %>% 
   pivot_longer(cols = starts_with("tn"), names_to = "tn_flag",
                values_to = "tn_vals") %>% 
@@ -267,7 +260,7 @@ data_qc %>%
                              tn_flag == "tn_flag_3" ~ "replicate outlier")) %>% 
   summarise(tn_flag = toString(tn_flag)) -> tn_flags
   
-
+# rename flags to descriptive names and combine
 data_qc %>% 
   pivot_longer(cols = starts_with("tc"), names_to = "tc_flag",
                values_to = "tc_vals") %>% 
@@ -293,9 +286,9 @@ data_qc %>%
     left_join(flags, by = c("kit_id", "transect_location", "rep")) %>% 
     select(campaign, kit_id, transect_location, rep, nitrogen_weight_perc, 
            carbon_weight_perc, tn_flag, tc_flag) %>% 
-    rename(tc_perc = carbon_weight_perc,
+    rename(tc_perc = carbon_weight_perc, # clean up names
            tn_perc = nitrogen_weight_perc) %>% 
-    mutate(tn_perc = case_when(grepl("replicate outlier", tn_flag) ~ NA,
+    mutate(tn_perc = case_when(grepl("replicate outlier", tn_flag) ~ NA, # remove outlier reps before averaging
                                grepl("replicate below detect", tn_flag) ~ NA,
                                TRUE ~ tn_perc),
            tc_perc = case_when(grepl("replicate outlier", tc_flag) ~ NA,
@@ -304,14 +297,14 @@ data_qc %>%
     group_by(campaign, kit_id, transect_location) %>% 
     summarise(tc_n = sum(!is.na(tc_perc)),
               tn_n = sum(!is.na(tn_perc)),
-              tc_perc = round(mean(tc_perc, na.rm = TRUE), digits = 3),
+              tc_perc = round(mean(tc_perc, na.rm = TRUE), digits = 3), #average reps
               tn_perc = round(mean(tn_perc, na.rm = TRUE), digits = 3)) %>% 
-    mutate(tc_flag = case_when(tc_n < 3 & tc_n > 0 ~ "< 3 replicates used",
+    mutate(tc_flag = case_when(tc_n < 3 & tc_n > 0 ~ "< 3 replicates used", # create flag based on # of reps used
                                tc_perc == "NaN" ~ "no replicates used"),
            tn_flag = case_when(tn_n < 3 & tn_n > 0 ~ "< 3 replicates used",
                                tn_perc == "NaN" ~ "no replicates used")) %>% 
     left_join(flag_notes, by = c("kit_id", "transect_location")) %>% 
-    unite(col = tc_flag, c("tc_flag", "tc_flag_notes"), sep = ", ", na.rm = TRUE) %>% 
+    unite(col = tc_flag, c("tc_flag", "tc_flag_notes"), sep = ", ", na.rm = TRUE) %>% #combine notes with flags
     unite(col = tn_flag, c("tn_flag", "tn_flag_notes"), sep = ", ", na.rm = TRUE) %>% 
     mutate(tc_flag = case_when(grepl("no replicates used", tc_flag) ~ "no replicates used",
                             TRUE ~ tc_flag),
@@ -336,17 +329,12 @@ metadata_collected %>%
 
 data_clean %>%
   full_join(meta_filter, by = c("campaign", "kit_id", "transect_location"))  %>%
+  # add rows for samples not collected, creating a "full" dataset of all possible samples
   mutate(tc_flag = case_when(collected == FALSE & is.na(tc_perc) & is.na(tc_flag) ~ "sample not collected",
                                   TRUE ~ tc_flag),
          tn_flag = case_when(collected == FALSE & is.na(tn_perc) & is.na(tn_flag) ~ "sample not collected",
                                   TRUE ~ tn_flag)) %>% 
   select(-c(sample_type, sample_method, collected)) -> tctn_full
-
-
-  # filter(collected == TRUE & is.na(tc_perc) & is.na(tc_flag) | collected == FALSE & !is.na(tc_perc) | collected == FALSE & is.na(tc_perc) & !is.na(tc_flag) |
-  #          collected == TRUE & is.na(tn_perc) & is.na(tn_flag) | collected == FALSE & !is.na(tn_perc) | collected == FALSE & is.na(tn_perc) & !is.na(tn_flag) ) -> check_these
-
-View(check_these)
 
 #
 # 6. Write cleaned data to drive -----------------------------------------------
