@@ -162,4 +162,11 @@ tctn_full %>%
   select(-c("tc_flag", "tn_flag", "remove")) -> L2
 
 # Write out
-write_csv(L2, "ec1_soil_tctn_L2.csv")
+L2 %>% write.csv("ec1_soil_tctn_L2.csv", row.names = FALSE)
+
+L2directory = "https://drive.google.com/drive/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
+
+drive_upload(media = "ec1_soil_tctn_L2.csv", name= "ec1_soil_tctn_L2.csv", path = L2directory)
+
+file.remove("ec1_soil_tctn_L2.csv")
+
