@@ -24,6 +24,7 @@ pacman::p_load(cowsay,
                readr,
                tidyr,
                googlesheets4, # read_sheet 
+               googledrive, # drive_download
                lubridate,
                gsw) # drive_upload
 
@@ -34,17 +35,17 @@ say("Welcome to EXCHANGE!", by = "random")
 data_path <- "https://docs.google.com/spreadsheets/d/13MBZYTh3K8bsog27UZOx2mXUGflXMukapq7Zfsl1ooM/edit#gid=768038889" 
 titrator_path <- "https://docs.google.com/spreadsheets/d/1lP4ft29oknaR5Xthv3Qo29EZeco6R3WkRkH-TT_x1vc/edit#gid=1069041223"
 gsheet_tab <- "Sheet1"
-drive_download("https://drive.google.com/file/d/1auYnbc16eg6Dg6AzUJ_DNP5UOd2H-7Kl/view",
+drive_download("https://drive.google.com/file/d/1GjHoUT9lrAjQzNHuLbwidJbMaGzRXUG2/view",
                               "temp.csv", overwrite = TRUE)
 
 kit_metadata <- read_csv("temp.csv")
 unlink("temp.csv")
 
 ## Define constants
-f4_min = 4
-f4_max = 10000
-cond_cb <- 17
-cond_gl <- 0.5
+F4_MIN = 4
+F4_MAX = 10000
+COND_MA <- 17 # average conductivity of mid-Atlantic sites
+COND_GL <- 0.5 # average conductivity of great lake sites
 
 ## Define analyte
 var <- "TSS"
@@ -58,8 +59,8 @@ read_sheet(ss = titrator_path, range = "Data") %>%
   left_join(kit_metadata, by = "kit_id") %>% 
   # we had missing titrator data for conductivity, so we used average conductivity by region from the other
   # available titrator data
-  mutate(avg_cond = case_when(region == "Greak Lakes" ~ cond_gl,
-                              region == "Chesapeake Bay" ~ cond_cb),
+  mutate(avg_cond = case_when(region == "Greak Lakes" ~ COND_GL,
+                              region == "Mid-Atlantic" ~ COND_MA),
          spcond_mscm = ifelse(is.na(spcond_mscm), avg_cond, spcond_mscm)) -> titrator
 
 ## read in raw data
@@ -119,7 +120,7 @@ data_qc <- function(data) {
     mutate(`negative filter mass` = ifelse(total_filter_mass_g < 0, T, F),
            `used average conductivity` = ifelse(kit_id %in% c("K014", "K057"), T, F),
            #flag_3 = ifelse(total_bottom_filter_g > 0, T, F),
-           `outside range` = ifelse(tss_mg_perl < f4_min | tss_mg_perl > f4_max, T, F)
+           `outside range` = ifelse(tss_mg_perl < F4_MIN | tss_mg_perl > F4_MAX, T, F)
            ) 
 }
 
