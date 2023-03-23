@@ -35,12 +35,8 @@ say("Welcome to EXCHANGE!", by = "random")
 directory <- "https://drive.google.com/drive/folders/1OVhQADClTIcfMtbJenoWfCD8fnODx_it" 
 
 ## Define constants
-f1_min <- 0
-f1_max <- 100
-standard_c <- 71.09
-standard_c_prop <- standard_c * 0.05
-standard_n <- 10.36
-standard_n_prop <- standard_n * 0.05
+F1_MIN <- 0
+F1_MAX <- 100
 
 ## Define analyte
 var <- "TC/TN"
@@ -126,12 +122,12 @@ data_raw %>%
 
 cat("Calcuating", var, "data from cal curves...")
 
-#Step 1. filter nitrogen_response and carbon_response and date_ran in standards = Standards Dataframe
+#Step 1. filter nitrogen_response and carbon_response and date_ran in standards
 # standards start with STD in sample column
 
 data_primitive %>% filter(grepl("STD", sample)) -> standards_df
 
-#Step 1b. filter nitrogen_response and carbon_response and date_ran in checks = Checks Dataframe
+#Step 1b. filter nitrogen_response and carbon_response and date_ran in checks
 
 data_primitive %>% filter(grepl("CK", sample)) %>% 
   mutate(type = str_extract(sample_id, "CK_[A-Z]*"),
@@ -233,8 +229,8 @@ data_qc <- function(df){
     left_join(mins, by = "date_run") %>% 
     left_join(medians, by = c("kit_id", "transect_location")) %>% 
     mutate(
-           tn_flag_1 = ifelse(nitrogen_weight_perc < f1_min | nitrogen_weight_perc > f1_max, T, F),
-           tc_flag_1 = ifelse(carbon_weight_perc < f1_min | carbon_weight_perc > f1_max, T, F)) %>% 
+           tn_flag_1 = ifelse(nitrogen_weight_perc < F1_MIN | nitrogen_weight_perc > F1_MAX, T, F),
+           tc_flag_1 = ifelse(carbon_weight_perc < F1_MIN | carbon_weight_perc > F1_MAX, T, F)) %>% 
     group_by(date_run) %>% 
     mutate(
            tn_flag_2 = ifelse(nitrogen_weight_mg < min_n, T, F),
@@ -286,23 +282,21 @@ data_qc %>%
     left_join(flags, by = c("kit_id", "transect_location", "rep")) %>% 
     select(campaign, kit_id, transect_location, rep, nitrogen_weight_perc, 
            carbon_weight_perc, tn_flag, tc_flag) %>% 
-    rename(tc_perc = carbon_weight_perc, # clean up names
-           tn_perc = nitrogen_weight_perc) %>% 
-    mutate(tn_perc = case_when(grepl("replicate outlier", tn_flag) ~ NA, # remove outlier reps before averaging
+    mutate(nitrogen_weight_perc = case_when(grepl("replicate outlier", tn_flag) ~ NA, # remove outlier reps before averaging
                                grepl("replicate below detect", tn_flag) ~ NA,
-                               TRUE ~ tn_perc),
-           tc_perc = case_when(grepl("replicate outlier", tc_flag) ~ NA,
+                               TRUE ~ nitrogen_weight_perc),
+           carbon_weight_perc = case_when(grepl("replicate outlier", tc_flag) ~ NA,
                                grepl("replicate below detect", tc_flag) ~ NA,
-                               TRUE ~ tc_perc)) %>%
+                               TRUE ~ carbon_weight_perc)) %>%
     group_by(campaign, kit_id, transect_location) %>% 
-    summarise(tc_n = sum(!is.na(tc_perc)),
-              tn_n = sum(!is.na(tn_perc)),
-              tc_perc = round(mean(tc_perc, na.rm = TRUE), digits = 3), #average reps
-              tn_perc = round(mean(tn_perc, na.rm = TRUE), digits = 3)) %>% 
+    summarise(tc_n = sum(!is.na(carbon_weight_perc)),
+              tn_n = sum(!is.na(nitrogen_weight_perc)),
+              carbon_weight_perc = round(mean(carbon_weight_perc, na.rm = TRUE), digits = 3), #average reps
+              nitrogen_weight_perc = round(mean(nitrogen_weight_perc, na.rm = TRUE), digits = 3)) %>% 
     mutate(tc_flag = case_when(tc_n < 3 & tc_n > 0 ~ "< 3 replicates used", # create flag based on # of reps used
-                               tc_perc == "NaN" ~ "no replicates used"),
+                               carbon_weight_perc == "NaN" ~ "no replicates used"),
            tn_flag = case_when(tn_n < 3 & tn_n > 0 ~ "< 3 replicates used",
-                               tn_perc == "NaN" ~ "no replicates used")) %>% 
+                               nitrogen_weight_perc == "NaN" ~ "no replicates used")) %>% 
     left_join(flag_notes, by = c("kit_id", "transect_location")) %>% 
     unite(col = tc_flag, c("tc_flag", "tc_flag_notes"), sep = ", ", na.rm = TRUE) %>% #combine notes with flags
     unite(col = tn_flag, c("tn_flag", "tn_flag_notes"), sep = ", ", na.rm = TRUE) %>% 
@@ -330,9 +324,9 @@ metadata_collected %>%
 data_clean %>%
   full_join(meta_filter, by = c("campaign", "kit_id", "transect_location"))  %>%
   # add rows for samples not collected, creating a "full" dataset of all possible samples
-  mutate(tc_flag = case_when(collected == FALSE & is.na(tc_perc) & is.na(tc_flag) ~ "sample not collected",
+  mutate(tc_flag = case_when(collected == FALSE & is.na(carbon_weight_perc) & is.na(tc_flag) ~ "sample not collected",
                                   TRUE ~ tc_flag),
-         tn_flag = case_when(collected == FALSE & is.na(tn_perc) & is.na(tn_flag) ~ "sample not collected",
+         tn_flag = case_when(collected == FALSE & is.na(nitrogen_weight_perc) & is.na(tn_flag) ~ "sample not collected",
                                   TRUE ~ tn_flag)) %>% 
   select(-c(sample_type, sample_method, collected)) -> tctn_full
 
@@ -343,7 +337,11 @@ data_clean %>%
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
 #drive_upload(media = data_clean, path = data_path)
 
-write_csv(tctn_full, paste0("EC1_Soil_TCTN_L0B_",Sys.Date(),".csv"))
+tctn_full %>% write.csv(paste0("./ec1_soil_tctn_l0B_", Sys.Date(), ".csv"), row.names = FALSE)
 
+L0Bdirectory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
 
+drive_upload(media = paste0("./ec1_soil_tctn_l0B_", Sys.Date(), ".csv"), name= paste0("ec1_soil_tctn_l0B_", Sys.Date(), ".csv"), path = L0Bdirectory)
+
+file.remove(paste0("./ec1_soil_tctn_l0B_", Sys.Date(), ".csv"))
  
