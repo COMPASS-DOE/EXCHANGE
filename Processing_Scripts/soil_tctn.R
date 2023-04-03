@@ -10,8 +10,6 @@
 ## Created: 2022-04-01
 ## Stephanie Pennington
 ##
-# ############# #
-# ############# #
 
 #
 # 1. Setup ---------------------------------------------------------------------
@@ -27,7 +25,8 @@ pacman::p_load(cowsay,
                googlesheets4, # read_sheet 
                googledrive,
                stringr,
-               lubridate) # drive_upload
+               lubridate,
+               EnvStats) # drive_upload
 
 ## Welcome
 say("Welcome to EXCHANGE!", by = "random")
@@ -35,10 +34,9 @@ say("Welcome to EXCHANGE!", by = "random")
 ## URL for data
 directory <- "https://drive.google.com/drive/folders/1OVhQADClTIcfMtbJenoWfCD8fnODx_it" 
 
-
 ## Define constants
-f1_min <- 0
-f1_max <- 100
+F1_MIN <- 0
+F1_MAX <- 100
 
 ## Define analyte
 var <- "TC/TN"
@@ -93,12 +91,26 @@ import_data = function(directory){
 
 data_raw = import_data(directory)
 
-data_raw = data_raw %>% mutate(date_run = str_extract(source, "[0-9]{8}"))
+data_raw[data_raw == "N/A"] <- NA # replace "N/A" with NA
 
+data_raw %>% 
+  mutate(
+    date_run = str_extract(source, "[0-9]{1}_[0-9]{2}_[0-9]{4}|[0-9]{2}_[0-9]{2}_[0-9]{4}"),
+    date_run = mdy(str_replace_all(date_run, fixed("_"), "-")),
+    month = as.character(month(date_run, label = TRUE, abbr = FALSE)),
+    month_groups = ifelse(month == "September", "August", month),
+    nitrogen_weight_percent = as.numeric(nitrogen_weight_percent),
+    carbon_weight_percent = as.numeric(carbon_weight_percent),
+    nitrogen_response = as.numeric(nitrogen_response),
+    carbon_response = as.numeric(carbon_response),
+    nitrogen_wt_mg = as.numeric(nitrogen_wt_mg),
+    carbon_wt_mg = as.numeric(carbon_wt_mg),
+    sample_wt_mg = as.numeric(sample_wt_mg)) %>% 
+  separate(source, into = c("one", "two", "three", "four", "rep")) %>% 
+  select(-one, -two, -three, -four) -> data_primitive
 
 #
 # 3. Process data --------------------------------------------------------------
-#TO DO:
   #extract response values
   ##get range of responses from samples in each run to bound curve
   #take cal curve for each run date
@@ -108,141 +120,228 @@ data_raw = data_raw %>% mutate(date_run = str_extract(source, "[0-9]{8}"))
   # calculate standard curves in R 
   ##recalculate all sample values based on responses 
 
-cat("Processing", var, "data...")
-
-## I dont think we need these lines now- AMP ##
-# # Process LOD data
-# lod %>% 
-#   rename(instrument_id = "...1", sample_id = "...3",
-#                total_nitrogen_mg = "Weight\n[mg]...8",
-#                total_carbon_mg = "Weight\n[mg]...15") %>% 
-#   left_join(key, by = c("instrument_id" = "Original Instrument ID")) %>% 
-#   separate(sample_id, into = c("type", "weight", "run"), sep = "_") %>% 
-#   select(type, weight, run, total_nitrogen_mg, total_carbon_mg) %>% 
-#   filter(weight == "0.1", type == "ACN") %>% 
-#   mutate(total_nitrogen_mg = as.numeric(total_nitrogen_mg),
-#          total_carbon_mg = as.numeric(total_carbon_mg)) %>% 
-#   summarise(lod_tn_average = mean(total_nitrogen_mg),
-#             lod_tn_sd = sd(total_nitrogen_mg),
-#             lod_tc_average = mean(total_carbon_mg),
-#             lod_tc_sd = sd(total_carbon_mg)) -> lod_processed
-
-data_raw %>% 
-  rename(instrument_id = "...1", sample_id = "...3",
-         total_nitrogen_perc = "Weight\n[%]...9",
-         total_nitrogen_mg = "Weight\n[mg]...8",
-         total_carbon_perc = "Weight\n[%]...16",
-         total_carbon_mg = "Weight\n[mg]...15") %>% 
-  select(instrument_id, sample_id, total_nitrogen_perc, total_nitrogen_mg,
-         total_carbon_perc, total_carbon_mg) %>% 
-  filter(str_detect(instrument_id, "^EC1")) %>% # filter out blanks
-  left_join(key, by = c("instrument_id" = "Original Instrument ID")) %>% 
-  separate('Reassigned Sample ID', into = c("campaign", "kit_id","transect_location", 
-                                            "acidification", "set", "run"), sep = "_") %>% 
-  mutate(transect_location = case_when(transect_location == "WET" ~ "Wetland",
-                                       transect_location == "TRANS" ~ "Transition",
-                                       transect_location == "UPL" ~ "Upland"),
-         acidification = case_when(acidification == "UnAc" ~ FALSE)) %>% 
-  separate(instrument_id, into = c("one", "two", "three", "Month", "Day"), sep = "_") %>% 
-  mutate(Year = "2022", date_ran = make_date(day = Day, month = Month, year = Year)) %>% 
-  bind_cols(lod_processed) -> data_intermediate
-
-## This is where I would first filter to standards and samples dataframes 
-
 cat("Calcuating", var, "data from cal curves...")
 
-#Step 1. filter nitrogen_response and carbon_response and date_ran in standards = Standards Dataframe
+#Step 1. filter nitrogen_response and carbon_response and date_ran in standards
+# standards start with STD in sample column
+
+data_primitive %>% filter(grepl("STD", sample)) -> standards_df
+
+#Step 1b. filter nitrogen_response and carbon_response and date_ran in checks
+
+data_primitive %>% filter(grepl("CK", sample)) %>% 
+  mutate(type = str_extract(sample_id, "CK_[A-Z]*"),
+         type_perc_C = case_when(type == "CK_AN" ~ 71.09,
+                                 type == "CK_AP" ~ 70.56,
+                                 type == "CK_C" ~ 4.4),
+         type_perc_N = case_when(type == "CK_AN" ~ 10.36,
+                                 type == "CK_AP" ~ 4.84,
+                                 type == "CK_N" ~ 6.06)) -> checks_df
+
 #Step 2. filter nitrogen_response and carbon_response and date_ran in samples = Sample Dataframe
-#Step 3. filtering samples outside of range between the response values for 0.1mg to 6mg in Standards Dataframe per date_ran
-#Step 4. get range of responses from samples in each run (date_ran)
-#Step 5. Filter Standards Dataframe that are reading a weight percentage of C and N that are in line with what the standard should be reporting +/- 5% (Acetanilide_C_per = 71.09, Acetanilide_N_per = 10.36)
-#Step 6. make a linear plot to visually confirm the curve per date_ran is reasonable with good points as is (at min 3 points per curve, ideally as many as possible), no averaging by curve/weight level needed (if curves look wonky, need to average and/or drop points dates)
-#Step 7. Steph talk to Allison & Khadijah
-#Step 8. Response ratios of good/bad curves if needed (@amyerspigg)
-#Step 9. Re-calculate standard curves in R using package EnvStats calibrate function:
-      #curve_fit_N = calibrate(nitrogen_response ~ nitrogen_wt_mg, Standards Dataframe, max.order = 2)
-#Step 10. Recalculate all sample values based on responses in R using package EnvStats inversePredictCalibrate:
-  #Sample Dataframe$nitrogen_wt_mg = inversePredictCalibrate(curve_fit_N, Sample Dataframe$nitrogen_response)
-#Step 11. Using nitrogen_wt_mg , carbon_wt_mg columns from the re-calculation above, then calculate weight percent: 
-        # nitrogen_wt_mg /sample_wt_mg x 100 = nitrogen_weight_percent
-        # carbon_wt_mg /sample_wt_mg x 100 = carbon_weight_percent
-#
+
+data_primitive %>% filter(grepl("EC1", sample)) -> samples_df
+
+#Step 3. Reverse-calculate sample weights using Acetanilide fraction, these will be used to predict sample weights
+
+standards_df %>% mutate(
+  reverse_C_wt = sample_wt_mg * 0.7109,
+  reverse_N_wt = sample_wt_mg * 0.1036
+) -> reverse_standards
+
+
+#Step 4. Calculate sample weights based on the reverse standards using the 'EnvStats' package
+
+curve_fit_N <- function(x) {
+  
+  standards <- filter(reverse_standards, date_run == x)
+  data <- filter(samples_df, date_run == x)
+  
+  calibrate(nitrogen_response ~ reverse_N_wt, standards, max.order = 3) -> w
+  as.data.frame(inversePredictCalibrate(w, data$nitrogen_response)) %>% 
+    mutate(date_run = x) %>% 
+    rename(nitrogen_response = obs.y, predict_N_wt = pred.x)
+  
+}
+
+curve_fit_C <- function(x) {
+  
+  standards <- filter(reverse_standards, date_run == x)
+  data <- filter(samples_df, date_run == x)
+  
+  calibrate(carbon_response ~ reverse_C_wt, standards, max.order = 3) -> w
+  as.data.frame(inversePredictCalibrate(w, data$carbon_response)) %>% 
+    mutate(date_run = x) %>% 
+    rename(carbon_response = obs.y, predict_C_wt = pred.x)
+  
+}
+
+d_groups <- unique(reverse_standards$date_run) #grab dates run
+
+# run curve fit functions to predict new values based on the reverse standards
+lapply(d_groups, curve_fit_C) %>% bind_rows() -> C_reverse
+lapply(d_groups, curve_fit_N) %>% bind_rows() -> N_reverse
+
+samples_df %>% 
+  left_join(N_reverse, by = c("nitrogen_response", "date_run")) %>% 
+  left_join(C_reverse, by = c("carbon_response", "date_run")) -> reverse_joined
+
+reverse_joined %>% 
+  separate(sample_id, into = c("campaign", "kit_id", "transect_location", "extra_rep")) %>% 
+  mutate(extra_rep = case_when(extra_rep == "REP4" ~ "R4",
+                               TRUE ~ extra_rep),
+         extra_rep = toupper(extra_rep),
+         rep = case_when(!is.na(extra_rep) ~ extra_rep,
+                         TRUE ~ rep)) %>%
+  select(campaign, kit_id, transect_location, date_run, rep, sample_wt_mg, predict_N_wt, nitrogen_response, predict_C_wt, carbon_response) %>% 
+  # round to 3 decimal places
+  mutate(carbon_weight_perc = round((predict_C_wt / sample_wt_mg) * 100, 3),
+         nitrogen_weight_perc = round((predict_N_wt / sample_wt_mg) * 100, 3),
+         carbon_weight_mg = round(predict_C_wt, 3),
+         nitrogen_weight_mg = round(predict_N_wt, 3),
+         transect_location = case_when(transect_location == "UPL" ~ "upland",
+                                       transect_location == "TRANS" ~ "transition",
+                                       transect_location == "WET" ~ "wetland")) %>% 
+  select(-predict_N_wt, -predict_C_wt) -> tctn_df
+
 # 4. Apply QC flags ------------------------------------------------------------
-#TO DO:
-#Flag 2:
-  #below_detect rename to "outside cal curve"
 
 cat("Applying flags to", var, "data...")
 
-data_intermediate %>% 
-  group_by(kit_id, transect_location, set) %>% 
-  summarise(total_nitrogen_perc = mean(as.numeric(total_nitrogen_perc)),
-            total_carbon_perc = mean(as.numeric(total_carbon_perc)),
-            total_nitrogen_mg = mean(as.numeric(total_nitrogen_mg)),
-            total_carbon_mg = mean(as.numeric(total_carbon_mg)),
-            total_nitrogen_perc_min = min(total_nitrogen_perc),
-            total_carbon_perc_min = min(total_carbon_perc),
-            total_nitrogen_perc_max = max(total_nitrogen_perc),
-            total_carbon_perc_max = max(total_carbon_perc)) -> means_mins
+# Calculate minimum response standards for each date_run (flag 2)
+##NEED TO MAKE A NOTE ABT WHY WE USED WEIGHTS AND NOT RESPONSES
+reverse_standards %>% 
+  group_by(date_run) %>% 
+  summarise(min_c = min(reverse_C_wt),
+            min_n = min(reverse_N_wt)) -> mins
 
-data_intermediate %>% 
-  distinct(kit_id, transect_location, .keep_all = TRUE) %>% 
-  select(campaign, kit_id, transect_location, set, acidification, lod_tc_average, 
-         lod_tc_sd, lod_tn_average, lod_tn_sd, date_ran) %>% 
-  right_join(means_mins, by = c("kit_id", "transect_location", "set")) -> data_processed
+# Calculate median predicted percentages by kit_id, transect_location (flag 3)
+tctn_df %>% 
+  group_by(kit_id, transect_location) %>% 
+  summarise(median_c = median(carbon_weight_perc),
+            median_n = median(nitrogen_weight_perc)) %>% 
+  mutate(range_c = median_c * 0.10,
+         range_n = median_n * 0.10) -> medians
 
-data_qc <- function(data) {
-  data %>% 
-    mutate(  #a = round(a, n_sig_figs),
-           tn_flag_1 = ifelse(total_nitrogen_perc < f1_min | total_nitrogen_perc > f1_max, T, F),
-           tc_flag_1 = ifelse(total_carbon_perc < f1_min | total_carbon_perc > f1_max, T, F),
-           tn_flag_3 = ifelse(total_nitrogen_perc_min < (0.05 * total_nitrogen_perc) |
-                              total_nitrogen_perc_max > (0.05 * total_nitrogen_perc), T, F),
-           tc_flag_3 = ifelse(total_carbon_perc_min < (0.05 * total_carbon_perc) |
-                              total_carbon_perc_max > (0.05 * total_carbon_perc), T, F)
-           )
+data_qc <- function(df){
+
+  df %>% 
+    left_join(mins, by = "date_run") %>% 
+    left_join(medians, by = c("kit_id", "transect_location")) %>% 
+    mutate(
+           tn_flag_1 = ifelse(nitrogen_weight_perc < F1_MIN | nitrogen_weight_perc > F1_MAX, T, F),
+           tc_flag_1 = ifelse(carbon_weight_perc < F1_MIN | carbon_weight_perc > F1_MAX, T, F)) %>% 
+    group_by(date_run) %>% 
+    mutate(
+           tn_flag_2 = ifelse(nitrogen_weight_mg < min_n, T, F),
+           tc_flag_2 = ifelse(carbon_weight_mg < min_c, T, F)) %>% 
+    ungroup() %>% 
+    group_by(kit_id, transect_location) %>% 
+    mutate(
+           tn_flag_3 = ifelse(nitrogen_weight_perc < (median_n - range_n) | nitrogen_weight_perc > (median_n + range_n), T, F),
+           tc_flag_3 = ifelse(carbon_weight_perc < (median_c - range_c) | carbon_weight_perc > (median_c + range_c), T, F)) %>% 
+    ungroup()
 }
 
-data_qc <- data_qc(data_processed)
+data_qc <- data_qc(tctn_df)
 
+# rename flags to descriptive names and combine
 data_qc %>% 
   pivot_longer(cols = starts_with("tn"), names_to = "tn_flag",
                values_to = "tn_vals") %>% 
   filter(tn_vals == TRUE) %>% select(-tn_vals) %>%  
-  group_by(kit_id, transect_location) %>%
+  group_by(kit_id, transect_location, rep) %>%
   mutate(tn_flag = case_when(tn_flag == "tn_flag_1" ~ "outside range",
-                             tn_flag == "tn_flag_2" ~ "below detect",
-                             tn_flag == "tn_flag_3" ~ "rep outlier")) %>% 
+                             tn_flag == "tn_flag_2" ~ "replicate below detect",
+                             tn_flag == "tn_flag_3" ~ "replicate outlier")) %>% 
   summarise(tn_flag = toString(tn_flag)) -> tn_flags
   
-
+# rename flags to descriptive names and combine
 data_qc %>% 
   pivot_longer(cols = starts_with("tc"), names_to = "tc_flag",
                values_to = "tc_vals") %>% 
   filter(tc_vals == TRUE) %>% select(-tc_vals) %>% 
-  group_by(kit_id, transect_location) %>%
-    mutate(tc_flag = case_when(tc_flag == "tc_flag_1" ~ "outside range",
-                               tc_flag == "tc_flag_2" ~ "below detect",
-                               tc_flag == "tc_flag_3" ~ "rep outlier")) %>% 
+  group_by(kit_id, transect_location, rep) %>%
+  mutate(tc_flag = case_when(tc_flag == "tc_flag_1" ~ "outside range",
+                             tc_flag == "tc_flag_2" ~ "replicate below detect",
+                             tc_flag == "tc_flag_3" ~ "replicate outlier")) %>% 
     summarise(tc_flag = toString(tc_flag)) %>% 
-    left_join(tn_flags, by = c("kit_id", "transect_location")) -> flags
+    left_join(tn_flags, by = c("kit_id", "transect_location", "rep")) -> flags
   
-  
-  data_qc %>% 
-    left_join(flags, by = c("kit_id", "transect_location")) %>% 
-    select(campaign, kit_id, transect_location, acidification, total_nitrogen_perc, 
-         total_carbon_perc, tn_flag, tc_flag) %>% 
-    mutate(total_carbon_perc = round(total_carbon_perc, 2),
-           total_nitrogen_perc = round(total_nitrogen_perc, 2)) %>% 
-    rename(tc_perc = total_carbon_perc,
-           tn_perc = total_nitrogen_perc)-> data_clean
+flags %>% 
+  select(-rep) %>% 
+  pivot_longer(cols = contains("flag"), names_to = "flag", values_to = "value") %>% 
+  separate_longer_delim(cols = value, delim = ", ") %>% 
+  group_by(kit_id, transect_location, flag) %>% 
+  distinct(value) %>% 
+  filter(!is.na(value)) %>% 
+  pivot_wider(names_from = "flag", values_from = "value", values_fn = toString) %>% 
+  rename(tc_flag_notes = tc_flag, tn_flag_notes = tn_flag) -> flag_notes
+
+data_qc %>% 
+    left_join(flags, by = c("kit_id", "transect_location", "rep")) %>% 
+    select(campaign, kit_id, transect_location, rep, nitrogen_weight_perc, 
+           carbon_weight_perc, tn_flag, tc_flag) %>% 
+    mutate(nitrogen_weight_perc = case_when(grepl("replicate outlier", tn_flag) ~ NA, # remove outlier reps before averaging
+                               grepl("replicate below detect", tn_flag) ~ NA,
+                               TRUE ~ nitrogen_weight_perc),
+           carbon_weight_perc = case_when(grepl("replicate outlier", tc_flag) ~ NA,
+                               grepl("replicate below detect", tc_flag) ~ NA,
+                               TRUE ~ carbon_weight_perc)) %>%
+    group_by(campaign, kit_id, transect_location) %>% 
+    summarise(tc_n = sum(!is.na(carbon_weight_perc)),
+              tn_n = sum(!is.na(nitrogen_weight_perc)),
+              carbon_weight_perc = round(mean(carbon_weight_perc, na.rm = TRUE), digits = 3), #average reps
+              nitrogen_weight_perc = round(mean(nitrogen_weight_perc, na.rm = TRUE), digits = 3)) %>% 
+    mutate(tc_flag = case_when(tc_n < 3 & tc_n > 0 ~ "< 3 replicates used", # create flag based on # of reps used
+                               carbon_weight_perc == "NaN" ~ "no replicates used"),
+           tn_flag = case_when(tn_n < 3 & tn_n > 0 ~ "< 3 replicates used",
+                               nitrogen_weight_perc == "NaN" ~ "no replicates used")) %>% 
+    left_join(flag_notes, by = c("kit_id", "transect_location")) %>% 
+    unite(col = tc_flag, c("tc_flag", "tc_flag_notes"), sep = ", ", na.rm = TRUE) %>% #combine notes with flags
+    unite(col = tn_flag, c("tn_flag", "tn_flag_notes"), sep = ", ", na.rm = TRUE) %>% 
+    mutate(tc_flag = case_when(grepl("no replicates used", tc_flag) ~ "no replicates used",
+                            TRUE ~ tc_flag),
+           tn_flag = case_when(grepl("no replicates used", tn_flag) ~ "no replicates used",
+                                   TRUE ~ tn_flag),
+           # switch wetland and transition names due to a...
+           # ...sampling error: wetland soil was sampled and put into a jar labeled "transition" incorrectly
+           transect_location = case_when(kit_id == "K046" & transect_location == "transition" ~ "wetland", 
+                                         kit_id == "K046" & transect_location == "wetland" ~ "transition", 
+                                         TRUE ~ transect_location)) %>% 
+    select(-tc_n, -tn_n) -> data_clean
+
+data_clean[data_clean == "NaN"] <- NA # replace NaN with NA
+data_clean[data_clean == ""] <- NA # replace empty cells with NA
+
+# 5. Check with Metadata for missing:
+
+source("./Processing_Scripts/Metadata_kit_list.R")
+
+metadata_collected %>%
+  filter(sample_method == "jar", transect_location != "sediment")-> meta_filter
+
+data_clean %>%
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location"))  %>%
+  # add rows for samples not collected, creating a "full" dataset of all possible samples
+  mutate(tc_flag = case_when(collected == FALSE & is.na(carbon_weight_perc) & is.na(tc_flag) ~ "sample not collected",
+                                  TRUE ~ tc_flag),
+         tn_flag = case_when(collected == FALSE & is.na(nitrogen_weight_perc) & is.na(tn_flag) ~ "sample not collected",
+                                  TRUE ~ tn_flag)) %>% 
+  select(-c(sample_type, sample_method, collected)) -> tctn_full
 
 #
-# 5. Write cleaned data to drive -----------------------------------------------
+# 6. Write cleaned data to drive -----------------------------------------------
   
 ## The file written out should be named following 
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
 #drive_upload(media = data_clean, path = data_path)
 
-write_csv(data_clean, paste0("Data/Processed/EC1_Soil_TCTN_L0B_",Sys.Date(),".csv"))
+tctn_full %>% write.csv(paste0("./ec1_soil_tctn_l0B_", Sys.Date(), ".csv"), row.names = FALSE)
+
+L0Bdirectory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
+
+drive_upload(media = paste0("./ec1_soil_tctn_l0B_", Sys.Date(), ".csv"), name= paste0("ec1_soil_tctn_l0B_", Sys.Date(), ".csv"), path = L0Bdirectory)
+
+file.remove(paste0("./ec1_soil_tctn_l0B_", Sys.Date(), ".csv"))
  

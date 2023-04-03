@@ -148,3 +148,25 @@ ions_l2 <-
   pivot_wider(name)
 
 }
+
+# Clean up and export TCTN ------------------------------------
+
+tctn_full %>% 
+  mutate(remove = case_when(tc_flag == "sample not collected" ~ TRUE, 
+                            tc_flag == "outside range" ~ TRUE, 
+                            tn_flag == "sample not collected" ~ TRUE, 
+                            tn_flag == "outside range" ~ TRUE,
+                            tn_flag == "no replicates used" & tc_flag == "no replicates used" ~ TRUE,
+                            TRUE ~ FALSE)) %>% 
+  filter(remove == FALSE) %>% 
+  select(-c("tc_flag", "tn_flag", "remove")) -> L2
+
+# Write out
+L2 %>% write.csv("ec1_soil_tctn_L2.csv", row.names = FALSE)
+
+L2directory = "https://drive.google.com/drive/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
+
+drive_upload(media = "ec1_soil_tctn_L2.csv", name= "ec1_soil_tctn_L2.csv", path = L2directory)
+
+file.remove("ec1_soil_tctn_L2.csv")
+
