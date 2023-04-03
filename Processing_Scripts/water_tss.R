@@ -109,7 +109,11 @@ processed_interim %>%
          density_water = gsw_rho(SA, CT, 0),
          volume_filtered_ml = sample_weight_g / (density_water / 1000),
          # have to convert ml to L and g to mg
-         tss_mg_perl = ((total_filter_mass_g / volume_filtered_ml) * 1000 * 1000)) -> data_processed
+         tss_mg_perl = ((total_filter_mass_g / volume_filtered_ml) * 1000 * 1000),
+         # round final numbers to 2 decimal places
+         tss_mg_perl = round(tss_mg_perl, 2),
+         total_filter_mass_g = round(total_filter_mass_g, 2),
+         volume_filtered_ml = round(volume_filtered_ml, 2)) -> data_processed
  
 #
 # 4. Apply QC flags ------------------------------------------------------------
@@ -136,8 +140,19 @@ data_processed %>%
   select(campaign, kit_id, transect_location, tss_mg_perl, total_filter_mass_g, 
          volume_filtered_ml, filters_used, tss_flag) -> data_clean 
 
+# 5. Check with Metadata for missing: 
+
+source("./Processing_Scripts/Metadata_kit_list.R") 
+
+metadata_collected %>% 
+  filter(sample_method == "bottle_1l")-> meta_filter 
+
+data_clean %>% 
+  mutate(transect_location = tolower(transect_location)) %>% 
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) -> t
+
 #
-# 5. Write cleaned data to drive -----------------------------------------------
+# 6. Write cleaned data to drive -----------------------------------------------
 
 ## We should add Sys.date or hardcode date so we know when the L0B was born
 ## The file written out should be named following 
