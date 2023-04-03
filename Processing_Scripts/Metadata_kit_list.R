@@ -30,11 +30,11 @@ pacman::p_load(cowsay,
 say("Welcome to EXCHANGE!", by = "random")
 
 #Set Directory 
-metadata_directory = "https://drive.google.com/drive/folders/1IQUq_sD-Jama7ajaZl1zW_9zlWfyCohn"
+metadata_directory = "https://drive.google.com/drive/u/1/folders/1xy9nsTpbiSk-KXrcDEeFQ7gg4350DuH-"
 
 ## Next, list all files in the directory, filter out the Kit Level file and snag the file name
 metadata_file <- drive_ls(metadata_directory) %>%
-  filter(grepl("KitLevel", name)) %>%
+  filter(grepl("kitlevel", name)) %>%
   pull(name)
 
 
