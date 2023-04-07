@@ -45,9 +45,11 @@ data_raw <- googlesheets4::read_sheet(data_path)
 
 soil_pH_data_processed = 
   data_raw %>% 
-  filter(is.na(Notes)) %>% 
+  mutate(Conductivity_uS_cm = case_when(grepl("measured as milliSiemens", Notes) ~ Conductivity_uS_cm * 1000,
+                                        TRUE ~ Conductivity_uS_cm)) %>% 
   mutate(specific_conductance_us_cm = Conductivity_uS_cm/ (1 + 0.02 * (Temp_C - 25)), # conversion from raw cond to specific cond
          specific_conductance_us_cm = signif(specific_conductance_us_cm, digits = 3)) %>% 
+  # need to address other notes column issues
   mutate(Transect_location = tolower(Transect_location),
          Transect_location = factor(Transect_location, levels = c("upland", "transition", "wetland"))) %>% 
   dplyr::select(Kit_ID, Transect_location, pH, specific_conductance_us_cm, date_run) %>% 
