@@ -112,6 +112,7 @@ import_data = function(directory){
   
   ## e. output
   dat
+  browser()
 }
 
 ## import the raw data files
@@ -450,7 +451,7 @@ apply_qc_flags = function(data_ions_processed, QC_DATA){
                             TRUE ~ flag)) %>% 
     rename(ppm = Amount) %>% 
     dplyr::select(Name, date_run, Ion, ppm, flag, Action, Dilution)
-  browser()
+
 }
 
 #Run Function: 
@@ -567,6 +568,25 @@ do_corrections = function(data_ions_qc, dilutions_key){
 
 #Run Function:
 data_ions_corrected = do_corrections(data_ions_qc, dilutions_key)
+
+
+## checking dilution issues #####
+
+dilution_level_check = data_ions_corrected %>%
+  filter(grepl("below instrument detection, dilution corrected", flag) & is.na(Amount_bl_dil_corrected)) %>%
+  mutate(used = "yes") %>%
+  group_by(Name, Ion) 
+
+all_dilution_level_check = data_ions_qc %>%
+  select(Name, date_run, Ion, Dilution, flag)
+
+check_dil_level = all_dilution_level_check %>%
+  group_by(Name, Ion) %>%
+  right_join(select(dilution_level_check, Name, Ion)) %>%
+  full_join(dilution_level_check, by= c("Name","Ion", "Dilution", "date_run")) %>%
+  arrange(Name, Ion) %>%
+  select(-Amount_bl_dil_corrected)
+
 
 #data_ions_corrected_all_dilutions = do_corrections(data_ions_qc, dilutions_key)$samples_dilution_corrected_ALLDILUTIONS
 
