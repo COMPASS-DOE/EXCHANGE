@@ -48,15 +48,19 @@ soil_pH_data_processed =
   mutate(Conductivity_uS_cm = case_when(grepl("measured as milliSiemens", Notes) ~ Conductivity_uS_cm * 1000,
                                         TRUE ~ Conductivity_uS_cm)) %>% 
   mutate(specific_conductance_us_cm = Conductivity_uS_cm/ (1 + 0.02 * (Temp_C - 25)), # conversion from raw cond to specific cond
-         specific_conductance_us_cm = signif(specific_conductance_us_cm, digits = 3)) %>% 
-  # need to address other notes column issues
-  mutate(Transect_location = tolower(Transect_location),
-         Transect_location = factor(Transect_location, levels = c("upland", "transition", "wetland"))) %>% 
-  dplyr::select(Kit_ID, Transect_location, pH, specific_conductance_us_cm, date_run) %>% 
-  rename(transect_location = Transect_location,
-         ph = pH) %>% 
-  mutate(campaign = "EC1")
-
+         specific_conductance_us_cm = signif(specific_conductance_us_cm, digits = 3),
+         transect_location = tolower(Transect_location),
+         transect_location = factor(transect_location, levels = c("upland", "transition", "wetland")),
+         campaign = "EC1") %>% 
+  rename(ph = pH,
+         kit_id = Kit_ID) %>% 
+  filter(!grepl("SKIP", Notes)) %>% #remove error sample runs labeled "SKIP" in notes
+  dplyr::select(campaign, kit_id, transect_location, ph, specific_conductance_us_cm, Notes) %>% 
+  # switch wetland and transition names due to a...
+  # ...sampling error: wetland soil was sampled and put into a jar labeled "transition" incorrectly
+  mutate(transect_location = case_when(kit_id == "K046" & transect_location == "transition" ~ "wetland", 
+                                       kit_id == "K046" & transect_location == "wetland" ~ "transition", 
+                                       TRUE ~ transect_location)) 
 
 #
 # 4. Apply QC flags ------------------------------------------------------------
@@ -66,8 +70,9 @@ soil_pH_qc =
   mutate(ph_flag = case_when(ph < 0 ~ "below range",
                              ph > 14 ~ "above range"),
          specific_conductance_flag = case_when(specific_conductance_us_cm < 0 ~ "below range",
-                                               specific_conductance_us_cm > 9999 ~ "above range")) %>% 
-  dplyr::select(-starts_with("ph"), -starts_with("specific_conductance"), starts_with("ph"), starts_with("specific_conductance"), -date_run) %>% 
+                                               !grepl("measured as milliSiemens", Notes) & specific_conductance_us_cm > 9999 ~ "above range",
+                                               grepl("measured as milliSiemens", Notes) & specific_conductance_us_cm > 200000 ~ "above range")) %>% 
+  dplyr::select(-starts_with("ph"), -starts_with("specific_conductance"), starts_with("ph"), starts_with("specific_conductance"), -Notes) %>% 
   janitor::clean_names()
   
 
