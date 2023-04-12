@@ -69,7 +69,8 @@ soil_pH_qc =
   soil_pH_data_processed %>% 
   mutate(ph_flag = case_when(ph < 0 ~ "below range",
                              ph > 14 ~ "above range"),
-         specific_conductance_flag = case_when(specific_conductance_us_cm < 0 ~ "below range",
+         specific_conductance_flag = case_when(!grepl("measured as milliSiemens", Notes) & specific_conductance_us_cm < 0 ~ "below range",
+                                               grepl("measured as milliSiemens", Notes) & specific_conductance_us_cm < 10 ~ "below range",
                                                !grepl("measured as milliSiemens", Notes) & specific_conductance_us_cm > 9999 ~ "above range",
                                                grepl("measured as milliSiemens", Notes) & specific_conductance_us_cm > 200000 ~ "above range")) %>% 
   dplyr::select(campaign, kit_id, transect_location, ph, specific_conductance_us_cm, ph_flag, specific_conductance_flag) %>% 
@@ -90,7 +91,8 @@ soil_pH_qc %>%
   mutate(ph_flag = case_when(is.na(ph) & collected == FALSE ~ "sample not collected",
                              TRUE ~ ph_flag),
          specific_conductance_flag = case_when(is.na(specific_conductance_us_cm) & collected == FALSE ~ "sample not collected",
-                             TRUE ~ specific_conductance_flag)) -> soil_ph_cond_full
+                                               TRUE ~ specific_conductance_flag)) %>% 
+  select(-sample_type, -collected, -sample_method, -sample_weight_g) -> soil_ph_cond_full
 
 #
 # 6. Export cleaned data --------------------------------------------------
