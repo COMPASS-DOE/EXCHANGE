@@ -149,14 +149,24 @@ metadata_collected %>%
 
 data_clean %>% 
   mutate(transect_location = tolower(transect_location)) %>% 
-  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) -> t
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
+  filter(!kit_id %in% c("K001", "K007")) %>% 
+  mutate(tss_flag = case_when(kit_id == "K027" ~ "sample compromised",
+                              TRUE ~ tss_flag)) %>% 
+  select(-sample_type, -collected, -sample_method) -> tss_full
 
 #
 # 6. Write cleaned data to drive -----------------------------------------------
 
-## We should add Sys.date or hardcode date so we know when the L0B was born
+## We should add Sys.date so we know when the L1 was born
 ## The file written out should be named following 
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
-#drive_upload(media = data_clean, path = data_path)
 
-write_csv(data_clean, "Data/Processed/EC1_Water_TSS_L0B_20220119.csv")
+tss_full %>% write.csv(paste0("./ec1_water_tss_L1_", Sys.Date(), ".csv"), row.names = FALSE)
+
+L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
+
+drive_upload(media = paste0("./ec1_water_tss_L1_", Sys.Date(), ".csv"), name= paste0("ec1_water_tss_L1_", Sys.Date(), ".csv"), path = L1directory)
+
+file.remove(paste0("./ec1_water_tss_L1_", Sys.Date(), ".csv"))
+
