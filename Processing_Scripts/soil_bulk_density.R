@@ -43,6 +43,9 @@ bulk_density_raw <- read_sheet(bd_path, col_types = c("TcdddccccddTlllcc")) %>%
 ## two 2.5" ring lids weigh 16.9g, with 5cm diameter and 5.1cm height. Thus, the 
 ## volume is pi * (d/2)^2 * headspace_cm. Dry weight is calculated from GWC 
 ## based on the formula of (field_moist / ((GWC / 100) + 1)) from KP
+
+## Note from Pat on dry to wet weight conversion: [Wbasis = (Dbasis/(100+Dbasis))*100]
+
 bulk_density_processed <- bulk_density_raw %>% 
   mutate(campaign = "EC1",
          kit_id = str_match(sample_id, "K0\\d\\d")[,1], 
@@ -59,6 +62,8 @@ bulk_density_processed <- bulk_density_raw %>%
 
 
 # 3. QC data -------------------------------------------------------------------
+## Wetland organic soil ranges 0.1-0.4g/cm3
+## wetland mineral soil ranges 1.0-1.5 g/cm3
 
 clean_data <- function(data) {
   data %>% 
