@@ -146,7 +146,7 @@ eems_list = as_tibble(eems_files) %>% dplyr::select(name) %>%
   mutate(campaign = "EC1",
          transect_location = "water",
          kit_id= stringr::str_extract(name, "K[0-9]{3}"),
-         data_collected = "TRUE") %>%
+         data_collected = TRUE) %>%
   dplyr::select(campaign, kit_id, transect_location, data_collected)
 
 # 2. Check with Metadata for missing:
@@ -163,4 +163,24 @@ eems_list %>%
   filter(is.na(data_collected))-> check_these_eems
 
 View(check_these_eems)
+
+eems_list %>%
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>%
+  mutate(data_collected = case_when(is.na(data_collected) ~ FALSE,
+                                    kit_id %in% c("K001","K007") ~ FALSE,
+                                    TRUE ~ data_collected),
+         note = case_when(kit_id %in% c("K001","K007") ~ "kit compromised",
+                          kit_id %in% c("K027", "K014", "K057") ~ "sample compromised")
+  ) %>%
+  rename(sample_analyzed = data_collected) %>%
+  select(campaign, kit_id, transect_location,sample_analyzed, note) %>%
+  arrange(kit_id)-> eems_sample_list
+
+View(eems_sample_list)
+
+eems_sample_list %>% write.csv("./ec1_water_eems_sample_list.csv", row.names = FALSE)
+
+drive_upload(media = "./ec1_water_eems_sample_list.csv", name= "ec1_water_eems_sample_list.csv", path = L2directory)
+
+file.remove("./ec1_water_eems_sample_list.csv")
 
