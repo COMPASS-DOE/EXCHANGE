@@ -60,29 +60,41 @@ clean_data <- function(data) {
     ## Second, add flags for 
     mutate(sal_flag = ifelse(sal_psu < 0 | sal_psu > 50, "outside range", NA), 
            ph_flag = ifelse(ph < 0 | ph > 14, "outside range", NA), 
-           orp_flag = ifelse(orp_mv < 0 | orp_mv > 500, "outside range", NA),
+           orp_flag = ifelse(orp_mv < -250 | orp_mv > 500, "outside range", NA), #https://www.ysi.com/parameters/orp-redox
            alk_flag = ifelse(alk_mgl_caco3 < 0, "outside range", NA))
 }
 
 water_quality <- clean_data(water_quality_primitive) 
-  
 
-
-# 4. Write L0B data to Google Drive ---------------------------------------------
-water_quality %>% write.csv(paste0("./ec1_water_waterquality_l0B_", Sys.Date(), ".csv"), row.names = FALSE)
-
-L0Bdirectory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
-
-drive_upload(media = paste0("./ec1_water_waterquality_l0B_", Sys.Date(), ".csv"), name= paste0("ec1_soil_gwc_l0B_", Sys.Date(), ".csv"), path = L0Bdirectory)
-
-file.remove(paste0("./ec1_water_waterquality_l0B_", Sys.Date(), ".csv"))
-
-# 5. Check with Metadata for missing:
+# 4. Check with Metadata for missing:
 
 source("./Processing_Scripts/Metadata_kit_list.R")
 
 metadata_collected %>%
   filter(sample_method == "bottle_125ml")-> meta_filter
 
-check = water_quality %>%
-  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) 
+water_quality %>%
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
+  filter(kit_id != "K007") %>% #remove kit 7 from all datasets
+  mutate(sal_flag = case_when(collected == TRUE & is.na(sal_psu) ~ "sample compromised",
+                              collected == FALSE & is.na(sal_psu) ~ "sample not collected",
+                              TRUE ~ sal_flag),
+         ph_flag = case_when(collected == TRUE & is.na(ph) ~ "sample compromised",
+                              collected == FALSE & is.na(ph) ~ "sample not collected",
+                              TRUE ~ ph_flag),
+         orp_flag = case_when(collected == TRUE & is.na(orp_mv) ~ "sample compromised",
+                              collected == FALSE & is.na(orp_mv) ~ "sample not collected",
+                              TRUE ~ orp_flag),
+         alk_flag = case_when(collected == TRUE & is.na(alk_mgl_caco3) ~ "sample compromised",
+                              collected == FALSE & is.na(alk_mgl_caco3) ~ "sample not collected",
+                              TRUE ~ alk_flag)) %>% 
+          select(-sample_type, -collected, -sample_method) -> water_quality_full
+
+# 5. Write L0B data to Google Drive ---------------------------------------------
+water_quality_full %>% write.csv(paste0("./ec1_water_waterquality_L1_", Sys.Date(), ".csv"), row.names = FALSE)
+
+L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
+
+drive_upload(media = paste0("./ec1_water_waterquality_L1_", Sys.Date(), ".csv"), name= paste0("ec1_water_waterquality_L1_", Sys.Date(), ".csv"), path = L1directory)
+
+file.remove(paste0("./ec1_water_waterquality_L1_", Sys.Date(), ".csv"))

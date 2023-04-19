@@ -91,19 +91,25 @@ write_csv(loi_l2_soil, "Data/Processed/L2/EC1_Soil_LOI_L2_20220923.csv")
 # 4. Clean up and export L2 water quality --------------------------------------
 
 ## Remove flagged values then remove flag column
-wq_l2 <- wq_l0 %>% 
-  filter(!is.na(sal_psu)) %>% 
-  filter(is.na(sal_flag)) %>% 
-  filter(!is.na(ph)) %>% 
-  filter(is.na(ph_flag)) %>% 
-  filter(!is.na(orp_mv)) %>% 
-  filter(is.na(orp_flag)) %>% 
-  filter(!is.na(alk_mgl_caco3)) %>% 
-  filter(is.na(alk_flag)) %>% 
-  select(-c(contains("flag"))) 
+wq_l1 %>% 
+  filter(!is.na(sal_psu),
+         is.na(sal_flag),
+         !is.na(ph),
+         is.na(ph_flag),
+         !is.na(orp_mv),
+         is.na(orp_flag),
+         !is.na(alk_mgl_caco3),
+         is.na(alk_flag)) %>% 
+  select(-c(contains("flag"))) -> wq_l2
 
 ## Write out
-write_csv(wq_l2, "Data/Processed/L2/EC1_Water_WaterQuality_L2_20221004.csv")
+wq_l2 %>% write.csv("ec1_water_waterquality_L2.csv", row.names = FALSE)
+
+L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
+
+drive_upload(media = "ec1_water_waterquality_L2.csv", name= "ec1_water_waterquality_L2.csv", path = L2directory)
+
+file.remove("ec1_water_waterquality_L2.csv")
 
 
 # 4. Clean up and export L2 water quality --------------------------------------
@@ -121,8 +127,6 @@ o2_l2_soil <- o2_l2 %>% filter(transect_location != "Sediment")
 ## Write out
 write_csv(o2_l2_sed, "Data/Processed/L2/EC1_Sediment_OxygenDrawdown_L2_20221004.csv")
 write_csv(o2_l2_soil, "Data/Processed/L2/EC1_Soil_OxygenDrawdown_L2_20221004.csv")
-
-
 
 # 5. Clean up and export L2 soil pH/conductivity --------------------------
 
@@ -149,7 +153,7 @@ ions_l2 <-
 
 }
 
-# Clean up and export TCTN ------------------------------------
+# Clean up and export L2 TCTN ------------------------------------
 
 tctn_full %>% 
   mutate(remove = case_when(tc_flag == "sample not collected" ~ TRUE, 
@@ -170,3 +174,22 @@ drive_upload(media = "ec1_soil_tctn_L2.csv", name= "ec1_soil_tctn_L2.csv", path 
 
 file.remove("ec1_soil_tctn_L2.csv")
 
+# Clean up and export L2 TSS ------------------------------------
+
+tss_full %>% 
+  filter(!grepl("outside range", tss_flag),
+         !is.na(tss_mg_perl)) %>% 
+  select(campaign, kit_id, transect_location, tss_mg_perl) -> tss_l2
+
+# Write out
+tss_l2 %>% write.csv("ec1_water_tss_L2.csv", row.names = FALSE)
+
+L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
+
+drive_upload(media = "ec1_water_tss_L2.csv", name= "ec1_water_tss_L2.csv", path = L2directory)
+
+file.remove("ec1_water_tss_L2.csv")
+
+  
+  
+  
