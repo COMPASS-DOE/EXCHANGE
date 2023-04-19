@@ -90,21 +90,16 @@ write_csv(loi_l2_soil, "Data/Processed/L2/EC1_Soil_LOI_L2_20220923.csv")
 
 # 4. Clean up and export L2 water quality --------------------------------------
 
-num_cols <- colnames(select_if(wq_l1, is.numeric)) # list numeric columns
-
 ## Remove flagged values then remove flag column
 wq_l1 %>% 
-  # if a value is flagged, make NA so we can retain the rest of the sample values
-  mutate(sal_psu = case_when(!is.na(sal_flag) ~ NA,
-                             TRUE ~ sal_psu),
-         ph = case_when(!is.na(ph_flag) ~ NA,
-                        TRUE ~ ph),
-         orp_mv = case_when(!is.na(orp_flag) ~ NA,
-                            TRUE ~ orp_mv),
-         alk_mgl_caco3 = case_when(!is.na(alk_flag) ~ NA,
-                                   TRUE ~ alk_mgl_caco3)) %>% 
-  # only remove rows that are missing all numeric values
-  filter(if_any(num_cols, complete.cases)) %>% 
+  filter(!is.na(sal_psu),
+         is.na(sal_flag),
+         !is.na(ph),
+         is.na(ph_flag),
+         !is.na(orp_mv),
+         is.na(orp_flag),
+         !is.na(alk_mgl_caco3),
+         is.na(alk_flag)) %>% 
   select(-c(contains("flag"))) -> wq_l2
 
 ## Write out
