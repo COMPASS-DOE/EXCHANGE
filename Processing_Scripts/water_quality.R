@@ -60,7 +60,7 @@ clean_data <- function(data) {
     ## Second, add flags for 
     mutate(sal_flag = ifelse(sal_psu < 0 | sal_psu > 50, "outside range", NA), 
            ph_flag = ifelse(ph < 0 | ph > 14, "outside range", NA), 
-           orp_flag = ifelse(orp_mv < 0 | orp_mv > 500, "outside range", NA),
+           orp_flag = ifelse(orp_mv < -250 | orp_mv > 500, "outside range", NA), #https://www.ysi.com/parameters/orp-redox
            alk_flag = ifelse(alk_mgl_caco3 < 0, "outside range", NA))
 }
 
