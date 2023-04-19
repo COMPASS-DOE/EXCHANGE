@@ -129,7 +129,8 @@ write_csv(o2_l2_soil, "Data/Processed/L2/EC1_Soil_OxygenDrawdown_L2_20221004.csv
 ## Remove flagged values then remove flag column
 pH_l2 <- 
   pH_l1 %>% 
-  filter(is.na(ph_flag) & is.na(specific_conductance_flag)) %>% 
+  filter(is.na(ph_flag),
+         is.na(specific_conductance_flag)) %>% 
   select(campaign, kit_id, transect_location, ph, specific_conductance_us_cm)
 
 ## Write out to drive
