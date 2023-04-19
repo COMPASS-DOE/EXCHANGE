@@ -132,12 +132,19 @@ write_csv(o2_l2_soil, "Data/Processed/L2/EC1_Soil_OxygenDrawdown_L2_20221004.csv
 
 ## Remove flagged values then remove flag column
 pH_l2 <- 
-  pH_l0 %>% 
-  filter(is.na(ph_flag) & is.na(specific_conductance_flag)) %>% 
+  pH_l1 %>% 
+  filter(is.na(ph_flag),
+         is.na(specific_conductance_flag)) %>% 
   select(campaign, kit_id, transect_location, ph, specific_conductance_us_cm)
 
-## Write out
-write_csv(pH_l2, "Data/Processed/L2/EC1_Soil_pH_L2_20221012.csv")
+## Write out to drive
+pH_l2 %>% write.csv("./ec1_soil_ph_cond_L2.csv", row.names = FALSE)
+
+L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
+
+drive_upload(media = "ec1_soil_ph_cond_L2.csv", name= "ec1_soil_ph_cond_L2.csv", path = L2directory )
+
+file.remove("ec1_soil_ph_cond_L2.csv")
 
 #
 # 5. Clean up and export L2 water ions ------------------------------------
