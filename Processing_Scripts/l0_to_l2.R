@@ -56,20 +56,56 @@ write_csv(bd_l2, "Data/Processed/L2/EC1_Soil_BD_L2_20220923.csv")
 
 
 # 4. Clean up and export L2 GWC ------------------------------------------------
-
+import_l1_gwc_data = function(directory){
+  
+  ## a. Create a list of files to download
+  files <- 
+    drive_ls(directory) %>% 
+    filter(grepl("gwc", name))
+  
+  ## b. Download files to local (don't worry, we'll delete em in a sec)
+  lapply(files$id, drive_download, overwrite = TRUE)
+  
+  dat <- read.csv(files$name)
+  
+  ## d. delete the temporary files
+  file.remove(c(files$name))  
+  
+  ## e. output
+  dat
+}
 ## Remove flagged values then remove flag column
-gwc_l2 <- gwc_l0 %>% 
-  filter(is.na(gwc_flag)) %>% 
+
+L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
+  
+gwc_l1 = import_l1_gwc_data(L1directory)
+
+gwc_l2 <- 
+  gwc_l1 %>% 
+  filter(!is.na(moisturecontent_perc_drywtbasis)) %>%
   select(-gwc_flag)
 
 ## Split into soil and sediment
-gwc_l2_sed <- gwc_l2 %>% filter(transect_location == "Sediment")
-gwc_l2_soil <- gwc_l2 %>% filter(transect_location != "Sediment")
+gwc_l2_sed <- gwc_l2 %>% filter(transect_location == "sediment") %>% arrange(kit_id)
+gwc_l2_soil <- gwc_l2 %>% filter(transect_location != "sediment") %>% arrange(kit_id)
 
-## Write out
-write_csv(gwc_l2_sed, "Data/Processed/L2/EC1_Sediment_GWC_L2_20220923.csv")
-write_csv(gwc_l2_soil, "Data/Processed/L2/EC1_Soil_GWC_L2_20220923.csv")
+## Write out to drive
+gwc_l2_sed %>% write.csv("./ec1_sediment_gwc_L2.csv", row.names = FALSE)
 
+L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
+
+drive_upload(media = "ec1_sediment_gwc_L2.csv", name= "ec1_sediment_gwc_L2.csv", path = L2directory )
+
+file.remove("ec1_sediment_gwc_L2.csv")
+
+ #soil
+gwc_l2_soil %>% write.csv("./ec1_soil_gwc_L2.csv", row.names = FALSE)
+
+L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
+
+drive_upload(media = "ec1_soil_gwc_L2.csv", name= "ec1_soil_gwc_L2.csv", path = L2directory )
+
+file.remove("ec1_soil_gwc_L2.csv")
 
 # 4. Clean up and export L2 LOI ------------------------------------------------
 
