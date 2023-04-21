@@ -244,6 +244,7 @@ file.remove("ec1_soil_tn_L2.csv")
 
 tss_full %>% 
   filter(!grepl("outside range", tss_flag),
+         !grepl("negative filter mass", tss_flag),
          !is.na(tss_mg_perl)) %>% 
   select(campaign, kit_id, transect_location, tss_mg_perl) -> tss_l2
 
@@ -256,7 +257,7 @@ drive_upload(media = "ec1_water_tss_L2.csv", name= "ec1_water_tss_L2.csv", path 
 
 file.remove("ec1_water_tss_L2.csv")
 
-# Clean up and export L2 TCTN and TDN ------------------------------------
+# Clean up and export L2 NPOC and TDN ------------------------------------
 full_npoc %>% 
   filter(!is.na(npoc_mgl),
          is.na(npoc_flag)) %>% 
