@@ -132,10 +132,15 @@ gwc %>%
                               TRUE ~ gwc_flag)) %>% 
   mutate(gwc_flag = case_when(kit_id == "K055" & transect_location== "sediment" ~ "sample not analyzed",
                               TRUE ~ gwc_flag)) %>%
-  filter(!kit_id %in% c("K001", "K007")) %>%
+  mutate(moisturecontent_perc_drywtbasis = case_when(kit_id %in% c("K001","K007") ~ NA,
+                                                     TRUE ~ moisturecontent_perc_drywtbasis),
+         gwc_flag = case_when(kit_id %in% c("K001","K007") ~ "kit compromised",
+                              TRUE ~ gwc_flag)) %>%
   mutate(gwc_flag = case_when(is.na(moisturecontent_perc_drywtbasis) & collected == FALSE ~ "sample not collected",
                              TRUE ~ gwc_flag)) %>%
   select(-sample_type, -collected, -sample_method, -notes) -> gwc_full
+
+View(gwc_full)
 
 # 5. Export cleaned data --------------------------------------------------
 
