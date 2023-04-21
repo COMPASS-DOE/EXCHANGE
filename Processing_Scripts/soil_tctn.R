@@ -140,7 +140,7 @@ data_primitive %>% filter(grepl("CK", sample)) %>%
 
 #Step 2. filter nitrogen_response and carbon_response and date_ran in samples = Sample Dataframe
 
-data_primitive %>% filter(grepl("EC1", sample)) -> samples_df
+data_primitive %>% filter(grepl("K0", sample)) -> samples_df
 
 #Step 3. Reverse-calculate sample weights using Acetanilide fraction, these will be used to predict sample weights
 
@@ -168,7 +168,7 @@ curve_fit_C <- function(x) {
   
   standards <- filter(reverse_standards, date_run == x)
   data <- filter(samples_df, date_run == x)
-  
+
   calibrate(carbon_response ~ reverse_C_wt, standards, max.order = 3) -> w
   as.data.frame(inversePredictCalibrate(w, data$carbon_response)) %>% 
     mutate(date_run = x) %>% 
@@ -187,13 +187,24 @@ samples_df %>%
   left_join(C_reverse, by = c("carbon_response", "date_run")) -> reverse_joined
 
 reverse_joined %>% 
-  separate(sample_id, into = c("campaign", "kit_id", "transect_location", "extra_rep")) %>% 
-  mutate(extra_rep = case_when(extra_rep == "REP4" ~ "R4",
-                               TRUE ~ extra_rep),
-         extra_rep = toupper(extra_rep),
+  mutate(campaign = "EC1",
+         kit_id = str_extract(reverse_joined$sample_id, "K0[0-9][0-9]"),
+         transect_location = str_extract(reverse_joined$sample_id, "SED|UPL|TRANS|WET"),
+         extra_rep = str_extract(reverse_joined$sample_id, "_(?i)r.*[0-9]+$"),
          rep = case_when(!is.na(extra_rep) ~ extra_rep,
+                         TRUE ~ rep),
+         extra_rep = case_when(extra_rep == "_REP4" ~ "R4",
+                               extra_rep == "_r1" ~ "R1",
+                               extra_rep == "_r2" ~ "R2",
+                               extra_rep == "_r5" ~ "R5",
+                               extra_rep == "_r6" ~ "R6",
+                               extra_rep == "_r7" ~ "R7",
+                               TRUE ~ extra_rep),
+         rep = case_when(!is.na(extra_rep) ~ extra_rep,
+                         rep == "13" ~ NA,
                          TRUE ~ rep)) %>%
   select(campaign, kit_id, transect_location, date_run, rep, sample_wt_mg, predict_N_wt, nitrogen_response, predict_C_wt, carbon_response) %>% 
+  filter(transect_location != "SED") %>% # filter out sediments for phase 1 submission
   # round to 3 decimal places
   mutate(carbon_weight_perc = round((predict_C_wt / sample_wt_mg) * 100, 3),
          nitrogen_weight_perc = round((predict_N_wt / sample_wt_mg) * 100, 3),
@@ -283,26 +294,26 @@ data_qc %>%
     select(campaign, kit_id, transect_location, rep, nitrogen_weight_perc, 
            carbon_weight_perc, tn_flag, tc_flag) %>% 
     mutate(nitrogen_weight_perc = case_when(grepl("replicate outlier", tn_flag) ~ NA, # remove outlier reps before averaging
-                               grepl("replicate below detect", tn_flag) ~ NA,
-                               TRUE ~ nitrogen_weight_perc),
+                                            grepl("replicate below detect", tn_flag) ~ NA,
+                                            TRUE ~ nitrogen_weight_perc),
            carbon_weight_perc = case_when(grepl("replicate outlier", tc_flag) ~ NA,
-                               grepl("replicate below detect", tc_flag) ~ NA,
-                               TRUE ~ carbon_weight_perc)) %>%
+                                          grepl("replicate below detect", tc_flag) ~ NA,
+                                          TRUE ~ carbon_weight_perc)) %>%
     group_by(campaign, kit_id, transect_location) %>% 
     summarise(tc_n = sum(!is.na(carbon_weight_perc)),
               tn_n = sum(!is.na(nitrogen_weight_perc)),
               carbon_weight_perc = round(mean(carbon_weight_perc, na.rm = TRUE), digits = 3), #average reps
               nitrogen_weight_perc = round(mean(nitrogen_weight_perc, na.rm = TRUE), digits = 3)) %>% 
     mutate(tc_flag = case_when(tc_n < 3 & tc_n > 0 ~ "< 3 replicates used", # create flag based on # of reps used
-                               carbon_weight_perc == "NaN" ~ "no replicates used"),
+                               carbon_weight_perc == "NaN" ~ "replicates > 10% different"),
            tn_flag = case_when(tn_n < 3 & tn_n > 0 ~ "< 3 replicates used",
-                               nitrogen_weight_perc == "NaN" ~ "no replicates used")) %>% 
+                               nitrogen_weight_perc == "NaN" ~ "replicates > 10% different")) %>% 
     left_join(flag_notes, by = c("kit_id", "transect_location")) %>% 
     unite(col = tc_flag, c("tc_flag", "tc_flag_notes"), sep = ", ", na.rm = TRUE) %>% #combine notes with flags
     unite(col = tn_flag, c("tn_flag", "tn_flag_notes"), sep = ", ", na.rm = TRUE) %>% 
-    mutate(tc_flag = case_when(grepl("no replicates used", tc_flag) ~ "no replicates used",
+    mutate(tc_flag = case_when(grepl("replicates > 10% different", tc_flag) ~ "replicates > 10% different",
                             TRUE ~ tc_flag),
-           tn_flag = case_when(grepl("no replicates used", tn_flag) ~ "no replicates used",
+           tn_flag = case_when(grepl("replicates > 10% different", tn_flag) ~ "replicates > 10% different",
                                    TRUE ~ tn_flag),
            # switch wetland and transition names due to a...
            # ...sampling error: wetland soil was sampled and put into a jar labeled "transition" incorrectly
@@ -325,9 +336,17 @@ data_clean %>%
   full_join(meta_filter, by = c("campaign", "kit_id", "transect_location"))  %>%
   # add rows for samples not collected, creating a "full" dataset of all possible samples
   mutate(tc_flag = case_when(collected == FALSE & is.na(carbon_weight_perc) & is.na(tc_flag) ~ "sample not collected",
-                                  TRUE ~ tc_flag),
+                             notes == "kit compromised" ~ "kit compromised",
+                             notes == "sample compromised" ~ "sample compromised",
+                             TRUE ~ tc_flag),
          tn_flag = case_when(collected == FALSE & is.na(nitrogen_weight_perc) & is.na(tn_flag) ~ "sample not collected",
-                                  TRUE ~ tn_flag)) %>% 
+                             notes == "kit compromised" ~ "kit compromised",
+                             notes == "sample compromised" ~ "sample compromised",
+                             TRUE ~ tn_flag),
+         carbon_weight_perc = case_when(notes == "kit compromised" ~ NA,
+                                        TRUE ~ carbon_weight_perc),
+         nitrogen_weight_perc = case_when(notes == "kit compromised" ~ NA,
+                                          TRUE ~ nitrogen_weight_perc)) %>% 
   select(-c(sample_type, sample_method, collected)) -> tctn_full
 
 #
@@ -337,11 +356,11 @@ data_clean %>%
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
 #drive_upload(media = data_clean, path = data_path)
 
-tctn_full %>% write.csv(paste0("./ec1_soil_tctn_l0B_", Sys.Date(), ".csv"), row.names = FALSE)
+tctn_full %>% write.csv(paste0("./ec1_soil_tctn_L1_", Sys.Date(), ".csv"), row.names = FALSE)
 
-L0Bdirectory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
+L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
 
-drive_upload(media = paste0("./ec1_soil_tctn_l0B_", Sys.Date(), ".csv"), name= paste0("ec1_soil_tctn_l0B_", Sys.Date(), ".csv"), path = L0Bdirectory)
+drive_upload(media = paste0("./ec1_soil_tctn_L1_", Sys.Date(), ".csv"), name= paste0("ec1_soil_tctn_L1_", Sys.Date(), ".csv"), path = L1directory)
 
-file.remove(paste0("./ec1_soil_tctn_l0B_", Sys.Date(), ".csv"))
+file.remove(paste0("./ec1_soil_tctn_L1_", Sys.Date(), ".csv"))
  
