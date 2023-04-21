@@ -198,24 +198,35 @@ ions_l2 <-
 
 # Clean up and export L2 TCTN ------------------------------------
 
+# Split tc and tn into different dataframes
 tctn_full %>% 
-  mutate(remove = case_when(tc_flag == "sample not collected" ~ TRUE, 
-                            tc_flag == "outside range" ~ TRUE, 
-                            tn_flag == "sample not collected" ~ TRUE, 
-                            tn_flag == "outside range" ~ TRUE,
-                            tn_flag == "no replicates used" & tc_flag == "no replicates used" ~ TRUE,
-                            TRUE ~ FALSE)) %>% 
-  filter(remove == FALSE) %>% 
-  select(-c("tc_flag", "tn_flag", "remove")) -> L2
+  select(campaign, kit_id, transect_location, carbon_weight_perc, tc_flag) -> tc_full
+
+tctn_full %>% 
+  select(campaign, kit_id, transect_location, nitrogen_weight_perc, tn_flag) -> tn_full
+
+# Remove flagged values and NAs
+tc_full %>% 
+  filter(!is.na(carbon_weight_perc),
+         !grepl("outside range", carbon_weight_perc)) %>% 
+  select(-tc_flag) -> tc_L2
+
+tn_full %>% 
+  filter(!is.na(nitrogen_weight_perc),
+         !grepl("outside range", nitrogen_weight_perc)) %>% 
+  select(-tn_flag) -> tn_L2
 
 # Write out
-L2 %>% write.csv("ec1_soil_tctn_L2.csv", row.names = FALSE)
-
 L2directory = "https://drive.google.com/drive/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
 
-drive_upload(media = "ec1_soil_tctn_L2.csv", name= "ec1_soil_tctn_L2.csv", path = L2directory)
+tc_L2 %>% write.csv("ec1_soil_tc_L2.csv", row.names = FALSE)
+tn_L2 %>% write.csv("ec1_soil_tn_L2.csv", row.names = FALSE)
 
-file.remove("ec1_soil_tctn_L2.csv")
+drive_upload(media = "ec1_soil_tc_L2.csv", name= "ec1_soil_tc_L2.csv", path = L2directory)
+drive_upload(media = "ec1_soil_tn_L2.csv", name= "ec1_soil_tn_L2.csv", path = L2directory)
+
+file.remove("ec1_soil_tc_L2.csv")
+file.remove("ec1_soil_tn_L2.csv")
 
 # Clean up and export L2 TSS ------------------------------------
 
