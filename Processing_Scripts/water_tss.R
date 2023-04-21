@@ -150,10 +150,18 @@ metadata_collected %>%
 data_clean %>% 
   mutate(transect_location = tolower(transect_location)) %>% 
   full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
-  filter(!kit_id %in% c("K001", "K007")) %>% 
-  mutate(tss_flag = case_when(kit_id == "K027" ~ "sample compromised",
+  mutate(tss_mg_perl = case_when(notes == "kit compromised" ~ NA,
+                                 TRUE ~ tss_mg_perl),
+         total_filter_mass_g = case_when(notes == "kit compromised" ~ NA,
+                                         TRUE ~ total_filter_mass_g),
+         volume_filtered_ml = case_when(notes == "kit compromised" ~ NA,
+                                        TRUE ~ volume_filtered_ml),
+         filters_used = case_when(notes == "kit compromised" ~ NA,
+                                  TRUE ~ filters_used),
+         tss_flag = case_when(notes == "sample compromised" ~ "sample compromised",
+                              notes == "kit compromised" ~ "kit compromised",
                               TRUE ~ tss_flag)) %>% 
-  select(-sample_type, -collected, -sample_method) -> tss_full
+  select(-sample_type, -collected, -sample_method, - notes) -> tss_full
 
 #
 # 6. Write cleaned data to drive -----------------------------------------------
