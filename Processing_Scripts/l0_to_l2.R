@@ -233,6 +233,25 @@ drive_upload(media = "ec1_water_tss_L2.csv", name= "ec1_water_tss_L2.csv", path 
 
 file.remove("ec1_water_tss_L2.csv")
 
-  
-  
-  
+# Clean up and export L2 TCTN and TDN ------------------------------------
+full_npoc %>% 
+  filter(!is.na(npoc_mgl),
+         is.na(npoc_flag)) %>% 
+  select(-npoc_flag) -> npoc_l2
+
+full_tdn %>% 
+  filter(!is.na(tdn_mgl),
+         is.na(tdn_flag)) %>% 
+  select(-tdn_flag) -> tdn_l2
+
+# Write out
+npoc_l2 %>% write.csv("ec1_water_npoc_L2.csv", row.names = FALSE)
+tdn_l2 %>% write.csv("ec1_water_tdn_L2.csv", row.names = FALSE)
+
+L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
+
+drive_upload(media = "ec1_water_npoc_L2.csv", name= "ec1_water_npoc_L2.csv", path = L2directory)
+drive_upload(media = "ec1_water_tdn_L2.csv", name= "ec1_water_tdn_L2.csv", path = L2directory)
+
+file.remove("ec1_water_npoc_L2.csv")
+file.remove("ec1_water_tdn_L2.csv")
