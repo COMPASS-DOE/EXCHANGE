@@ -347,7 +347,7 @@ data_clean %>%
                                         TRUE ~ carbon_weight_perc),
          nitrogen_weight_perc = case_when(notes == "kit compromised" ~ NA,
                                           TRUE ~ nitrogen_weight_perc)) %>% 
-  select(-c(sample_type, sample_method, collected)) -> tctn_full
+  select(-c(sample_type, sample_method, collected, notes)) -> tctn_full
 
 #
 # 6. Write cleaned data to drive -----------------------------------------------
