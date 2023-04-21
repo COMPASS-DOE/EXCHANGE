@@ -208,7 +208,7 @@ blanks_final <- blanks_LOD_corrected %>%
 samples_blank_corrected <- samples %>% 
   mutate(campaign = "EC1", 
          kit_id = substr(sample_name, 5, 9), 
-         transect_location = "Water") %>% 
+         transect_location = "water") %>% 
   # join blank information with dataset
   inner_join(select(blanks_final, date, npoc_blank, tdn_blank), by = "date") %>% 
   # calculate blank corrected npoc/tdn values
@@ -270,43 +270,35 @@ npoc_duplicates_removed <- npoc_bc_flagged %>%
 npoc <- npoc_duplicates_removed %>% 
   select(date, campaign, kit_id, transect_location, npoc_mgl, tdn_mgl, contains("_flag"))
 
+# 10. Check with Metadata for missing:
 
-# 10. Compare Data to Samples Received -----------------------------------------
+source("./Processing_Scripts/Metadata_kit_list.R")
 
-## set location of the metadata file
-metadata_directory <- "https://drive.google.com/drive/folders/1IQUq_sD-Jama7ajaZl1zW_9zlWfyCohn"
+metadata_collected %>% 
+  filter(sample_method == "vial_40ml") -> meta_filter
 
-## pull desired metadata file
-metadata_file <- drive_ls(metadata_directory) %>%
-  filter(grepl("KitLevel", name)) %>%
-  pull(name)
+npoc %>% 
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) -> full_npoc_tdn
 
-## download metadata file
-drive_download(metadata_file, overwrite = T)
+full_npoc_tdn %>% 
+  mutate(npoc_flag = case_when(!is.na(notes) ~ notes,
+                               TRUE ~ npoc_flag)) %>% 
+  select(campaign, kit_id, transect_location, npoc_mgl, npoc_flag) -> full_npoc
 
-## read in metadata file and edit dataframe
-samples_collected <- read_csv(metadata_file) %>%
-  select(kit_id, samples_collected) %>%
-  ## determine if a surface water was collected for a kit
-  mutate(Water = ifelse(str_detect(samples_collected, "Water"), T, F)) %>%
-  pivot_longer(cols = Water, names_to = "transect_location", values_to = "collected")
+full_npoc_tdn %>% 
+  mutate(tdn_flag = case_when(!is.na(notes) ~ notes,
+                               TRUE ~ tdn_flag)) %>% 
+  select(campaign, kit_id, transect_location, tdn_mgl, tdn_flag) -> full_tdn
 
-## remove downloaded file to clean up local directory
-file.remove(metadata_file)
+# 11. Write L1 data -----------------------------------------------------------
 
-## merge with finalized npoc dataset to compare collected vs samples run
-samples_collected_measured <- samples_collected %>%
-  left_join(select(npoc, kit_id, transect_location, npoc_mgl),
-            by = c("kit_id", "transect_location")) %>%
-  mutate(npoc_tdn_measured = ifelse(!is.na(npoc_mgl),T,F)) %>%
-  select(-npoc_mgl)
+write_csv(full_npoc, paste0("Data/Processed/ec1_water_npoc_L1_", Sys.Date(), ".csv"))
+write_csv(full_tdn, paste0("Data/Processed/ec1_water_tdn_L1_", Sys.Date(), ".csv"))
 
-## write out dataframe
-write_csv(samples_collected_measured, file = "npoc_samples_collectedvsmeasured.csv")
+L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
 
+drive_upload(media = paste0("./ec1_water_npoc_L1_", Sys.Date(), ".csv"), name= paste0("ec1_water_npoc_L1_", Sys.Date(), ".csv"), path = L1directory )
+drive_upload(media = paste0("./ec1_water_tdn_L1_", Sys.Date(), ".csv"), name= paste0("ec1_water_tdn_L1_", Sys.Date(), ".csv"), path = L1directory )
 
-# 11. Write L0B data -----------------------------------------------------------
-
-write_csv(npoc, paste0("Data/Processed/EC1_Water_NPOC_TDN_L0B_", Sys.Date(), ".csv"))
-
-
+file.remove(paste0("./ec1_water_npoc_L1_", Sys.Date(), ".csv"))
+file.remove(paste0("./ec1_water_tdn_L1_", Sys.Date(), ".csv"))
