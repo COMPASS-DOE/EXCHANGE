@@ -39,10 +39,6 @@ o2_l0 <- read_csv("Data/Processed/L0B/EC1_SoilSedimentOxygenDrawdown_L0B_2022051
 ## Read in L0B ions (surface waters)
 ions_l0 <- read_csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221012.csv")
 
-## Read in L0B soil pH/conductivity
-pH_l0 <- read_csv("Data/Processed/L0B/EC1_Soil_pH_L0B_20220531.csv")
-
-
 # 
 # 3. Clean up and export L2 Bulk Density ---------------------------------------
 
@@ -166,21 +162,37 @@ write_csv(o2_l2_soil, "Data/Processed/L2/EC1_Soil_OxygenDrawdown_L2_20221004.csv
 
 # 5. Clean up and export L2 soil pH/conductivity --------------------------
 
+# Split ph and conductivity into two data frames
+soil_ph_cond_full %>% 
+  select(campaign, kit_id, transect_location, ph, ph_flag) -> ph_L1
+
+soil_ph_cond_full %>% 
+  select(campaign, kit_id, transect_location, specific_conductance_us_cm, specific_conductance_flag) -> cond_L1
+
 ## Remove flagged values then remove flag column
-pH_l2 <- 
-  pH_l1 %>% 
-  filter(is.na(ph_flag),
-         is.na(specific_conductance_flag)) %>% 
-  select(campaign, kit_id, transect_location, ph, specific_conductance_us_cm)
+ph_L1 %>% 
+  filter(!is.na(ph),
+         !grepl("below range", ph_flag),
+         !grepl("above range", ph_flag)) %>% 
+  select(-ph_flag) -> ph_L2
+
+cond_L1 %>% 
+  filter(!is.na(specific_conductance_us_cm),
+         !grepl("below range", specific_conductance_flag),
+         !grepl("above range", specific_conductance_flag)) %>% 
+  select(-specific_conductance_flag) -> cond_L2
 
 ## Write out to drive
-pH_l2 %>% write.csv("./ec1_soil_ph_cond_L2.csv", row.names = FALSE)
-
 L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
 
-drive_upload(media = "ec1_soil_ph_cond_L2.csv", name= "ec1_soil_ph_cond_L2.csv", path = L2directory )
+ph_L2 %>% write.csv("./ec1_soil_ph_L2.csv", row.names = FALSE)
+cond_L2 %>% write.csv("./ec1_soil_cond_L2.csv", row.names = FALSE)
 
-file.remove("ec1_soil_ph_cond_L2.csv")
+drive_upload(media = "ec1_soil_ph_L2.csv", name= "ec1_soil_ph_L2.csv", path = L2directory )
+drive_upload(media = "ec1_soil_cond_L2.csv", name= "ec1_soil_cond_L2.csv", path = L2directory )
+
+file.remove("ec1_soil_ph_L2.csv")
+file.remove("ec1_soil_cond_L2.csv")
 
 #
 # 5. Clean up and export L2 water ions ------------------------------------
