@@ -123,6 +123,31 @@ write_csv(loi_l2_soil, "Data/Processed/L2/EC1_Soil_LOI_L2_20220923.csv")
 # 4. Clean up and export L2 water quality --------------------------------------
 
 ## Remove flagged values then remove flag column
+import_l1_wq_data = function(directory){
+  
+  ## a. Create a list of files to download
+  files <- 
+    drive_ls(directory) %>% 
+    filter(grepl("waterquality", name))
+  
+  ## b. Download files to local (don't worry, we'll delete em in a sec)
+  lapply(files$id, drive_download, overwrite = TRUE)
+  
+  dat <- read.csv(files$name)
+  
+  ## d. delete the temporary files
+  file.remove(c(files$name))  
+  
+  ## e. output
+  dat
+}
+## Remove flagged values then remove flag column
+
+L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
+
+wq_l1 = import_l1_wq_data(L1directory)
+
+#leaving all these together since they all do match. need to seperate if we have one indvidually though. We don't. 
 wq_l1 %>% 
   filter(!is.na(sal_psu),
          is.na(sal_flag),
@@ -135,13 +160,19 @@ wq_l1 %>%
   select(-c(contains("flag"))) -> wq_l2
 
 ## Write out
-wq_l2 %>% write.csv("ec1_water_waterquality_L2.csv", row.names = FALSE)
+wq_l2 %>% select(campaign, kit_id, transect_location, ph) %>% arrange(kit_id) %>% write.csv("ec1_water_pH_L2.csv", row.names = FALSE)
+wq_l2 %>% select(campaign, kit_id, transect_location, sal_psu) %>% arrange(kit_id) %>% write.csv("ec1_water_salinity_L2.csv", row.names = FALSE)
+wq_l2 %>% select(campaign, kit_id, transect_location, orp_mv) %>% arrange(kit_id) %>% write.csv("ec1_water_ORP_L2.csv", row.names = FALSE)
+wq_l2 %>% select(campaign, kit_id, transect_location, alk_mgl_caco3) %>% arrange(kit_id) %>% write.csv("ec1_water_alkalinity_L2.csv", row.names = FALSE)
 
 L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
 
-drive_upload(media = "ec1_water_waterquality_L2.csv", name= "ec1_water_waterquality_L2.csv", path = L2directory)
+drive_upload(media = "ec1_water_pH_L2.csv", name= "ec1_water_pH_L2.csv", path = L2directory)
+drive_upload(media = "ec1_water_salinity_L2.csv", name=  "ec1_water_salinity_L2.csv", path = L2directory)
+drive_upload(media ="ec1_water_ORP_L2.csv", name= "ec1_water_ORP_L2.csv", path = L2directory)
+drive_upload(media = "ec1_water_alkalinity_L2.csv", name= "ec1_water_alkalinity_L2.csv", path = L2directory)
 
-file.remove("ec1_water_waterquality_L2.csv")
+file.remove(c("ec1_water_pH_L2.csv", "ec1_water_salinity_L2.csv", "ec1_water_ORP_L2.csv", "ec1_water_alkalinity_L2.csv"))
 
 
 # 4. Clean up and export L2 water quality --------------------------------------
