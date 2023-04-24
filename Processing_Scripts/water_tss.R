@@ -109,9 +109,9 @@ processed_interim %>%
          density_water = gsw_rho(SA, CT, 0),
          volume_filtered_ml = sample_weight_g / (density_water / 1000),
          # have to convert ml to L and g to mg
-         tss_mg_perl = ((total_filter_mass_g / volume_filtered_ml) * 1000 * 1000),
+         tss_mg_L = ((total_filter_mass_g / volume_filtered_ml) * 1000 * 1000),
          # round final numbers to 2 decimal places
-         tss_mg_perl = round(tss_mg_perl, 2),
+         tss_mg_L = round(tss_mg_L, 2),
          total_filter_mass_g = round(total_filter_mass_g, 2),
          volume_filtered_ml = round(volume_filtered_ml, 2)) -> data_processed
  
@@ -124,7 +124,7 @@ data_qc <- function(data) {
     mutate(`negative filter mass` = ifelse(total_filter_mass_g < 0, T, F),
            `used average conductivity` = ifelse(kit_id %in% c("K014", "K057"), T, F),
            #flag_3 = ifelse(total_bottom_filter_g > 0, T, F),
-           `outside range` = ifelse(tss_mg_perl < F4_MIN | tss_mg_perl > F4_MAX, T, F)
+           `outside range` = ifelse(tss_mg_L < F4_MIN | tss_mg_L > F4_MAX, T, F)
            ) 
 }
 
@@ -137,7 +137,7 @@ data_qc(data_processed) %>%
 
 data_processed %>% 
   left_join(flags, by = c("kit_id", "transect_location")) %>% 
-  select(campaign, kit_id, transect_location, tss_mg_perl, total_filter_mass_g, 
+  select(campaign, kit_id, transect_location, tss_mg_L, total_filter_mass_g, 
          volume_filtered_ml, filters_used, tss_flag) -> data_clean 
 
 # 5. Check with Metadata for missing: 
@@ -150,8 +150,8 @@ metadata_collected %>%
 data_clean %>% 
   mutate(transect_location = tolower(transect_location)) %>% 
   full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
-  mutate(tss_mg_perl = case_when(notes == "kit compromised" ~ NA,
-                                 TRUE ~ tss_mg_perl),
+  mutate(tss_mg_L = case_when(notes == "kit compromised" ~ NA,
+                                 TRUE ~ tss_mg_L),
          total_filter_mass_g = case_when(notes == "kit compromised" ~ NA,
                                          TRUE ~ total_filter_mass_g),
          volume_filtered_ml = case_when(notes == "kit compromised" ~ NA,
