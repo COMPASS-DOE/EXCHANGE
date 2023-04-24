@@ -276,8 +276,8 @@ file.remove("ec1_soil_tn_L2.csv")
 tss_full %>% 
   filter(!grepl("outside range", tss_flag),
          !grepl("negative filter mass", tss_flag),
-         !is.na(tss_mg_perl)) %>% 
-  select(campaign, kit_id, transect_location, tss_mg_perl) -> tss_l2
+         !is.na(tss_mg_L)) %>% 
+  select(campaign, kit_id, transect_location, tss_mg_L) -> tss_l2
 
 # Write out
 tss_l2 %>% write.csv("ec1_water_tss_L2.csv", row.names = FALSE)
