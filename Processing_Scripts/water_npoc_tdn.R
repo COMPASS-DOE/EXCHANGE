@@ -5,6 +5,12 @@
 ## Created: 2022-01-15 (Updated 2022-03-30 with Opal Otenburg)
 ## Peter Regier
 ## Updated: 2023-02-23 by Julia McElhinny
+
+#Examine data frame
+# Non-blank corrected
+# All Blank corrected
+# Conditional blank corrected
+# geom_point comparison 
 ##
 
 
@@ -212,11 +218,12 @@ samples_blank_corrected <- samples %>%
   # join blank information with dataset
   inner_join(select(blanks_final, date, npoc_blank, tdn_blank), by = "date") %>% 
   # calculate blank corrected npoc/tdn values
-  mutate(npoc_mgl = npoc_raw - npoc_blank, 
-         tdn_mgl = tdn_raw - tdn_blank) %>%
+  mutate(npoc_mgl = npoc_raw, 
+         tdn_mgl = tdn_raw,
+         npoc_mgl_blkcorr = npoc_raw - npoc_blank, 
+         tdn_mgl_blkcorr = tdn_raw - tdn_blank) %>%
   # simplify data frame
-  select(campaign, kit_id, transect_location, sample_name, date, npoc_mgl, tdn_mgl, LOD_NPOC, LOD_TN)
-
+  select(campaign, kit_id, transect_location, sample_name, date, npoc_mgl, tdn_mgl, npoc_mgl_blkcorr,tdn_mgl_blkcorr, LOD_NPOC, LOD_TN)
 
 # 8b. Check Data Against ReadMe Action Items -----------------------------------
 
@@ -227,8 +234,9 @@ samples_readme_action <- samples_blank_corrected %>%
   # if the action reads "Replace TN", make tdn_mgl NA
   mutate(tdn_mgl = ifelse(grepl("Replace TN", action),
                           NA,
-                          tdn_mgl)) %>%
-  select(-action)
+                          tdn_mgl)) 
+#%>%
+ # select(-action)
 
 
 # 8c. Flag Data Against LOD and Cal Curve Upper Limits -------------------------
@@ -237,7 +245,9 @@ samples_readme_action <- samples_blank_corrected %>%
 npoc_bc_flagged <- samples_readme_action %>% 
   ## First, round each parameter to proper significant figures
   mutate(npoc_mgl = round(npoc_mgl, 2), 
-         tdn_mgl = round(tdn_mgl, 3)) %>% 
+         tdn_mgl = round(tdn_mgl, 3),
+         npoc_diff = (npoc_mgl- npoc_mgl_blkcorr)/npoc_mgl *100,
+         tdn_diff = (tdn_mgl- tdn_mgl_blkcorr)/tdn_mgl * 100) %>% 
   ## join with the cal curve information
   left_join(cal_curve, by = "date") %>%
   ## Second, add flags for outside LOD (LOD info is still part of this data frame from previous edits)
@@ -248,9 +258,9 @@ npoc_bc_flagged <- samples_readme_action %>%
   ## combine flags into one column since one sample will not be below the LOD and above the cal curve at the same time
   mutate(npoc_flag = ifelse(!is.na(npoc_lod_flag), npoc_lod_flag, npoc_flag),
          tdn_flag = ifelse(!is.na(tdn_lod_flag), tdn_lod_flag, tdn_flag)) %>%
-  select(campaign:tdn_mgl, npoc_flag, tdn_flag)
+  select(campaign:tdn_mgl,npoc_diff, tdn_diff, npoc_flag, tdn_flag, action)
 
-  
+
 # 9. Clean data ----------------------------------------------------------------
 
 ## Helper function to calculate mean if numeric, otherwise preserve the value of
@@ -267,9 +277,15 @@ npoc_duplicates_removed <- npoc_bc_flagged %>%
   summarize(across(everything(), .f = mean_if_numeric))
 
 ## Finalize Dataset
-npoc <- npoc_duplicates_removed %>% 
-  select(date, campaign, kit_id, transect_location, npoc_mgl, tdn_mgl, contains("_flag"))
+npoc_final <- npoc_duplicates_removed %>% 
+  select(date, campaign, kit_id, transect_location, npoc_mgl, tdn_mgl, npoc_diff, tdn_diff, contains("_flag"), action)
 
+npoc_perc_diff = npoc_final %>%
+  summarise(npoc_mean_diff = mean(npoc_diff),
+            npoc_sd_diff = sd(npoc_diff),
+            tdn_mean_diff = mean(tdn_diff),
+            tdn_sd_diff = sd(tdn_diff))
+  
 # 10. Check with Metadata for missing:
 
 source("./Processing_Scripts/Metadata_kit_list.R")
@@ -277,28 +293,35 @@ source("./Processing_Scripts/Metadata_kit_list.R")
 metadata_collected %>% 
   filter(sample_method == "vial_40ml") -> meta_filter
 
-npoc %>% 
+npoc_final %>% 
   full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) -> full_npoc_tdn
 
 full_npoc_tdn %>% 
   mutate(npoc_flag = case_when(!is.na(notes) ~ notes,
-                               TRUE ~ npoc_flag)) %>% 
-  select(campaign, kit_id, transect_location, npoc_mgl, npoc_flag) -> full_npoc
+                               TRUE ~ npoc_flag),
+         npoc_mgl = case_when(npoc_flag == "sample compromised in shipment" ~ NA,
+                                     TRUE ~ npoc_mgl)) %>% 
+  rename(doc_mgC_L = npoc_mgl,
+         doc_flag = npoc_flag) %>%
+  select(campaign, kit_id, transect_location, doc_mgC_L, doc_flag) -> full_npoc
 
 full_npoc_tdn %>% 
   mutate(tdn_flag = case_when(!is.na(notes) ~ notes,
-                               TRUE ~ tdn_flag)) %>% 
-  select(campaign, kit_id, transect_location, tdn_mgl, tdn_flag) -> full_tdn
+                               TRUE ~ tdn_flag),
+         tdn_mgl = case_when(tdn_flag == "sample compromised in shipment" ~ NA,
+                              TRUE ~ tdn_mgl)) %>% 
+  rename(tdn_mgN_L = tdn_mgl) %>%
+  select(campaign, kit_id, transect_location, tdn_mgN_L, tdn_flag) -> full_tdn
 
 # 11. Write L1 data -----------------------------------------------------------
 
-write_csv(full_npoc, paste0("Data/Processed/ec1_water_npoc_L1_", Sys.Date(), ".csv"))
-write_csv(full_tdn, paste0("Data/Processed/ec1_water_tdn_L1_", Sys.Date(), ".csv"))
+write.csv(full_npoc, paste0("./ec1_water_doc_L1_", Sys.Date(), ".csv"), row.names = FALSE)
+write.csv(full_tdn, paste0("./ec1_water_tdn_L1_", Sys.Date(), ".csv"), row.names = FALSE)
 
 L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
 
-drive_upload(media = paste0("./ec1_water_npoc_L1_", Sys.Date(), ".csv"), name= paste0("ec1_water_npoc_L1_", Sys.Date(), ".csv"), path = L1directory )
+drive_upload(media = paste0("./ec1_water_doc_L1_", Sys.Date(), ".csv"), name= paste0("ec1_water_doc_L1_", Sys.Date(), ".csv"), path = L1directory )
 drive_upload(media = paste0("./ec1_water_tdn_L1_", Sys.Date(), ".csv"), name= paste0("ec1_water_tdn_L1_", Sys.Date(), ".csv"), path = L1directory )
 
-file.remove(paste0("./ec1_water_npoc_L1_", Sys.Date(), ".csv"))
+file.remove(paste0("./ec1_water_doc_L1_", Sys.Date(), ".csv"))
 file.remove(paste0("./ec1_water_tdn_L1_", Sys.Date(), ".csv"))
