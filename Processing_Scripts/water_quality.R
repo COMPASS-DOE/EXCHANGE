@@ -111,7 +111,7 @@ water_quality %>%
                             TRUE ~ alk_mgl_caco3),
          alk_flag = case_when(kit_id %in% c("K001","K007") ~ "kit compromised",
                               TRUE ~ alk_flag)) %>%
-          select(-sample_type, -collected, -sample_method) -> water_quality_full
+          select(-sample_type, -collected, -sample_method, -notes) -> water_quality_full
 
 View(water_quality_full)
 

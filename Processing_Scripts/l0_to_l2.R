@@ -208,7 +208,7 @@ drive_upload(media = "ec1_water_alkalinity_L2.csv", name= "ec1_water_alkalinity_
 file.remove(c("ec1_water_pH_L2.csv", "ec1_water_salinity_L2.csv", "ec1_water_ORP_L2.csv", "ec1_water_alkalinity_L2.csv"))
 
 
-# 4. Clean up and export L2 water quality --------------------------------------
+# 4. Clean up and export L2 oxygen drawdown --------------------------------------
 
 ## Remove flagged values then remove flag column
 o2_l2 <- o2_l0 %>% 

@@ -102,7 +102,7 @@ soil_pH_qc %>%
                                                notes == "kit compromised" ~ "kit compromised",
                                                notes == "sample compromised" ~ "sample compromised",
                                                TRUE ~ specific_conductance_flag)) %>% 
-  select(-sample_type, -collected, -sample_method, -sample_weight_g) -> soil_ph_cond_full
+  select(-sample_type, -collected, -sample_method, -sample_weight_g, -notes) -> soil_ph_cond_full
 
 #
 # 6. Export cleaned data --------------------------------------------------
