@@ -42,13 +42,45 @@ ions_l0 <- read_csv("Data/Processed/L0B/EC1_Water_Ions_L0B_20221012.csv")
 # 
 # 3. Clean up and export L2 Bulk Density ---------------------------------------
 
+import_l1_bd_data = function(directory){
+  
+  ## a. Create a list of files to download
+  files <- 
+    drive_ls(directory) %>% 
+    filter(grepl("bulk_density", name))
+  
+  ## b. Download files to local (don't worry, we'll delete em in a sec)
+  lapply(files$id, drive_download, overwrite = TRUE)
+  
+  dat <- read.csv(files$name)
+  
+  ## d. delete the temporary files
+  file.remove(c(files$name))  
+  
+  ## e. output
+  dat
+}
 ## Remove flagged values then remove flag column
-bd_l2 <- bd_l0 %>% 
-  filter(is.na(bulk_density_flag)) %>% 
+
+L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
+
+bd_l1 = import_l1_bd_data(L1directory)
+
+bd_l2 <- 
+  bd_l1 %>% 
+  filter(!is.na(bulk_density_g_cm3)) %>%
   select(-bulk_density_flag)
 
-## Write out
-write_csv(bd_l2, "Data/Processed/L2/EC1_Soil_BD_L2_20220923.csv")
+## Write out to drive
+
+#soil
+bd_l2 %>% write.csv("./ec1_soil_bulk_density_L2.csv", row.names = FALSE)
+
+L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
+
+drive_upload(media = "ec1_soil_bulk_density_L2.csv", name= "ec1_soil_bulk_density_L2.csv", path = L2directory )
+
+file.remove("ec1_soil_bulk_density_L2.csv")
 
 
 # 4. Clean up and export L2 GWC ------------------------------------------------
@@ -290,23 +322,23 @@ file.remove("ec1_water_tss_L2.csv")
 
 # Clean up and export L2 NPOC and TDN ------------------------------------
 full_npoc %>% 
-  filter(!is.na(npoc_mgl),
-         is.na(npoc_flag)) %>% 
-  select(-npoc_flag) -> npoc_l2
+  filter(!is.na(doc_mgC_L)) %>% 
+  select(-doc_flag) -> npoc_l2
+
+npoc_l2$doc_mgC_L = format(npoc_l2$doc_mgC_L, digits = 3)
 
 full_tdn %>% 
-  filter(!is.na(tdn_mgl),
-         is.na(tdn_flag)) %>% 
+  filter(!is.na(tdn_mgN_L)) %>% 
   select(-tdn_flag) -> tdn_l2
 
 # Write out
-npoc_l2 %>% write.csv("ec1_water_npoc_L2.csv", row.names = FALSE)
-tdn_l2 %>% write.csv("ec1_water_tdn_L2.csv", row.names = FALSE)
+npoc_l2 %>% write_csv("ec1_water_doc_L2.csv")
+tdn_l2 %>% write_csv("ec1_water_tdn_L2.csv")
 
 L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
 
-drive_upload(media = "ec1_water_npoc_L2.csv", name= "ec1_water_npoc_L2.csv", path = L2directory)
+drive_upload(media = "ec1_water_doc_L2.csv", name= "ec1_water_doc_L2.csv", path = L2directory)
 drive_upload(media = "ec1_water_tdn_L2.csv", name= "ec1_water_tdn_L2.csv", path = L2directory)
 
-file.remove("ec1_water_npoc_L2.csv")
+file.remove("ec1_water_doc_L2.csv")
 file.remove("ec1_water_tdn_L2.csv")
