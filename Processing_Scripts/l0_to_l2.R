@@ -200,12 +200,12 @@ wq_l2 %>% select(campaign, kit_id, transect_location, alk_mgl_caco3) %>% arrange
 
 L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
 
-drive_upload(media = "ec1_water_pH_L2.csv", name= "ec1_water_pH_L2.csv", path = L2directory)
+drive_upload(media = "ec1_water_ph_L2.csv", name= "ec1_water_pH_L2.csv", path = L2directory)
 drive_upload(media = "ec1_water_salinity_L2.csv", name=  "ec1_water_salinity_L2.csv", path = L2directory)
-drive_upload(media ="ec1_water_ORP_L2.csv", name= "ec1_water_ORP_L2.csv", path = L2directory)
+drive_upload(media ="ec1_water_orp_L2.csv", name= "ec1_water_ORP_L2.csv", path = L2directory)
 drive_upload(media = "ec1_water_alkalinity_L2.csv", name= "ec1_water_alkalinity_L2.csv", path = L2directory)
 
-file.remove(c("ec1_water_pH_L2.csv", "ec1_water_salinity_L2.csv", "ec1_water_ORP_L2.csv", "ec1_water_alkalinity_L2.csv"))
+file.remove(c("ec1_water_ph_L2.csv", "ec1_water_salinity_L2.csv", "ec1_water_orp_L2.csv", "ec1_water_alkalinity_L2.csv"))
 
 
 # 4. Clean up and export L2 oxygen drawdown --------------------------------------
