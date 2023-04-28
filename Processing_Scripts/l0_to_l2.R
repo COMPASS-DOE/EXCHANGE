@@ -237,13 +237,15 @@ ph_L1 %>%
   filter(!is.na(ph),
          !grepl("below range", ph_flag),
          !grepl("above range", ph_flag)) %>% 
-  select(-ph_flag) -> ph_L2
+  select(-ph_flag) %>% 
+  arrange(kit_id) -> ph_L2
 
 cond_L1 %>% 
   filter(!is.na(specific_conductance_us_cm),
          !grepl("below range", specific_conductance_flag),
          !grepl("above range", specific_conductance_flag)) %>% 
-  select(-specific_conductance_flag) -> cond_L2
+  select(-specific_conductance_flag) %>% 
+  arrange(kit_id) -> cond_L2
 
 ## Write out to drive
 L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
