@@ -94,7 +94,11 @@ gwc_1 <- clean_data(gwc_processed)
 # Need to add flag for samples taken from a different source: 
 gwc <- gwc_1 %>%
  mutate(gwc_flag = case_when(kit_id == "K029" & transect_location == "transition" ~ "sample taken from hyprop ring", #this is based on raw data notes and cross reference with kit tracking sheet
+                             kit_id == "K029" & transect_location == "wetland" ~ "sample taken from unknown source", #bags not collected and no notes on where these were taken from
+                             kit_id == "K056" & transect_location == "transition" ~ "sample taken from unknown source", #bags not collected and no notes on where these were taken from
+                             kit_id == "K056" & transect_location == "wetland" ~ "sample taken from unknown source", #bags not collected and no notes on where these were taken from
                              kit_id == "K058" & transect_location == "wetland" ~ "sample taken from hyprop ring", #this is based on raw data notes and cross reference with kit tracking sheet
+                             kit_id == "K058" & transect_location == "transition" ~ "sample taken from unknown source", #bags not collected and no notes on where these were taken from
                              kit_id == "K060" & transect_location == "wetland" ~ "sample taken from hyprop ring", #this is based on raw data notes and cross reference with kit tracking sheet
                              TRUE ~ gwc_flag))
 
@@ -126,20 +130,17 @@ could_rerun <- check_these %>% filter(does_bag_exist == TRUE)
 gwc %>% 
   select(campaign, kit_id, transect_location, moisturecontent_perc_drywtbasis, gwc_flag) %>%
   full_join(meta_filter, by = c("campaign", "kit_id", "transect_location"))  %>%
-  mutate(moisturecontent_perc_drywtbasis = case_when(gwc_flag == "sample taken from hyprop ring" ~ NA,
-                              TRUE ~ moisturecontent_perc_drywtbasis),
-         gwc_flag = case_when(kit_id == "K050" & transect_location== "upland" ~ "sample lost",
-                              TRUE ~ gwc_flag)) %>% 
-  mutate(gwc_flag = case_when(kit_id == "K055" & transect_location== "sediment" ~ "sample not analyzed",
-                              TRUE ~ gwc_flag)) %>%
-  mutate(moisturecontent_perc_drywtbasis = case_when(kit_id %in% c("K001", "K007") ~ NA,
-                                                     notes == "sample compromised" ~ NA,
-                                                     TRUE ~ moisturecontent_perc_drywtbasis),
-         gwc_flag = case_when(kit_id %in% c("K001", "K007") ~ "kit compromised",
+  mutate(gwc_flag = case_when(is.na(moisturecontent_perc_drywtbasis) & collected == FALSE ~ "sample not collected",
+                              kit_id == "K050" & transect_location== "upland" ~ "sample lost",
+                              kit_id == "K055" & transect_location== "sediment" ~ "sample not analyzed",
+                              kit_id %in% c("K001", "K007") ~ "kit compromised",
+                              kit_id %in% c("K029", "K056", "K058") ~ "sample not collected",
                               notes == "sample compromised" ~ "sample compromised",
                               TRUE ~ gwc_flag)) %>%
-  mutate(gwc_flag = case_when(is.na(moisturecontent_perc_drywtbasis) & collected == FALSE ~ "sample not collected",
-                             TRUE ~ gwc_flag)) %>%
+  mutate(moisturecontent_perc_drywtbasis = case_when(kit_id %in% c("K001", "K007") ~ NA,
+                                                     kit_id %in% c("K029", "K056", "K058") ~ NA,
+                                                     notes == "sample compromised" ~ NA,
+                                                     TRUE ~ moisturecontent_perc_drywtbasis)) %>%
   select(-sample_type, -collected, -sample_method, -notes) %>% 
   arrange(kit_id) -> gwc_full
 
