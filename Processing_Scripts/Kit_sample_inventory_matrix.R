@@ -26,19 +26,28 @@ lapply(files$id, drive_download, overwrite = TRUE)
 
 csvs_2 <- list.files("./", pattern = "soil|water", full.names = TRUE) |>
   set_names() |>
-  map_dfr(read_delim, .id = "file")
+  map_dfr(read_delim, .id = "file") %>% 
+  mutate()
 
 file.remove(c(files$name))  
+
+source("./Processing_Scripts/Metadata_kit_list.R")
+
+analyte_meta <- read_sheet("https://docs.google.com/spreadsheets/d/1MKsWaZBcKJIj8mO8yB_5pcZ4DUofj11eCIviOeLPZWc/edit#gid=0")
 
 #csvs <- list.files("./", pattern = "soil|water", full.names = TRUE)
 
 #data <- lapply(csvs, read_csv)
 
-test4 <- csvs_2 %>% mutate(data_type = (stringr::str_split(file,"_",simplify=TRUE)[,3])) %>%
+test4 <- csvs_2 %>% 
+  mutate(data_type = (stringr::str_split(file,"_",simplify=TRUE)[,3])) %>%
   mutate(data_type = case_when(data_type == "bulk" ~ "bulkdensity",
                                data_type =="ph" ~ "soilphspc",
-                                TRUE ~ data_type)) %>% 
-  select(data_type, campaign, kit_id, transect_location, note, contains("_flag")) %>% pivot_wider(id_cols=c(campaign, kit_id, transect_location), names_from = data_type, values_from = c(note, contains("_flag"))) %>%
+                               data_type == "gwc" & transect_location == "sediment" ~ "sediment_gwc", #separate sediment and gwc columns
+                               data_type == "gwc" & transect_location %in% c("upland", "transition", "wetland") ~ "soil_gwc",
+                               TRUE ~ data_type)) %>% 
+  select(data_type, campaign, kit_id, transect_location, note, contains("_flag")) %>% 
+  pivot_wider(id_cols=c(campaign, kit_id, transect_location), names_from = data_type, values_from = c(note, contains("_flag"))) %>%
   janitor::remove_empty(which = "cols") %>%
   rename(ec1_water_cdom_L2 = note_cdom,
          ec1_water_fticrms_L2 = note_fticrms,
@@ -46,7 +55,7 @@ test4 <- csvs_2 %>% mutate(data_type = (stringr::str_split(file,"_",simplify=TRU
          ec1_water_doc_L2.csv = doc_flag_doc,
          ec1_water_orp_L2.csv = orp_flag_waterquality,
          ec1_water_ph_L2.csv = ph_flag_waterquality,
-         ec1_salinity_L2.csv = sal_flag_waterquality,
+         ec1_water_salinity_L2.csv = sal_flag_waterquality,
          ec1_water_tdn_L2.csv = tdn_flag_tdn,
          ec1_water_tss_L2.csv = tss_flag_tss,
          ec1_soil_bulk_density_L2.csv = bulk_density_flag_bulkdensity,
@@ -54,7 +63,18 @@ test4 <- csvs_2 %>% mutate(data_type = (stringr::str_split(file,"_",simplify=TRU
          ec1_soil_ph_L2.csv = ph_flag_soilphspc,
          ec1_soil_tc_L2.csv = tc_flag_tctn,
          ec1_soil_tn_L2.csv = tn_flag_tctn,
-        `ec1_soil/sediment_L2.csv` = gwc_flag_gwc) 
- 
-# mutate(across(all_of(starts_with("ec1"), replace_na("data available"))))
-#reduce(full_join, by=c("campaign", "kit_id", "transect_location")) 
+         ec1_soil_gwc_L2.csv = gwc_flag_soil_gwc,
+         ec1_sediment_gwc_L2.csv = gwc_flag_sediment_gwc) %>%
+  pivot_longer(cols = starts_with("ec1"), names_to = "analyte", values_to = "status") %>%
+  left_join(analyte_meta, by = "analyte") %>% 
+  mutate(status = case_when(grepl("soil", analyte) & transect_location %in% c("water", "sediment") ~ "not applicable", #not sure what we want to call something like this
+                            grepl("water", analyte) & transect_location != "water" ~ "not applicable",
+                            grepl("sediment", analyte) & transect_location != "sediment" ~ "not applicable",
+                            TRUE ~ status)) %>% 
+  left_join(metadata_collected, by = c("campaign", "kit_id", "transect_location", "sample_method")) %>% #we need to take into account sample_method, need to know which analytes used which method
+  mutate(status = case_when(collected == TRUE & is.na(status) ~ "data available",
+                            TRUE ~ status)) %>% 
+  select(-sample_type, -sample_method, -collected, -notes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = analyte, values_from = status)
+
