@@ -53,8 +53,11 @@ file.remove(metadata_file)
 
 cat("Importing", var, "...")
 
+removed_kits <- tibble(kit_id = c("K001", "K007"))
+
 ## Finally, read those data in and format so we can set up a list of all samples received
 metadata_collected <- metadata_collected_raw %>%
+  bind_rows(removed_kits) %>% 
   select(kit_id, samples_collected) %>%
   mutate(Water = ifelse(str_detect(samples_collected, "Water"), T, F),
          Sediment = ifelse(str_detect(samples_collected, "Sediment"), T, F),
@@ -88,7 +91,8 @@ select(campaign, kit_id, transect_location, sample_type, collected) %>%
                            kit_id == "K018" & sample_type %in% c("sediment", "soil") ~ "sample compromised",
                            kit_id == "K014" & sample_method %in% c("vial_15ml", "vial_40ml") ~ "sample compromised in shipment",
                            kit_id == "K027" & sample_method %in% c("vial_40ml", "bottle_1l", "jar") ~ "sample compromised",
-                           kit_id == "K057" & sample_method %in% c("vial_15ml", "vial_40ml") ~ "sample compromised in shipment"))
+                           kit_id == "K057" & sample_method %in% c("vial_15ml", "vial_40ml") ~ "sample compromised in shipment")) %>% 
+  arrange(kit_id)
 
 # 3. Export cleaned metadata --------------------------------------------------
 cat("Exporting", var, "...")
