@@ -344,8 +344,10 @@ data_clean %>%
                              notes == "sample compromised" ~ "sample compromised",
                              TRUE ~ tn_flag),
          carbon_weight_perc = case_when(notes == "kit compromised" ~ NA,
+                                        notes == "sample compromised" ~ NA,
                                         TRUE ~ carbon_weight_perc),
          nitrogen_weight_perc = case_when(notes == "kit compromised" ~ NA,
+                                          notes == "sample compromised" ~ NA,
                                           TRUE ~ nitrogen_weight_perc)) %>% 
   select(-c(sample_type, sample_method, collected, notes)) -> tctn_full
 

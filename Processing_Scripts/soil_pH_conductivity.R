@@ -89,8 +89,10 @@ soil_pH_qc %>%
   full_join(jars_clean, by = c("campaign", "kit_id", "transect_location"))  %>% 
   filter(transect_location != "sediment") %>% 
   mutate(ph = case_when(notes == "kit compromised" ~ NA,
+                        notes == "sample compromised" ~ NA,
                         TRUE ~ ph),
          specific_conductance_us_cm = case_when(notes == "kit compromised" ~ NA,
+                                                notes == "sample compromised" ~ NA,
                                                 TRUE ~ specific_conductance_us_cm),
          ph_flag = case_when(is.na(ph) & collected == FALSE ~ "sample not collected",
                              notes == "kit compromised" ~ "kit compromised",
