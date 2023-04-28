@@ -39,7 +39,7 @@ analyte_meta <- read_sheet("https://docs.google.com/spreadsheets/d/1MKsWaZBcKJIj
 
 #data <- lapply(csvs, read_csv)
 
-test4 <- csvs_2 %>% 
+availability_matrix <- csvs_2 %>% 
   mutate(data_type = (stringr::str_split(file,"_",simplify=TRUE)[,3])) %>%
   mutate(data_type = case_when(data_type == "bulk" ~ "bulkdensity",
                                data_type =="ph" ~ "soilphspc",
@@ -77,4 +77,14 @@ test4 <- csvs_2 %>%
   select(-sample_type, -sample_method, -collected, -notes) %>% 
   distinct() %>% 
   pivot_wider(names_from = analyte, values_from = status)
+
+availability_matrix %>% write.csv(paste0("./ec1_sample_catalog.csv"), row.names = FALSE)
+
+directory <- "https://drive.google.com/drive/u/1/folders/1xy9nsTpbiSk-KXrcDEeFQ7gg4350DuH-"
+
+drive_upload("./ec1_sample_catalog.csv", name= "ec1_sample_catalog.csv", path = directory)
+
+file.remove("./ec1_sample_catalog.csv")
+
+
 
