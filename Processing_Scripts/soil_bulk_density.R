@@ -120,11 +120,14 @@ metadata_collected %>%
 bulk_density_qc %>% 
   full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
   mutate(bulk_density_g_cm3 = case_when(notes == "kit compromised" ~ NA,
-                        TRUE ~ bulk_density_g_cm3),
+                                        notes == "sample compromised" ~ NA,
+                                        TRUE ~ bulk_density_g_cm3),
          bulk_density_flag = case_when(is.na(bulk_density_g_cm3) & collected == FALSE ~ "sample not collected",
                              notes == "kit compromised" ~ "kit compromised",
+                             notes == "sample compromised" ~ "sample compromised",
                              TRUE ~ bulk_density_flag )) %>% 
-  select(-sample_type, -collected, -sample_method, -notes, -moisturecontent_perc_drywtbasis) -> soil_bulk_density_full
+  select(-sample_type, -collected, -sample_method, -notes, -moisturecontent_perc_drywtbasis) %>% 
+  arrange(kit_id) -> soil_bulk_density_full
 
 # 6. Export cleaned data --------------------------------------------------
 
