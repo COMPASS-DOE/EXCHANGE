@@ -69,7 +69,8 @@ bd_l1 = import_l1_bd_data(L1directory)
 bd_l2 <- 
   bd_l1 %>% 
   filter(!is.na(bulk_density_g_cm3)) %>%
-  select(-bulk_density_flag)
+  select(-bulk_density_flag) %>% 
+  arrange(kit_id)
 
 ## Write out to drive
 
