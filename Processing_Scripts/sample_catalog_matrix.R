@@ -1,3 +1,18 @@
+
+## This is a data processing script for EXCHANGE, a sub-project of THE DOE-funded 
+## COMPASS project (https://compass.pnnl.gov/). 
+##
+## This script creates a sample catalog for a each analyte file in EC1, 
+## flags provided for any non-available sample data. 
+## If data is provided and text reads anything other than "data available", 
+## this constitutes warnings provided for any samples diverging from normal protocols 
+## (e.g. less than 3 replicate values used for total carbon). 
+## Values "not applicable" mean that the data type is not applicable for the sample type
+## 
+## Created: 2022-04-27
+## Allison Myers-Pigg and Stephanie Pennington
+##
+
 # 1. Setup ---------------------------------------------------------------------
 cat("Setup")
 
@@ -39,7 +54,7 @@ analyte_meta <- read_sheet("https://docs.google.com/spreadsheets/d/1MKsWaZBcKJIj
 
 #data <- lapply(csvs, read_csv)
 
-availability_matrix <- csvs_2 %>% 
+sample_catalog <- csvs_2 %>% 
   mutate(data_type = (stringr::str_split(file,"_",simplify=TRUE)[,3])) %>%
   mutate(data_type = case_when(data_type == "bulk" ~ "bulkdensity",
                                data_type =="ph" ~ "soilphspc",
@@ -76,9 +91,10 @@ availability_matrix <- csvs_2 %>%
                             TRUE ~ status)) %>% 
   select(-sample_type, -sample_method, -collected, -notes) %>% 
   distinct() %>% 
-  pivot_wider(names_from = analyte, values_from = status)
+  pivot_wider(names_from = analyte, values_from = status) %>% 
+  arrange(kit_id, transect_location)
 
-availability_matrix %>% write.csv(paste0("./ec1_sample_catalog.csv"), row.names = FALSE)
+sample_catalog %>% write.csv(paste0("./ec1_sample_catalog.csv"), row.names = FALSE)
 
 directory <- "https://drive.google.com/drive/u/1/folders/1xy9nsTpbiSk-KXrcDEeFQ7gg4350DuH-"
 
