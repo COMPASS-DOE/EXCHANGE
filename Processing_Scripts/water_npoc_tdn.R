@@ -103,7 +103,6 @@ LOD <- readxl::read_excel(LOD_file$name, col_names = TRUE)
 ## Clean up local (delete downloaded files)
 file.remove(c(files$name, LOD_file$name, readmes$name))
 
-
 # 5. Set up LOD and Join with Raw Data -----------------------------------------
 
 ## edit column names of LOD data frame for easier reference
@@ -162,6 +161,19 @@ blanks <- raw_data_LOD %>%
 ## Filter raw data to just EXCHANGE samples based on "EC1_K" name pattern
 samples <- raw_data_LOD %>% 
   filter(grepl("EC1_K", sample_name))
+
+#checks
+checks <- raw_data_LOD %>%
+  #filter to  checks
+  filter(grepl("CKSTD", sample_name)) %>%
+  #filter to just the 1ppm C & N checks 
+  filter(grepl("1ppmCN", sample_name)) %>%
+  #do not use TN from the 11/15/21 run as per the readme file
+  mutate(tdn_raw = case_when(date == "20211115" ~ NA,
+                             TRUE ~ tdn_raw),
+         npoc_ad = ((npoc_raw-1)/1) * 100,
+         tdn_ad = ((tdn_raw-1)/1) * 100)
+  
 
 ## Pull information about the calibration curve in another data frame
 cal_curve <- raw_data_LOD %>%
