@@ -5,6 +5,12 @@
 ## Created: 2022-01-15 (Updated 2022-03-30 with Opal Otenburg)
 ## Peter Regier
 ## Updated: 2023-02-23 by Julia McElhinny
+
+#Examine data frame
+# Non-blank corrected
+# All Blank corrected
+# Conditional blank corrected
+# geom_point comparison 
 ##
 
 
@@ -97,7 +103,6 @@ LOD <- readxl::read_excel(LOD_file$name, col_names = TRUE)
 ## Clean up local (delete downloaded files)
 file.remove(c(files$name, LOD_file$name, readmes$name))
 
-
 # 5. Set up LOD and Join with Raw Data -----------------------------------------
 
 ## edit column names of LOD data frame for easier reference
@@ -157,6 +162,19 @@ blanks <- raw_data_LOD %>%
 samples <- raw_data_LOD %>% 
   filter(grepl("EC1_K", sample_name))
 
+#checks
+checks <- raw_data_LOD %>%
+  #filter to  checks
+  filter(grepl("CKSTD", sample_name)) %>%
+  #filter to just the 1ppm C & N checks 
+  filter(grepl("1ppmCN", sample_name)) %>%
+  #do not use TN from the 11/15/21 run as per the readme file
+  mutate(tdn_raw = case_when(date == "20211115" ~ NA,
+                             TRUE ~ tdn_raw),
+         npoc_ad = ((npoc_raw-1)/1) * 100,
+         tdn_ad = ((tdn_raw-1)/1) * 100)
+  
+
 ## Pull information about the calibration curve in another data frame
 cal_curve <- raw_data_LOD %>%
   filter(grepl("STD_", sample_name)) %>%
@@ -208,15 +226,16 @@ blanks_final <- blanks_LOD_corrected %>%
 samples_blank_corrected <- samples %>% 
   mutate(campaign = "EC1", 
          kit_id = substr(sample_name, 5, 9), 
-         transect_location = "Water") %>% 
+         transect_location = "water") %>% 
   # join blank information with dataset
   inner_join(select(blanks_final, date, npoc_blank, tdn_blank), by = "date") %>% 
   # calculate blank corrected npoc/tdn values
-  mutate(npoc_mgl = npoc_raw - npoc_blank, 
-         tdn_mgl = tdn_raw - tdn_blank) %>%
+  mutate(npoc_mgl = npoc_raw, 
+         tdn_mgl = tdn_raw,
+         npoc_mgl_blkcorr = npoc_raw - npoc_blank, 
+         tdn_mgl_blkcorr = tdn_raw - tdn_blank) %>%
   # simplify data frame
-  select(campaign, kit_id, transect_location, sample_name, date, npoc_mgl, tdn_mgl, LOD_NPOC, LOD_TN)
-
+  select(campaign, kit_id, transect_location, sample_name, date, npoc_mgl, tdn_mgl, npoc_mgl_blkcorr,tdn_mgl_blkcorr, LOD_NPOC, LOD_TN)
 
 # 8b. Check Data Against ReadMe Action Items -----------------------------------
 
@@ -227,8 +246,9 @@ samples_readme_action <- samples_blank_corrected %>%
   # if the action reads "Replace TN", make tdn_mgl NA
   mutate(tdn_mgl = ifelse(grepl("Replace TN", action),
                           NA,
-                          tdn_mgl)) %>%
-  select(-action)
+                          tdn_mgl)) 
+#%>%
+ # select(-action)
 
 
 # 8c. Flag Data Against LOD and Cal Curve Upper Limits -------------------------
@@ -237,7 +257,9 @@ samples_readme_action <- samples_blank_corrected %>%
 npoc_bc_flagged <- samples_readme_action %>% 
   ## First, round each parameter to proper significant figures
   mutate(npoc_mgl = round(npoc_mgl, 2), 
-         tdn_mgl = round(tdn_mgl, 3)) %>% 
+         tdn_mgl = round(tdn_mgl, 3),
+         npoc_diff = (npoc_mgl- npoc_mgl_blkcorr)/npoc_mgl *100,
+         tdn_diff = (tdn_mgl- tdn_mgl_blkcorr)/tdn_mgl * 100) %>% 
   ## join with the cal curve information
   left_join(cal_curve, by = "date") %>%
   ## Second, add flags for outside LOD (LOD info is still part of this data frame from previous edits)
@@ -248,9 +270,9 @@ npoc_bc_flagged <- samples_readme_action %>%
   ## combine flags into one column since one sample will not be below the LOD and above the cal curve at the same time
   mutate(npoc_flag = ifelse(!is.na(npoc_lod_flag), npoc_lod_flag, npoc_flag),
          tdn_flag = ifelse(!is.na(tdn_lod_flag), tdn_lod_flag, tdn_flag)) %>%
-  select(campaign:tdn_mgl, npoc_flag, tdn_flag)
+  select(campaign:tdn_mgl,npoc_diff, tdn_diff, npoc_flag, tdn_flag, action)
 
-  
+
 # 9. Clean data ----------------------------------------------------------------
 
 ## Helper function to calculate mean if numeric, otherwise preserve the value of
@@ -267,46 +289,51 @@ npoc_duplicates_removed <- npoc_bc_flagged %>%
   summarize(across(everything(), .f = mean_if_numeric))
 
 ## Finalize Dataset
-npoc <- npoc_duplicates_removed %>% 
-  select(date, campaign, kit_id, transect_location, npoc_mgl, tdn_mgl, contains("_flag"))
+npoc_final <- npoc_duplicates_removed %>% 
+  select(date, campaign, kit_id, transect_location, npoc_mgl, tdn_mgl, npoc_diff, tdn_diff, contains("_flag"), action)
 
+npoc_perc_diff = npoc_final %>%
+  summarise(npoc_mean_diff = mean(npoc_diff),
+            npoc_sd_diff = sd(npoc_diff),
+            tdn_mean_diff = mean(tdn_diff),
+            tdn_sd_diff = sd(tdn_diff))
+  
+# 10. Check with Metadata for missing:
 
-# 10. Compare Data to Samples Received -----------------------------------------
+source("./Processing_Scripts/Metadata_kit_list.R")
 
-## set location of the metadata file
-metadata_directory <- "https://drive.google.com/drive/folders/1IQUq_sD-Jama7ajaZl1zW_9zlWfyCohn"
+metadata_collected %>% 
+  filter(sample_method == "vial_40ml") -> meta_filter
 
-## pull desired metadata file
-metadata_file <- drive_ls(metadata_directory) %>%
-  filter(grepl("KitLevel", name)) %>%
-  pull(name)
+npoc_final %>% 
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) -> full_npoc_tdn
 
-## download metadata file
-drive_download(metadata_file, overwrite = T)
+full_npoc_tdn %>% 
+  mutate(npoc_flag = case_when(!is.na(notes) ~ notes,
+                               TRUE ~ npoc_flag),
+         npoc_mgl = case_when(npoc_flag == "sample compromised in shipment" ~ NA,
+                                     TRUE ~ npoc_mgl)) %>% 
+  rename(doc_mgC_L = npoc_mgl,
+         doc_flag = npoc_flag) %>%
+  select(campaign, kit_id, transect_location, doc_mgC_L, doc_flag) -> full_npoc
 
-## read in metadata file and edit dataframe
-samples_collected <- read_csv(metadata_file) %>%
-  select(kit_id, samples_collected) %>%
-  ## determine if a surface water was collected for a kit
-  mutate(Water = ifelse(str_detect(samples_collected, "Water"), T, F)) %>%
-  pivot_longer(cols = Water, names_to = "transect_location", values_to = "collected")
+full_npoc_tdn %>% 
+  mutate(tdn_flag = case_when(!is.na(notes) ~ notes,
+                               TRUE ~ tdn_flag),
+         tdn_mgl = case_when(tdn_flag == "sample compromised in shipment" ~ NA,
+                              TRUE ~ tdn_mgl)) %>% 
+  rename(tdn_mgN_L = tdn_mgl) %>%
+  select(campaign, kit_id, transect_location, tdn_mgN_L, tdn_flag) -> full_tdn
 
-## remove downloaded file to clean up local directory
-file.remove(metadata_file)
+# 11. Write L1 data -----------------------------------------------------------
 
-## merge with finalized npoc dataset to compare collected vs samples run
-samples_collected_measured <- samples_collected %>%
-  left_join(select(npoc, kit_id, transect_location, npoc_mgl),
-            by = c("kit_id", "transect_location")) %>%
-  mutate(npoc_tdn_measured = ifelse(!is.na(npoc_mgl),T,F)) %>%
-  select(-npoc_mgl)
+write.csv(full_npoc, paste0("./ec1_water_doc_L1_", Sys.Date(), ".csv"), row.names = FALSE)
+write.csv(full_tdn, paste0("./ec1_water_tdn_L1_", Sys.Date(), ".csv"), row.names = FALSE)
 
-## write out dataframe
-write_csv(samples_collected_measured, file = "npoc_samples_collectedvsmeasured.csv")
+L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
 
+drive_upload(media = paste0("./ec1_water_doc_L1_", Sys.Date(), ".csv"), name= paste0("ec1_water_doc_L1_", Sys.Date(), ".csv"), path = L1directory )
+drive_upload(media = paste0("./ec1_water_tdn_L1_", Sys.Date(), ".csv"), name= paste0("ec1_water_tdn_L1_", Sys.Date(), ".csv"), path = L1directory )
 
-# 11. Write L0B data -----------------------------------------------------------
-
-write_csv(npoc, paste0("Data/Processed/EC1_Water_NPOC_TDN_L0B_", Sys.Date(), ".csv"))
-
-
+file.remove(paste0("./ec1_water_doc_L1_", Sys.Date(), ".csv"))
+file.remove(paste0("./ec1_water_tdn_L1_", Sys.Date(), ".csv"))

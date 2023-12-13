@@ -30,11 +30,11 @@ pacman::p_load(cowsay,
 say("Welcome to EXCHANGE!", by = "random")
 
 #Set Directory 
-metadata_directory = "https://drive.google.com/drive/folders/1IQUq_sD-Jama7ajaZl1zW_9zlWfyCohn"
+metadata_directory = "https://drive.google.com/drive/u/1/folders/1xy9nsTpbiSk-KXrcDEeFQ7gg4350DuH-"
 
 ## Next, list all files in the directory, filter out the Kit Level file and snag the file name
 metadata_file <- drive_ls(metadata_directory) %>%
-  filter(grepl("KitLevel", name)) %>%
+  filter(grepl("kitlevel", name)) %>%
   pull(name)
 
 
@@ -53,8 +53,11 @@ file.remove(metadata_file)
 
 cat("Importing", var, "...")
 
+removed_kits <- tibble(kit_id = c("K001", "K007"))
+
 ## Finally, read those data in and format so we can set up a list of all samples received
 metadata_collected <- metadata_collected_raw %>%
+  bind_rows(removed_kits) %>% 
   select(kit_id, samples_collected) %>%
   mutate(Water = ifelse(str_detect(samples_collected, "Water"), T, F),
          Sediment = ifelse(str_detect(samples_collected, "Sediment"), T, F),
@@ -75,7 +78,6 @@ select(campaign, kit_id, transect_location, sample_type, collected) %>%
   left_join(sample_kit, by = c("transect_location", "sample_type")) %>% 
   # next, we need to make manual edits by sample method based on kit tracking sheet https://docs.google.com/spreadsheets/d/19F1oS-DBvxQlU1EYXtciYkhu6TNA7fuCQ0Ts2NRWQlk/edit?usp=sharing
   mutate(collected = case_when(kit_id == "K014" & transect_location == "wetland" & sample_method == "jar" ~ TRUE, # collected sample for jar wetland
-                               kit_id == "K027" & sample_method == "jar" ~ FALSE, # jars compromised after arrival
                                kit_id == "K052" & transect_location == "wetland" & sample_method %in% c("jar", "bag") ~ FALSE, # did not sample wetland jar or bag
                                kit_id == "K060" & !transect_location == "sediment" & sample_method %in% c("jar", "bag") ~ FALSE, # did not sample jar or bag did not sample hyprop for transition or upland
                                kit_id == "K060" & transect_location %in% c("transition","upland") & sample_method %in% c("hyprop") ~ FALSE, # did not sample hyprop for transition or upland
@@ -83,7 +85,14 @@ select(campaign, kit_id, transect_location, sample_type, collected) %>%
                                kit_id == "K056" & sample_method %in% c("bag") ~ FALSE, # did not sample bags, put the jars inside the bags instead
                                kit_id == "K051" & transect_location == "sediment" & sample_method %in% c("jar", "bag") ~ FALSE, # did not sample sediment jar or bag
                                kit_id == "K058" & sample_method %in% c("bag") ~ FALSE, # did not sample bags, put the jars inside the bags instead
-                               TRUE ~ collected))
+                               TRUE ~ collected),
+         notes = case_when(kit_id == "K001" ~ "kit compromised",
+                           kit_id == "K007" ~ "kit compromised",
+                           kit_id == "K018" & sample_type %in% c("sediment", "soil") ~ "sample compromised",
+                           kit_id == "K014" & sample_method %in% c("vial_15ml", "vial_40ml") ~ "sample compromised in shipment",
+                           kit_id == "K027" & sample_method %in% c("vial_40ml", "bottle_1l", "jar") ~ "sample compromised",
+                           kit_id == "K057" & sample_method %in% c("vial_15ml", "vial_40ml") ~ "sample compromised in shipment")) %>% 
+  arrange(kit_id)
 
 # 3. Export cleaned metadata --------------------------------------------------
 cat("Exporting", var, "...")

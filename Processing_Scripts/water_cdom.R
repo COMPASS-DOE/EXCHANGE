@@ -1,11 +1,15 @@
-## CDOM data - 
+# This script contains two parts: 
+# 1) Generating sample list FOR the matlab input
+# 2) Generating post-matlab output kit list for L2 data for publication
+
+### 1) CDOM data <- generating sample lists for running through matlab ----
 
 ## Pre-processing step for CDOM data
 ## populating the SampleLog file, so it can be used in the MatLab script
 
 library(tidyverse)
 
-#  create empty SampleLog template ----
+#  1a) create empty SampleLog template ----------
 
 col_names = c("index",
               "Analysis",
@@ -26,7 +30,7 @@ samplelog_empty =
   mutate_all(as.character)
 
 #
-# extract metadata from file names ---- 
+# 1b) extract metadata from file names ---- 
 
 FILEPATH = "Data/cdom/EXCHANGE_Aqualog_Data"
 filePaths <- list.files(path = FILEPATH, pattern = ".dat", full.names = TRUE, recursive = TRUE)
@@ -68,7 +72,7 @@ samplelog_filled =
   arrange(Kit_ID)
 
 #
-# import DOC data ----
+# 1c) import DOC data ----
 doc_data = read.csv("Data/Processed/EC1_NPOC_L0B_20220509_copyKFP.csv", na = "NA")
 doc_data_subset = 
   doc_data %>% 
@@ -82,9 +86,101 @@ samplelog_filled2 =
   left_join(doc_data_subset) %>% 
   mutate(`Sample Description (60 Character Max) - Will display on final EEM figure` = Kit_ID)
 #
-# export ----
+# 1d) export ----
 
 samplelog_filled2 %>% write.csv("data/CDOM_SampleLog.csv", row.names = FALSE, na = "")
 
 ## 2022-05-23 KFP NOTE: this formats the list only when file names have the `K000`, `0s`, `0xdil` format
 ## the other files will be done next.
+
+#### 2) Samples Check from Post-Processed Data ----
+
+# 1. Setup ---------------------------------------------------------------------
+require(pacman)
+pacman::p_load(tidyverse,
+               stringr,
+               googlesheets4, # read_sheet 
+               googledrive # drive_upload
+)
+
+## Welcome
+say("Welcome to EXCHANGE!", by = "random")
+
+#Absorbance and Fluorescence data are in their folders: 
+
+abs_l2_directory = 'https://drive.google.com/drive/folders/1nAj4DPuFDwgc6hQbaQMzjUt1FZA72DGS'
+
+abs_files <- drive_ls(abs_l2_directory) %>% 
+  filter(grepl("Abs", name))
+
+abs_list = as_tibble(abs_files) %>% dplyr::select(name) %>% 
+  mutate(campaign = "EC1",
+         transect_location = "water",
+         kit_id= stringr::str_extract(name, "K[0-9]{3}"),
+         data_collected = "TRUE") %>%
+  dplyr::select(campaign, kit_id, transect_location, data_collected)
+
+# 2. Check with Metadata for missing:
+
+source("./Processing_Scripts/Metadata_kit_list.R")
+
+#Water
+
+metadata_collected %>%
+  filter(sample_method == "vial_40ml") -> meta_filter
+
+abs_list %>%
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>%
+  filter(is.na(data_collected))-> check_these_abs
+
+View(check_these_abs)
+
+#Absorbance and Fluorescence data are in their folders: 
+
+eems_l2_directory = 'https://drive.google.com/drive/folders/1TdX8y9B1y_AnA4Lvx8lLHYUqr8d3gofO'
+
+eems_files <- drive_ls(eems_l2_directory) %>% 
+  filter(grepl("RamNorm", name))
+
+eems_list = as_tibble(eems_files) %>% dplyr::select(name) %>% 
+  mutate(campaign = "EC1",
+         transect_location = "water",
+         kit_id= stringr::str_extract(name, "K[0-9]{3}"),
+         data_collected = TRUE) %>%
+  dplyr::select(campaign, kit_id, transect_location, data_collected)
+
+# 2. Check with Metadata for missing:
+
+source("./Processing_Scripts/Metadata_kit_list.R")
+
+#Water
+
+metadata_collected %>%
+  filter(sample_method == "vial_40ml") -> meta_filter
+
+eems_list %>%
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>%
+  filter(is.na(data_collected))-> check_these_eems
+
+View(check_these_eems)
+
+eems_list %>%
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>%
+  mutate(data_collected = case_when(is.na(data_collected) ~ FALSE,
+                                    kit_id %in% c("K001","K007") ~ FALSE,
+                                    TRUE ~ data_collected),
+         note = case_when(kit_id %in% c("K001","K007") ~ "kit compromised",
+                          kit_id %in% c("K027", "K014", "K057") ~ "sample compromised")
+  ) %>%
+  rename(sample_analyzed = data_collected) %>%
+  select(campaign, kit_id, transect_location,sample_analyzed, note) %>%
+  arrange(kit_id)-> eems_sample_list
+
+View(eems_sample_list)
+
+eems_sample_list %>% write.csv("./ec1_water_eems_sample_list.csv", row.names = FALSE)
+
+drive_upload(media = "./ec1_water_eems_sample_list.csv", name= "ec1_water_eems_sample_list.csv", path = L2directory)
+
+file.remove("./ec1_water_eems_sample_list.csv")
+

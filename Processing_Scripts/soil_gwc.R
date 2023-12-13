@@ -60,6 +60,8 @@ cat("Processing", var, "data...")
 #Equations from Reddy et al., 2013 Chapter 3 in Methods in Biogeochemistry of Wetlands 
 # https://doi.org/10.2136/sssabookser10.c3 
 
+#We are going to report ONLY the dry weight basis 
+
 gwc_processed <- gwc_raw %>% 
   mutate(campaign = "EC1",
          kit_id = str_match(sample_id, "K0\\d\\d")[,1],
@@ -88,25 +90,19 @@ clean_data <- function(data) {
 
 gwc_1 <- clean_data(gwc_processed)
 
-gwc_1[gwc_1 == ""] <- NA # replace empty cells with NA
 
 # Need to add flag for samples taken from a different source: 
 gwc <- gwc_1 %>%
  mutate(gwc_flag = case_when(kit_id == "K029" & transect_location == "transition" ~ "sample taken from hyprop ring", #this is based on raw data notes and cross reference with kit tracking sheet
+                             kit_id == "K029" & transect_location == "wetland" ~ "sample taken from unknown source", #bags not collected and no notes on where these were taken from
+                             kit_id == "K056" & transect_location == "transition" ~ "sample taken from unknown source", #bags not collected and no notes on where these were taken from
+                             kit_id == "K056" & transect_location == "wetland" ~ "sample taken from unknown source", #bags not collected and no notes on where these were taken from
                              kit_id == "K058" & transect_location == "wetland" ~ "sample taken from hyprop ring", #this is based on raw data notes and cross reference with kit tracking sheet
+                             kit_id == "K058" & transect_location == "transition" ~ "sample taken from unknown source", #bags not collected and no notes on where these were taken from
                              kit_id == "K060" & transect_location == "wetland" ~ "sample taken from hyprop ring", #this is based on raw data notes and cross reference with kit tracking sheet
                              TRUE ~ gwc_flag))
 
 #
-# 5. Export cleaned data --------------------------------------------------
-
-gwc %>% write.csv(paste0("./ec1_soil_gwc_l0B_", Sys.Date(), ".csv"), row.names = FALSE)
-
-L0Bdirectory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
-
-drive_upload(media = paste0("./ec1_soil_gwc_l0B_", Sys.Date(), ".csv"), name= paste0("ec1_soil_gwc_l0B_", Sys.Date(), ".csv"), path = L0Bdirectory)
-
-file.remove(paste0("./ec1_soil_gwc_l0B_", Sys.Date(), ".csv"))
 
 # 6. Check with Metadata for missing:
 
@@ -119,7 +115,8 @@ bags_inventory = googlesheets4::read_sheet("https://docs.google.com/spreadsheets
 metadata_collected %>%
   filter(sample_method == "bag") -> meta_filter
 
-gwc %>%
+gwc %>% 
+  filter(gwc_flag != "sample taken from hyprop ring") %>%
   full_join(meta_filter, by = c("campaign", "kit_id", "transect_location"))  %>%
   full_join(bags_inventory, by = c("campaign", "kit_id", "transect_location"))  %>%
   filter(collected == TRUE & is.na(moisturecontent_perc_drywtbasis) | collected == FALSE & !is.na(moisturecontent_perc_drywtbasis)) -> check_these
@@ -127,3 +124,35 @@ gwc %>%
 View(check_these)
 
 could_rerun <- check_these %>% filter(does_bag_exist == TRUE)
+
+## Finalize full dataset
+
+gwc %>% 
+  select(campaign, kit_id, transect_location, moisturecontent_perc_drywtbasis, gwc_flag) %>%
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location"))  %>%
+  mutate(gwc_flag = case_when(is.na(moisturecontent_perc_drywtbasis) & collected == FALSE ~ "sample not collected",
+                              kit_id == "K050" & transect_location== "upland" ~ "sample lost",
+                              kit_id == "K055" & transect_location== "sediment" ~ "sample not analyzed",
+                              kit_id %in% c("K001", "K007") ~ "kit compromised",
+                              kit_id %in% c("K029", "K056", "K058") ~ "sample not collected",
+                              notes == "sample compromised" ~ "sample compromised",
+                              TRUE ~ gwc_flag)) %>%
+  mutate(moisturecontent_perc_drywtbasis = case_when(kit_id %in% c("K001", "K007") ~ NA,
+                                                     kit_id %in% c("K029", "K056", "K058") ~ NA,
+                                                     notes == "sample compromised" ~ NA,
+                                                     TRUE ~ moisturecontent_perc_drywtbasis)) %>%
+  select(-sample_type, -collected, -sample_method, -notes) %>% 
+  arrange(kit_id) -> gwc_full
+
+View(gwc_full)
+
+# 5. Export cleaned data --------------------------------------------------
+
+gwc_full %>% write.csv(paste0("./ec1_soil_gwc_L1_", Sys.Date(), ".csv"), row.names = FALSE)
+
+L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
+
+drive_upload(media = paste0("./ec1_soil_gwc_L1_", Sys.Date(), ".csv"), name= paste0("ec1_soil_gwc_L1_", Sys.Date(), ".csv"), path = L1directory)
+
+file.remove(paste0("./ec1_soil_gwc_L1_", Sys.Date(), ".csv"))
+
