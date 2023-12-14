@@ -165,7 +165,8 @@ cec =
   samples_meq %>% 
   filter(name == "meq_100g") %>% 
   group_by(analysis_ID) %>% 
-  dplyr::summarise(CEC_meq_100g = sum(value))
+  dplyr::summarise(CEC_meq_100g = sum(value),
+                   CEC_meq_100g = round(CEC_meq_100g, 2))
 
 cations_and_cec = 
   samples_meq %>% 
@@ -173,7 +174,9 @@ cations_and_cec =
   pivot_wider(names_from = "element", values_from = "value") %>% 
   dplyr::select(analysis_ID, kit_id, transect, ends_with("meq_100g")) %>% 
   left_join(cec) %>% 
-  left_join(samples_flag)
+  left_join(samples_flag) %>% 
+  ungroup() %>% 
+  dplyr::select(-analysis_ID)
 
 
 #
