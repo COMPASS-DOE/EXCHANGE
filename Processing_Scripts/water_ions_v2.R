@@ -22,6 +22,7 @@
 ## Created: 2022-02-20
 ## Kaizad F. Patel
 ## Updated by AMP & SP 2023-02-21
+## V2 by  AMP & KFP 2023-12-20
 # ############# #
 # ############# #
 
@@ -50,37 +51,6 @@ var <- "ions"
 
 cat("Importing", var, "data...")
 
-# `import_data`: this function will import all xls files in the target directpry and combine them
-# input parameters are (a) FILEPATH, the target directory with the raw data files
-
-# import_data_OLD = function(FILEPATH){
-#   ## THIS WAS THE OLD FUNCTION,
-#   ## pulling files stored locally
-#   ## Replaced by the function below
-#   ## KFP 2022-10-04
-#   
-#   # pull a list of file names in the target folder with the target pattern
-#   # then read all files and combine
-#   
-#   filePaths <- list.files(path = FILEPATH, pattern = ".xls", full.names = TRUE)
-#   
-#   # dat <- 
-#     do.call(rbind, lapply(filePaths, function(path){
-#       # then add a new column `source` to denote the file name
-#       df <- readxl::read_excel(path, skip = 2)
-#     #  df <- read.delim(path, skip = 2)
-#       df[["source"]] <- rep(path, nrow(df))
-#       df}))
-#   
-# }
-
-# Now, run this function
-# raw_data <- import_data(FILEPATH = "data/ions/ions_data_without_dilution_correction")
-
-# Import the Limits of Detection (LOD)
-# ions_lods = read.csv("data/LODs/ions_LODs_2020_Oct_2022_April_COMPASS_Only.csv")
-## not doing this here - LOD function is below
-
 # Import files from Google Drive
 
 #Create function: 
@@ -103,7 +73,6 @@ import_data = function(directory){
     do.call(rbind, lapply(filePaths, function(path){
       # then add a new column `source` to denote the file name
       df <- readxl::read_excel(path, skip = 2)
-      #  df <- read.delim(path, skip = 2)
       df[["source"]] <- rep(path, nrow(df))
       df}))
   
@@ -112,7 +81,6 @@ import_data = function(directory){
   
   ## e. output
   dat
-  #  browser()
 }
 
 ## import the raw data files
@@ -148,7 +116,6 @@ import_readme = function(directory_readme){
     do.call(dplyr::bind_rows, lapply(filePaths, function(path){
       # then add a new column `source` to denote the file name
       df <- readxl::read_excel(path)
-      #  df <- read.delim(path, skip = 2)
       df[["source"]] <- rep(path, nrow(df))
       df}))
   
@@ -227,17 +194,6 @@ process_data = function(raw_data, readme_data, IONS){
   # b. clean the dataframe -----
   
   ### create header by collapsing the header + first row
-  ### new_header = 
-  ###   data_new %>% 
-  ###   colnames() %>% 
-  ###   paste0(data_new[1,]) %>% 
-  ###   str_remove_all("NA")
-  ### # the "source" column has "source" with a lot more crap
-  ### # use grepl to replace that full value with just "source"
-  ### new_header = replace(new_header, grep("source", new_header), "source")
-  ##
-  ### # set column names for the dataframe
-  ### names(data_new) <- new_header  
   
   # preliminary processing to make it tidy
   data_new_processed = 
@@ -457,3 +413,6 @@ apply_qc_flags = function(data_ions_processed, QC_DATA){
 #Run Function: 
 data_ions_qc = apply_qc_flags(data_ions_processed, QC_DATA = ions_lods)
 
+#1) group by sample, analyte, flag ; count of rows 
+#2) look at how many of the repeats were flagged or not
+#3) of the non-flagged repeats; examine this data frame to look at the dilution amount and the comparability across dilutions to determine best dilution to use
