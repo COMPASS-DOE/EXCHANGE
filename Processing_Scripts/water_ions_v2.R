@@ -395,7 +395,7 @@ apply_qc_flags = function(data_ions_processed, QC_DATA){
     filter(grepl("A-", Name) | grepl("C-", Name)) %>% 
     filter(!grepl("CK", Name)) %>%
     filter(!is.na(Amount)) %>% #getting rid of NAs in the curves, because they aren't used for the curve calculations 
-    group_by(Ion, date_run, Action, Dilution) %>% 
+    group_by(Ion, date_run, Action) %>% 
     dplyr::summarise(calib_min = min(Amount),
                      calib_max = max(Amount))
   data_ions_qc = 
@@ -416,3 +416,58 @@ data_ions_qc = apply_qc_flags(data_ions_processed, QC_DATA = ions_lods)
 #1) group by sample, analyte, flag ; count of rows 
 #2) look at how many of the repeats were flagged or not
 #3) of the non-flagged repeats; examine this data frame to look at the dilution amount and the comparability across dilutions to determine best dilution to use
+
+
+
+# kp testing for calibration ranges/flags in data ----
+# 2024-01-22
+
+
+data_ions_qc_samples =
+  data_ions_qc %>% 
+  filter(grepl("EC1", Name)) %>% 
+  arrange(Name, Ion, date_run) %>% 
+  mutate(flag = case_when(is.na(flag) ~ "no flag", TRUE ~ flag))
+  
+
+data_ions_qc_samples %>% 
+  filter(Ion == "chloride") %>% 
+  ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
+  geom_point(size = 4)+
+  scale_shape_manual(values = c(21, 22, 18))+
+  labs(title = "chloride")
+
+data_ions_qc_samples %>% 
+  filter(Ion == "sodium") %>% 
+  ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
+  geom_point(size = 4)+
+  scale_shape_manual(values = c(21, 22, 18))+
+  labs(title = "sodium")
+
+data_ions_qc_samples %>% 
+  filter(Ion == "calcium") %>% 
+  ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
+  geom_point(size = 4)+
+  scale_shape_manual(values = c(21, 22, 18))+
+  labs(title = "calcium")
+
+data_ions_qc_samples %>% 
+  filter(Ion == "sulfate") %>% 
+  ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
+  geom_point(size = 4)+
+  scale_shape_manual(values = c(21, 22, 18))+
+  labs(title = "sulfate")
+
+data_ions_qc_samples %>% 
+  filter(Ion == "phosphate") %>% 
+  ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
+  geom_point(size = 4)+
+  scale_shape_manual(values = c(21, 22, 18))+
+  labs(title = "phosphate")
+
+data_ions_qc_samples %>% 
+  filter(Ion == "nitrate") %>% 
+  ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
+  geom_point(size = 4)+
+  scale_shape_manual(values = c(21, 22, 18))+
+  labs(title = "nitrate")
