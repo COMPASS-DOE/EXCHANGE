@@ -83,9 +83,13 @@ cat("Applying flags to", var, "data...")
 ## manipulate a parameter and its flag together
 data_qc <- function(data) {
   data %>% 
-    mutate(a = round(a, n_sig_figs)) %>% 
-    mutate(a_flag_1 = a < a_min | a > a_max, 
-           a_flag_n = a < a_min | a > a_max, ) 
+    select(-notes) %>% 
+    mutate(
+      # switch wetland and transition names due to a...
+      # ...sampling error: wetland soil was sampled and put into a jar labeled "transition" incorrectly
+      transect_location = case_when(kit_id == "K046" & transect_location == "transition" ~ "wetland", 
+                                    kit_id == "K046" & transect_location == "wetland" ~ "transition", 
+                                    TRUE ~ transect_location))
 }
 
 data_clean <- data_qc(data_processed)
@@ -97,13 +101,43 @@ source("./Processing_Scripts/Metadata_kit_list.R")
 metadata_collected %>%
   filter(sample_method == "jar")-> meta_filter
 
-data_processed %>%
-  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location"))  -> join
+data_clean %>%
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
   # add rows for samples not collected, creating a "full" dataset of all possible samples
+  mutate(pebbles_angular_rounded = case_when(notes == "kit compromised" ~ NA,
+                                             notes == "sample compromised" ~ NA,
+                                             TRUE ~ pebbles_angular_rounded),
+         root_presence = case_when(notes == "kit compromised" ~ NA,
+                                   notes == "sample compromised" ~ NA,
+                                   TRUE ~ root_presence),           
+         root_thickness = case_when(notes == "kit compromised" ~ NA,
+                                    notes == "sample compromised" ~ NA,
+                                    TRUE ~ root_thickness),
+         visible_minerals = case_when(notes == "kit compromised" ~ NA,
+                                      notes == "sample compromised" ~ NA,
+                                      TRUE ~ visible_minerals),
+         visible_organisms = case_when(notes == "kit compromised" ~ NA,
+                                       notes == "sample compromised" ~ NA,
+                                       TRUE ~ visible_organisms),            
+         uninhabited_shells = case_when(notes == "kit compromised" ~ NA,
+                                        notes == "sample compromised" ~ NA,
+                                        TRUE ~ uninhabited_shells),
+         iron_oxidation = case_when(notes == "kit compromised" ~ NA,
+                                    notes == "sample compromised" ~ NA,
+                                    TRUE ~ iron_oxidation),           
+         cohesion_post_lyopholization = case_when(notes == "kit compromised" ~ NA,
+                                                  notes == "sample compromised" ~ NA,
+                                                  TRUE ~ cohesion_post_lyopholization),
+         glass_plastic = case_when(notes == "kit compromised" ~ NA,
+                                   notes == "sample compromised" ~ NA,
+                                   TRUE ~ glass_plastic),
+         white_flakes = case_when(notes == "kit compromised" ~ NA,
+                                  notes == "sample compromised" ~ NA,
+                                  TRUE ~ white_flakes)) -> test
 
 # 6. Write cleaned data to drive -----------------------------------------------
 
 ## We should add Sys.date or hardcode date so we know when the L0B was born
 ## The file written out should be named following 
 ## [Campaign]_[Analyte]_[QC_level]_[Date_of_creation_YYYYMMDD].csv
-drive_upload(media = data_clean, path = data_path)
+#drive_upload(media = data_clean, path = data_path)
