@@ -152,17 +152,17 @@ samples =
 samples2 = 
   samples %>% 
   dplyr::select(sample_label, ppm_corrected) %>% 
-  separate(sample_label, sep = "_", into = c("kit_id", "transect")) %>% 
-  mutate(transect = case_match(transect, "U" ~ "upland", "T" ~ "transition", "W" ~ "wetland")) %>% 
+  separate(sample_label, sep = "_", into = c("kit_id", "transect_location")) %>% 
+  mutate(transect_location = case_match(transect_location, "U" ~ "upland", "T" ~ "transition", "W" ~ "wetland")) %>% 
   left_join(weights) %>% 
   mutate(ppm_corrected = as.numeric(ppm_corrected),
          weight_g = as.numeric(weight_g),
          HCl_mL = as.numeric(HCl_mL),
          Fe_ug_g = ppm_corrected * ((HCl_mL)/weight_g),
          Fe_ug_g = round(Fe_ug_g, 2)) %>% 
-  dplyr::select(kit_id, transect, Fe_ug_g) %>% 
-  mutate(transect = factor(transect, levels = c("upland", "transition", "wetland"))) %>% 
-  arrange(kit_id, transect)
+  dplyr::select(kit_id, transect_location, Fe_ug_g) %>% 
+  mutate(transect_location = factor(transect_location, levels = c("upland", "transition", "wetland"))) %>% 
+  arrange(kit_id, transect_location)
 
 #
 # 5. Export L0B data ------------------------------------------------------
