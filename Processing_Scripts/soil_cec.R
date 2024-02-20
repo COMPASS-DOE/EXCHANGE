@@ -164,15 +164,26 @@ cations_and_cec =
   samples_meq %>% 
   dplyr::select(-c(charge, atomic_wt, name)) %>% 
   pivot_wider(names_from = "element", values_from = "value") %>% 
-  dplyr::select(analysis_ID, kit_id, transect, ends_with("meq_100g")) %>% 
+  rename(transect_location = transect) %>%
+  mutate(campaign = "EC1") %>% 
+  dplyr::select(campaign, analysis_ID, kit_id, transect_location, ends_with("meq_100g")) %>% 
   left_join(cec) %>% 
   left_join(samples_flag) %>% 
   ungroup() %>% 
   dplyr::select(-analysis_ID)
 
+# 11. Check with Metadata for missing samples  ---------------------------------
+
+source("./Processing_Scripts/Metadata_kit_list.R")
+
+metadata_collected %>%
+  filter(sample_method == "jar") -> meta_filter
+
+cations_and_cec %>% 
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) -> full
 
 #
-# 11. Write L0B data -----------------------------------------------------------
+# 12. Write L0B data -----------------------------------------------------------
 write_csv(cations_and_cec, paste0("Data/Processed/EC1_Soil_ICP_CEC_L0B_", Sys.Date(), ".csv"))
 
 
