@@ -83,7 +83,7 @@ cat("Applying flags to", var, "data...")
 ## manipulate a parameter and its flag together
 data_qc <- function(data) {
   data %>% 
-    select(-notes) %>% 
+    select(-notes, -cohesion_post_lyopholization) %>% 
     mutate(
       # switch wetland and transition names due to a...
       # ...sampling error: wetland soil was sampled and put into a jar labeled "transition" incorrectly
@@ -125,9 +125,6 @@ data_clean %>%
          iron_oxidation = case_when(notes == "kit compromised" ~ NA,
                                     notes == "sample compromised" ~ NA,
                                     TRUE ~ iron_oxidation),           
-         cohesion_post_lyopholization = case_when(notes == "kit compromised" ~ NA,
-                                                  notes == "sample compromised" ~ NA,
-                                                  TRUE ~ cohesion_post_lyopholization),
          glass_plastic = case_when(notes == "kit compromised" ~ NA,
                                    notes == "sample compromised" ~ NA,
                                    TRUE ~ glass_plastic),
