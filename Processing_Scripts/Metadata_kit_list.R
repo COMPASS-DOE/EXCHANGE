@@ -88,6 +88,7 @@ select(campaign, kit_id, transect_location, sample_type, collected) %>%
                                TRUE ~ collected),
          notes = case_when(kit_id == "K001" ~ "kit compromised",
                            kit_id == "K007" ~ "kit compromised",
+                           kit_id == "K010" & sample_type == "sediment" & sample_method == "jar" ~ "sample compromised",
                            kit_id == "K018" & sample_type %in% c("sediment", "soil") ~ "sample compromised",
                            kit_id == "K014" & sample_method %in% c("vial_15ml", "vial_40ml") ~ "sample compromised in shipment",
                            kit_id == "K027" & sample_method %in% c("vial_40ml", "bottle_1l", "jar") ~ "sample compromised",

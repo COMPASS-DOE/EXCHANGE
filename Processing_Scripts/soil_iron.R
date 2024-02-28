@@ -89,7 +89,7 @@ map_processed =
   mutate(standard_ppm = case_when(sample_type == "standard" ~ parse_number(sample_label)))
 
 data_processed = 
-  ferrozine_data %>% 
+  raw_data %>% 
   mutate_all(na_if,"") %>% 
   dplyr::select(-x) %>% 
   fill(x_1) %>% 
@@ -120,6 +120,7 @@ calibrate_ferrozine_data = function(data_processed){
     geom_smooth(method = "lm", se = F)+
     facet_wrap(~tray_number)
   
+  # using only tray2 for calibration because tray1 wasn't good
   calibration_coef = 
     standards %>% 
     filter(tray_number == 2) %>% 
@@ -151,20 +152,32 @@ samples =
 samples2 = 
   samples %>% 
   dplyr::select(sample_label, ppm_corrected) %>% 
-  separate(sample_label, sep = "_", into = c("kit_id", "transect")) %>% 
-  mutate(transect = case_match(transect, "U" ~ "upland", "T" ~ "transition", "W" ~ "wetland")) %>% 
+  separate(sample_label, sep = "_", into = c("kit_id", "transect_location")) %>% 
+  mutate(transect_location = case_match(transect_location, "U" ~ "upland", "T" ~ "transition", "W" ~ "wetland")) %>% 
   left_join(weights) %>% 
   mutate(ppm_corrected = as.numeric(ppm_corrected),
          weight_g = as.numeric(weight_g),
          HCl_mL = as.numeric(HCl_mL),
          Fe_ug_g = ppm_corrected * ((HCl_mL)/weight_g),
          Fe_ug_g = round(Fe_ug_g, 2)) %>% 
-  dplyr::select(kit_id, transect, Fe_ug_g) %>% 
-  mutate(transect = factor(transect, levels = c("upland", "transition", "wetland"))) %>% 
-  arrange(kit_id, transect)
+  dplyr::select(kit_id, transect_location, Fe_ug_g) %>% 
+  mutate(transect_location = factor(transect_location, levels = c("upland", "transition", "wetland"))) %>% 
+  arrange(kit_id, transect_location)
 
 #
 # 5. Export L0B data ------------------------------------------------------
 write_csv(samples2, paste0("Data/Processed/EC1_Soil_iron_ferrozine_", Sys.Date(), ".csv"))
 
 
+
+
+
+
+## extras ----
+# load sample key
+sample_key = read.csv("Data/EC1_Metadata_KitLevel.csv")
+
+samples2 %>% 
+  left_join(sample_key %>% dplyr::select(kit_id, region)) %>% 
+  ggplot(aes(x = transect, y = Fe_ug_g, color = region))+
+  geom_jitter(width = 0.1)

@@ -78,10 +78,12 @@ processed_data =
   mutate_at(vars(-c(Sample)), as.numeric) %>% 
   mutate(dilution_factor = mL_final/mL_of_sample,
          dilution_factor = round(dilution_factor, 2)) %>% 
-  dplyr::select(-starts_with("..."), -starts_with("mL"), -S, -source) %>% 
-  rename(S = `S (corrected)`) %>% 
+  # select only the cations (base cations + Al)
+  dplyr::select(Sample, Ca, Mg, Na, K, Al, dilution_factor) %>% 
   force()
 
+# clean up the samples
+# normalize to soil mass
 samples = 
   processed_data %>% 
   mutate(Sample = as.numeric(Sample)) %>% 
@@ -96,11 +98,11 @@ samples =
   mutate(mgL_corr = mgL * dilution_factor) %>% 
   left_join(sample_weights) %>% 
   dplyr::select(-Sample, -note) %>% 
+  # ug/g = (mg/L * vol/wt)/1000
   mutate(mgL_corr = round(mgL_corr, 2),
          mgg = mgL * (vol_extractant_mL / wt_soil_g) * (1/1000),
          ug_g = mgg * 1000, 
-         ug_g = signif(ug_g, 5),
-         #ug_g = formatC(ug_g, digits = 5)
+         ug_g = signif(ug_g, 5)
   ) %>% 
   mutate(skip = (analysis_ID == "EC1_ICP_137" & element == "K")) %>% 
   filter(!skip) %>% 
@@ -123,17 +125,7 @@ samples_flag =
   ungroup()
 
 #
-## 4c. finalize dataset for ug/g ----
-samples_wide = 
-  samples %>% 
-  dplyr::select(-mgL) %>% 
-  mutate(element = paste0(element, "_ug_g")) %>% 
-  pivot_wider(names_from = "element", values_from = "ug_g") %>% 
-  left_join(samples_flag) %>% 
-  dplyr::select(-analysis_ID)
-
-#
-## 4b. CEC calculations ----
+## 4c. CEC calculations ----
 ## CEC is calculated in terms of meq/100g
 ## for this we need charge and atomic weight per cation 
 
@@ -151,16 +143,15 @@ samples_meq =
   samples %>% 
   dplyr::select(analysis_ID, kit_id, transect, element, ug_g) %>% 
   left_join(charges) %>% 
-  #drop_na() %>% 
-  mutate(#ion = paste0(ion, "_meq_100g"), 
+  mutate(
     meq_100g = ug_g * charge/atomic_wt * 100/1000,
     meq_100g = round(meq_100g, 2)) %>% 
   filter(!is.na(meq_100g)) %>% 
   group_by(analysis_ID) %>% 
-  #dplyr::mutate(CEC_meq_100g = sum(meq_100g)) %>% 
   pivot_longer(cols = c(ug_g, meq_100g)) %>% 
   mutate(element = paste0(element, "_", name)) 
 
+# calculate CEC as sum of all extractable cations
 cec = 
   samples_meq %>% 
   filter(name == "meq_100g") %>% 
@@ -168,30 +159,54 @@ cec =
   dplyr::summarise(CEC_meq_100g = sum(value),
                    CEC_meq_100g = round(CEC_meq_100g, 2))
 
+# now combine cations and cec
 cations_and_cec = 
   samples_meq %>% 
   dplyr::select(-c(charge, atomic_wt, name)) %>% 
   pivot_wider(names_from = "element", values_from = "value") %>% 
-  dplyr::select(analysis_ID, kit_id, transect, ends_with("meq_100g")) %>% 
+  rename(transect_location = transect) %>%
+  mutate(campaign = "EC1") %>% 
+  dplyr::select(campaign, analysis_ID, kit_id, transect_location, ends_with("meq_100g")) %>% 
   left_join(cec) %>% 
   left_join(samples_flag) %>% 
   ungroup() %>% 
   dplyr::select(-analysis_ID)
 
+# 11. Clean data  --------------------------------------------------------------
+
+cations_and_cec %>% 
+  # switch wetland and transition names due to a...
+  # ...sampling error: wetland soil was sampled and put into a jar labeled "transition" incorrectly
+  mutate(transect_location = case_when(kit_id == "K046" & transect_location == "transition" ~ "wetland", 
+                                       kit_id == "K046" & transect_location == "wetland" ~ "transition", 
+                                       TRUE ~ transect_location)) -> data_clean
+
+# 12. Check with Metadata for missing samples  ---------------------------------
+
+source("./Processing_Scripts/Metadata_kit_list.R")
+
+metadata_collected %>%
+  filter(sample_method == "jar") -> meta_filter
+
+data_clean %>% 
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
+  mutate(notes = case_when(kit_id == "K050" & transect_location == "upland" ~ "not enough material for extraction"#,
+                  TRUE ~ notes),
+         #across(is.numeric & kit_id == "K001", NA)
+         ) -> full
 
 #
-# 11. Write L0B data -----------------------------------------------------------
-
-write_csv(samples_wide, paste0("Data/Processed/EC1_Soil_ICP_ugg_L0B_", Sys.Date(), ".csv"))
+# 12. Write L0B data -----------------------------------------------------------
 write_csv(cations_and_cec, paste0("Data/Processed/EC1_Soil_ICP_CEC_L0B_", Sys.Date(), ".csv"))
 
 
 
-
+## extras ----
 # testing
 # join sample key
-samples %>% 
+cations_and_cec %>% 
+  pivot_longer(cols = -c(kit_id, transect, flag)) %>% 
   left_join(sample_key %>% dplyr::select(kit_id, region)) %>% 
-  ggplot(aes(x = region, y = ug_g, color = region))+
-  geom_jitter()+
-  facet_wrap(~element, scales = "free")
+  ggplot(aes(x = name, y = value, color = region))+
+  geom_jitter(width = 0.2)+
+  facet_wrap(~region, scales = "free")

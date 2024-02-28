@@ -358,7 +358,8 @@ calculate_lods = function(data_ions_processed, z, IONS, directory_slope){
   #output from slope file needs to be Ion, Slope, Date
   m.run = assign_slopes(raw_slopes,IONS = all_ions) %>% 
     rename(Ion = `Peak Name`) %>% 
-    mutate(Ion = tolower(Ion))
+    mutate(Ion = tolower(Ion),
+           Ion = str_remove(Ion, "_uv"))
   
   #LOD.run = SADL_cal / m.run 
   
@@ -422,52 +423,120 @@ data_ions_qc = apply_qc_flags(data_ions_processed, QC_DATA = ions_lods)
 # kp testing for calibration ranges/flags in data ----
 # 2024-01-22
 
-
-data_ions_qc_samples =
-  data_ions_qc %>% 
-  filter(grepl("EC1", Name)) %>% 
-  arrange(Name, Ion, date_run) %>% 
-  mutate(flag = case_when(is.na(flag) ~ "no flag", TRUE ~ flag))
   
+disentangle_flags = function(){
+  
+  data_ions_qc_samples =
+    data_ions_qc %>% 
+    filter(grepl("EC1", Name)) %>% 
+    arrange(Name, Ion, date_run) %>% 
+    mutate(flag = case_when(is.na(flag) ~ "no flag", TRUE ~ flag))
+  
+  plot_flags_by_ion = function(){
+    # plotting sample name ~ concentration, so we can see how many times each sample was run (which dilutions), and if they were flagged
+    
+    data_ions_qc_samples %>% 
+      filter(Ion == "chloride") %>% 
+      ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
+      geom_point(size = 4)+
+      scale_shape_manual(values = c(21, 22, 18))+
+      labs(title = "chloride")
+    
+    data_ions_qc_samples %>% 
+      filter(Ion == "sodium") %>% 
+      ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
+      geom_point(size = 4)+
+      scale_shape_manual(values = c(21, 22, 18))+
+      labs(title = "sodium")
+    
+    data_ions_qc_samples %>% 
+      filter(Ion == "calcium") %>% 
+      ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
+      geom_point(size = 4)+
+      scale_shape_manual(values = c(21, 22, 18))+
+      labs(title = "calcium")
+    
+    data_ions_qc_samples %>% 
+      filter(Ion == "sulfate") %>% 
+      ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
+      geom_point(size = 4)+
+      scale_shape_manual(values = c(21, 22, 18))+
+      labs(title = "sulfate")
+    
+    data_ions_qc_samples %>% 
+      filter(Ion == "phosphate") %>% 
+      ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
+      geom_point(size = 4)+
+      scale_shape_manual(values = c(21, 22, 18))+
+      labs(title = "phosphate")
+    
+    data_ions_qc_samples %>% 
+      filter(Ion == "nitrate") %>% 
+      ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
+      geom_point(size = 4)+
+      scale_shape_manual(values = c(21, 22, 18))+
+      labs(title = "nitrate")
+    
+  }
+  
+  
+  # 1. identify samples+ions that had no flags
+  # in case of multiple dilutions, keep the lowest dilution
+  # in case of multiple dates, keep the most recent date
+  # NO NEED TO RE-RUN ANY OF THESE SAMPLES
+  
+  no_flag = 
+    data_ions_qc_samples %>% 
+    filter(flag == "no flag")
+  
+  lowest_dilution = 
+    no_flag %>% 
+    arrange(Name, Ion) %>% 
+    group_by(Name, Ion) %>% 
+    dplyr::mutate(LOWEST_DILUTION = Dilution == min(Dilution)) %>% 
+    filter(LOWEST_DILUTION) %>% 
+    group_by(Name, Ion) %>% 
+    dplyr::mutate(LATEST_DATE = date_run == max(date_run)) %>% 
+    filter(LATEST_DATE) 
+  
+  # 2. identify samples+ions that had flags across all dilutions
+  # SOME OF THESE WILL NEED TO BE RE-RUN
+  # most of the flags were "below detection"
+  # where a 1x dilution was "below detection", we can't re-run - report as below detection
+  # where higher dilutions were "below detection", we may want to re-run at 1x dilution
 
-data_ions_qc_samples %>% 
-  filter(Ion == "chloride") %>% 
-  ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
-  geom_point(size = 4)+
-  scale_shape_manual(values = c(21, 22, 18))+
-  labs(title = "chloride")
+  all_flags = 
+    data_ions_qc_samples %>% 
+    arrange(Name, Ion) %>% 
+    filter(flag != "no flag") %>% 
+    left_join(lowest_dilution %>% dplyr::select(Name, Ion) %>% mutate(NO_FLAG = TRUE)) %>% 
+    filter(is.na(NO_FLAG))
+  
+  all_flags_wide = 
+    all_flags %>% 
+    mutate(Dilution = as.numeric(Dilution),
+           label = paste(ppm, flag, date_run)) %>% 
+    arrange(Dilution) %>% 
+    ungroup() %>% 
+    dplyr::select(Name, Ion, Dilution, label) %>%
+    group_by(Name, Ion, Dilution) %>% 
+    dplyr::summarise(label = str_c(label, collapse = "/ ")) %>% 
+    mutate(Dilution = as.numeric(Dilution)) %>% 
+    arrange(Dilution) %>% 
+    pivot_wider(names_from = "Dilution", values_from = "label") %>% 
+    arrange(Name, Ion)
 
-data_ions_qc_samples %>% 
-  filter(Ion == "sodium") %>% 
-  ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
-  geom_point(size = 4)+
-  scale_shape_manual(values = c(21, 22, 18))+
-  labs(title = "sodium")
-
-data_ions_qc_samples %>% 
-  filter(Ion == "calcium") %>% 
-  ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
-  geom_point(size = 4)+
-  scale_shape_manual(values = c(21, 22, 18))+
-  labs(title = "calcium")
-
-data_ions_qc_samples %>% 
-  filter(Ion == "sulfate") %>% 
-  ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
-  geom_point(size = 4)+
-  scale_shape_manual(values = c(21, 22, 18))+
-  labs(title = "sulfate")
-
-data_ions_qc_samples %>% 
-  filter(Ion == "phosphate") %>% 
-  ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
-  geom_point(size = 4)+
-  scale_shape_manual(values = c(21, 22, 18))+
-  labs(title = "phosphate")
-
-data_ions_qc_samples %>% 
-  filter(Ion == "nitrate") %>% 
-  ggplot(aes(y = Name, x = ppm, color = as.character(Dilution), shape = flag))+
-  geom_point(size = 4)+
-  scale_shape_manual(values = c(21, 22, 18))+
-  labs(title = "nitrate")
+  needs_rerun_at_no_dilution = 
+    all_flags_wide %>% 
+    filter(is.na(`1`)) %>% 
+    ungroup() %>% 
+    distinct(Name)
+  
+  # making sure we have a full sample list
+  sample_list = 
+    no_flag %>% 
+    bind_rows(all_flags) %>% 
+    ungroup %>% 
+    distinct(Name)
+  
+  }
