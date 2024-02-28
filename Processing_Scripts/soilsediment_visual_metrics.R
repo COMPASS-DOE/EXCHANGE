@@ -130,12 +130,13 @@ data_clean %>%
                                    TRUE ~ glass_plastic),
          white_flakes = case_when(notes == "kit compromised" ~ NA,
                                   notes == "sample compromised" ~ NA,
-                                  TRUE ~ white_flakes)) -> soilviz_full
+                                  TRUE ~ white_flakes)) %>%
+  select(-c(sample_type, sample_method, collected, notes)) -> vizmetrics_full
 
 # 6. Write cleaned data to drive -----------------------------------------------
 
 
-soilviz_full %>% write.csv(paste0("./ec1_soilsediment_visualmetrics_L1_", Sys.Date(), ".csv"), row.names = FALSE)
+vizmetrics_full %>% write.csv(paste0("./ec1_soilsediment_visualmetrics_L1_", Sys.Date(), ".csv"), row.names = FALSE)
 
 L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
 

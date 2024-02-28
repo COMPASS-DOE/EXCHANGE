@@ -323,7 +323,7 @@ drive_upload(media = "ec1_water_tss_L2.csv", name= "ec1_water_tss_L2.csv", path 
 
 file.remove("ec1_water_tss_L2.csv")
 
-# Clean up and export L2 NPOC and TDN ------------------------------------
+# Clean up and export L2 NPOC and TDN ------------------------------------------
 full_npoc %>% 
   filter(!is.na(doc_mgC_L)) %>% 
   select(-doc_flag) -> npoc_l2
@@ -345,3 +345,25 @@ drive_upload(media = "ec1_water_tdn_L2.csv", name= "ec1_water_tdn_L2.csv", path 
 
 file.remove("ec1_water_doc_L2.csv")
 file.remove("ec1_water_tdn_L2.csv")
+
+# Clean up and export L2 Soil Visual Metrics -----------------------------------
+
+vizmetrics_full %>%
+  filter(!is.na(pebbles_angular_rounded)) -> soil_sed_viz
+
+# Separate into soil and sediment files
+soil_sed_viz %>% filter(transect_location != "sediment") -> soil_visualmetrics_l2
+soil_sed_viz %>% filter(transect_location == "sediment") -> sediment_visualmetrics_l2
+
+# Write out
+soil_visualmetrics_l2 %>% write_csv("ec1_soil_visualmetrics_L2.csv")
+sediment_visualmetrics_l2 %>% write_csv("ec1_sediment_visualmetrics_L2.csv")
+
+L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
+
+drive_upload(media = "ec1_soil_visualmetrics_L2.csv", name= "ec1_soil_visualmetrics_L2.csv", path = L2directory)
+drive_upload(media = "ec1_sediment_visualmetrics_L2.csv", name= "ec1_sediment_visualmetrics_L2.csv", path = L2directory)
+
+file.remove("ec1_soil_visualmetrics_L2.csv")
+file.remove("ec1_sediment_visualmetrics_L2.csv")
+
