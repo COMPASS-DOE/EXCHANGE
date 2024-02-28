@@ -172,15 +172,28 @@ cations_and_cec =
   ungroup() %>% 
   dplyr::select(-analysis_ID)
 
-# 11. Check with Metadata for missing samples  ---------------------------------
+# 11. Clean data  --------------------------------------------------------------
+
+cations_and_cec %>% 
+  # switch wetland and transition names due to a...
+  # ...sampling error: wetland soil was sampled and put into a jar labeled "transition" incorrectly
+  mutate(transect_location = case_when(kit_id == "K046" & transect_location == "transition" ~ "wetland", 
+                                       kit_id == "K046" & transect_location == "wetland" ~ "transition", 
+                                       TRUE ~ transect_location)) -> data_clean
+
+# 12. Check with Metadata for missing samples  ---------------------------------
 
 source("./Processing_Scripts/Metadata_kit_list.R")
 
 metadata_collected %>%
   filter(sample_method == "jar") -> meta_filter
 
-cations_and_cec %>% 
-  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) -> full
+data_clean %>% 
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
+  mutate(notes = case_when(kit_id == "K050" & transect_location == "upland" ~ "not enough material for extraction"#,
+                  TRUE ~ notes),
+         #across(is.numeric & kit_id == "K001", NA)
+         ) -> full
 
 #
 # 12. Write L0B data -----------------------------------------------------------
