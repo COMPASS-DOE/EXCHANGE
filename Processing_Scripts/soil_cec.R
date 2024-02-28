@@ -164,15 +164,39 @@ cations_and_cec =
   samples_meq %>% 
   dplyr::select(-c(charge, atomic_wt, name)) %>% 
   pivot_wider(names_from = "element", values_from = "value") %>% 
-  dplyr::select(analysis_ID, kit_id, transect, ends_with("meq_100g")) %>% 
+  rename(transect_location = transect) %>%
+  mutate(campaign = "EC1") %>% 
+  dplyr::select(campaign, analysis_ID, kit_id, transect_location, ends_with("meq_100g")) %>% 
   left_join(cec) %>% 
   left_join(samples_flag) %>% 
   ungroup() %>% 
   dplyr::select(-analysis_ID)
 
+# 11. Clean data  --------------------------------------------------------------
+
+cations_and_cec %>% 
+  # switch wetland and transition names due to a...
+  # ...sampling error: wetland soil was sampled and put into a jar labeled "transition" incorrectly
+  mutate(transect_location = case_when(kit_id == "K046" & transect_location == "transition" ~ "wetland", 
+                                       kit_id == "K046" & transect_location == "wetland" ~ "transition", 
+                                       TRUE ~ transect_location)) -> data_clean
+
+# 12. Check with Metadata for missing samples  ---------------------------------
+
+source("./Processing_Scripts/Metadata_kit_list.R")
+
+metadata_collected %>%
+  filter(sample_method == "jar") -> meta_filter
+
+data_clean %>% 
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
+  mutate(notes = case_when(kit_id == "K050" & transect_location == "upland" ~ "not enough material for extraction"#,
+                  TRUE ~ notes),
+         #across(is.numeric & kit_id == "K001", NA)
+         ) -> full
 
 #
-# 11. Write L0B data -----------------------------------------------------------
+# 12. Write L0B data -----------------------------------------------------------
 write_csv(cations_and_cec, paste0("Data/Processed/EC1_Soil_ICP_CEC_L0B_", Sys.Date(), ".csv"))
 
 
