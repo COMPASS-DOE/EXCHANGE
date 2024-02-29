@@ -190,13 +190,15 @@ metadata_collected %>%
 
 data_clean %>% 
   full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
-  mutate(notes = case_when(kit_id == "K050" & transect_location == "upland" ~ "not enough material for extraction"#,
-                  TRUE ~ notes),
-         #across(is.numeric & kit_id == "K001", NA)
-         ) -> full
+  mutate(notes = case_when(kit_id == "K050" & transect_location == "upland" ~ "not enough material for extraction",
+                           kit_id == "K024" & transect_location == "wetland" ~ "sample compromised",
+                  TRUE ~ notes)) -> full
+
+nums <- sapply(full, is.numeric)           # identify numeric columns
+full[!is.na(full$notes), which(nums)] <- NA  # set compromised kits to NA
 
 #
-# 12. Write L0B data -----------------------------------------------------------
+# 13. Write L0B data -----------------------------------------------------------
 write_csv(cations_and_cec, paste0("Data/Processed/EC1_Soil_ICP_CEC_L0B_", Sys.Date(), ".csv"))
 
 
