@@ -161,11 +161,22 @@ samples2 =
          Fe_ug_g = ppm_corrected * ((HCl_mL)/weight_g),
          Fe_ug_g = round(Fe_ug_g, 2)) %>% 
   dplyr::select(kit_id, transect_location, Fe_ug_g) %>% 
-  mutate(transect_location = factor(transect_location, levels = c("upland", "transition", "wetland"))) %>% 
+  mutate(campaign = "EC1", 
+         transect_location = factor(transect_location, levels = c("upland", "transition", "wetland"))) %>% 
   arrange(kit_id, transect_location)
 
+# 5. Check with Metadata for missing samples -----------------------------------
+
+source("./Processing_Scripts/Metadata_kit_list.R")
+
+metadata_collected %>%
+  filter(sample_method == "jar") -> meta_filter
+
+samples2 %>% 
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) -> full
+
 #
-# 5. Export L0B data ------------------------------------------------------
+# 6. Export L0B data -----------------------------------------------------------
 write_csv(samples2, paste0("Data/Processed/EC1_Soil_iron_ferrozine_", Sys.Date(), ".csv"))
 
 
