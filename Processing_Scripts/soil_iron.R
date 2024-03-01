@@ -31,7 +31,8 @@ directory = "https://drive.google.com/drive/u/1/folders/1Q5xiW8xSZ5TUs5_kXyDV16C
 
 # download the sample weights
 weights = googlesheets4::read_sheet("1hvORzjON18xEKG-vrBzZG0_GjX_-fHRXC40S5T23Kxs", 
-                                    sheet = "weights", col_types = "c") 
+                                    sheet = "weights", col_types = "c") %>% 
+  rename(transect_location = transect)
   
 # download the plate map
 ferrozine_map = googlesheets4::read_sheet("1hvORzjON18xEKG-vrBzZG0_GjX_-fHRXC40S5T23Kxs", sheet = "plate_map") %>% mutate_all(as.character)
@@ -154,7 +155,7 @@ samples2 =
   dplyr::select(sample_label, ppm_corrected) %>% 
   separate(sample_label, sep = "_", into = c("kit_id", "transect_location")) %>% 
   mutate(transect_location = case_match(transect_location, "U" ~ "upland", "T" ~ "transition", "W" ~ "wetland")) %>% 
-  left_join(weights) %>% 
+  left_join(weights, by = c("kit_id", "transect_location")) %>% 
   mutate(ppm_corrected = as.numeric(ppm_corrected),
          weight_g = as.numeric(weight_g),
          HCl_mL = as.numeric(HCl_mL),
@@ -163,26 +164,35 @@ samples2 =
   dplyr::select(kit_id, transect_location, Fe_ug_g) %>% 
   mutate(campaign = "EC1", 
          transect_location = factor(transect_location, levels = c("upland", "transition", "wetland"))) %>% 
-  arrange(kit_id, transect_location)
+  arrange(kit_id, transect_location) %>% 
+  select(campaign, kit_id, transect_location, Fe_ug_g)
 
-# 5. Check with Metadata for missing samples -----------------------------------
+# 5. Clean data ----------------------------------------------------------------
+
+samples2 %>% 
+  # switch wetland and transition names due to a...
+  # ...sampling error: wetland soil was sampled and put into a jar labeled "transition" incorrectly
+  mutate(transect_location = case_when(kit_id == "K046" & transect_location == "transition" ~ "wetland", 
+                                       kit_id == "K046" & transect_location == "wetland" ~ "transition", 
+                                       TRUE ~ transect_location)) -> data_clean
+
+# 6. Check with Metadata for missing samples -----------------------------------
 
 source("./Processing_Scripts/Metadata_kit_list.R")
 
 metadata_collected %>%
   filter(sample_method == "jar") -> meta_filter
 
-samples2 %>% 
-  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) -> full
+data_clean %>% 
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
+  mutate(notes = case_when(kit_id == "K018" & transect_location == "transition" ~ "not enough material for extraction",
+                           kit_id == "K044" & transect_location == "transition" ~ "not enough material for extraction",
+                           kit_id == "K048" & transect_location == "upland" ~ "not enough material for extraction",
+                           kit_id == "K050" & transect_location == "upland" ~ "not enough material for extraction",
+                           TRUE ~ notes)) -> full
 
-#
-# 6. Export L0B data -----------------------------------------------------------
+# 7. Export L0B data -----------------------------------------------------------
 write_csv(samples2, paste0("Data/Processed/EC1_Soil_iron_ferrozine_", Sys.Date(), ".csv"))
-
-
-
-
-
 
 ## extras ----
 # load sample key
