@@ -207,5 +207,5 @@ sample_key = read.csv("Data/EC1_Metadata_KitLevel.csv")
 
 samples2 %>% 
   left_join(sample_key %>% dplyr::select(kit_id, region)) %>% 
-  ggplot(aes(x = transect, y = Fe_ug_g, color = region))+
+  ggplot(aes(x = transect_location, y = Fe_ug_g, color = region))+
   geom_jitter(width = 0.1)
