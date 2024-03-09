@@ -31,7 +31,8 @@ directory = "https://drive.google.com/drive/u/1/folders/1Q5xiW8xSZ5TUs5_kXyDV16C
 
 # download the sample weights
 weights = googlesheets4::read_sheet("1hvORzjON18xEKG-vrBzZG0_GjX_-fHRXC40S5T23Kxs", 
-                                    sheet = "weights", col_types = "c") 
+                                    sheet = "weights", col_types = "c") %>% 
+  filter(!is.na(weight_g))
   
 # download the plate map
 ferrozine_map = googlesheets4::read_sheet("1hvORzjON18xEKG-vrBzZG0_GjX_-fHRXC40S5T23Kxs", sheet = "plate_map") %>% mutate_all(as.character)
@@ -166,15 +167,14 @@ calibration_curves = calibrate_ferrozine_data(data_processed)$gg_calibration
 
 
 samples = 
-  calibrate_ferrozine_data(data_processed) %>% 
+  calibrate_ferrozine_data(data_processed)$data_calibrated %>% 
   filter(sample_type == "sample") %>% 
-  dplyr::select(sample_label, ppm_calculated, dilution) %>% 
-  mutate(dilution = case_when(grepl("diluted 2x", notes) ~ 2,
-                              TRUE ~ 1),
-         # all samples were diluted 2x with HCl, and then some were diluted again
+  dplyr::select(sample_label, ppm_calculated, dilution, date) %>% 
+  mutate(dilution = as.numeric(dilution),
          # also apply the reduction efficiency correction (90 %)
-         ppm_corrected = ppm_calculated * 2 * dilution * 100/90,
+         ppm_corrected = ppm_calculated * dilution * 100/90,
          ppm_corrected = round(ppm_corrected, 2)) 
+
 
 # freeze-dried samples were used, so no need for a moisture correction
 samples2 = 
