@@ -32,7 +32,6 @@ directory = "https://drive.google.com/drive/u/1/folders/1Q5xiW8xSZ5TUs5_kXyDV16C
 # download the sample weights
 weights = googlesheets4::read_sheet("1hvORzjON18xEKG-vrBzZG0_GjX_-fHRXC40S5T23Kxs", 
                                     sheet = "weights", col_types = "c") %>% 
-  #rename(transect_location = transect)
   filter(!is.na(weight_g))
   
 # download the plate map
@@ -213,14 +212,20 @@ metadata_collected %>%
 
 data_clean %>% 
   full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
+  # 2024-03-13: need to split soil and sediments in this script because not all sediments have been ran yet
+  filter(sample_type == "soil") %>% 
   mutate(notes = case_when(kit_id == "K018" & transect_location == "transition" ~ "not enough material for extraction",
                            kit_id == "K044" & transect_location == "transition" ~ "not enough material for extraction",
                            kit_id == "K048" & transect_location == "upland" ~ "not enough material for extraction",
                            kit_id == "K050" & transect_location == "upland" ~ "not enough material for extraction",
-                           TRUE ~ notes)) -> full
+                           collected == TRUE & is.na(Fe_ug_g) & is.na(notes) ~ "not enough material for extraction",
+                           TRUE ~ notes),
+         Fe_ug_g = case_when(!is.na(notes) ~ NA,
+                             TRUE ~ Fe_ug_g)) %>% 
+  select(campaign, kit_id, transect_location, Fe_ug_g) -> soil_iron
 
 # 7. Export L0B data -----------------------------------------------------------
-write_csv(samples2, paste0("Data/Processed/EC1_Soil_iron_ferrozine_", Sys.Date(), ".csv"))
+write_csv(soil_iron, paste0("Data/Processed/EC1_Soil_iron_ferrozine_", Sys.Date(), ".csv"))
 
 ## extras ----
 # load sample key
