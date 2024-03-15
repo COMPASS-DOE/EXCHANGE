@@ -348,6 +348,23 @@ file.remove("ec1_sediment_visualmetrics_L2.csv")
 
 # Clean up and export L2 Soil Cations ------------------------------------------
 
+cations_l1 %>% 
+  pivot_longer(cols = where(is.numeric)) %>% 
+  filter(!is.na(value)) %>% 
+  pivot_wider(names_from = name, values_from = value) -> cations_filtered
+
+cations_filtered %>% filter(transect_location != "sediment") %>% arrange(kit_id) -> soil_cations_l2
+cations_filtered %>% filter(transect_location == "sediment") %>% arrange(kit_id) -> sediment_cations_l2
+
+# Write out
+soil_cations_l2 %>% write_csv("ec1_soil_cations_L2.csv")
+sediment_cations_l2 %>% write_csv("ec1_sediment_cations_L2.csv")
+
+drive_upload(media = "ec1_soil_cations_L2.csv", name= "ec1_soil_cations_L2.csv", path = L2directory)
+drive_upload(media = "ec1_sediment_cations_L2.csv", name= "ec1_sediment_cations_L2.csv", path = L2directory)
+
+file.remove("ec1_soil_cations_L2.csv")
+file.remove("ec1_sediment_cations_L2.csv")
 
 # Clean up and export L2 Soil Iron ---------------------------------------------
 

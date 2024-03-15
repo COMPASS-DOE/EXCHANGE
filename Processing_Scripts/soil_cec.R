@@ -197,11 +197,11 @@ data_clean %>%
 nums <- sapply(full, is.numeric)           # identify numeric columns
 full[!is.na(full$notes), which(nums)] <- NA  # set compromised kits to NA
 
+full %>% select(campaign, kit_id, transect_location, contains("meq_100")) -> cations_l1
+
 #
 # 13. Write L0B data -----------------------------------------------------------
-write_csv(cations_and_cec, paste0("Data/Processed/EC1_Soil_ICP_CEC_L0B_", Sys.Date(), ".csv"))
-
-
+write_csv(full, paste0("Data/Processed/EC1_soil_cations_L1", Sys.Date(), ".csv"))
 
 ## extras ----
 # testing
