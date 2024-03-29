@@ -130,17 +130,24 @@ data_clean %>%
                                    TRUE ~ glass_plastic),
          white_flakes = case_when(notes == "kit compromised" ~ NA,
                                   notes == "sample compromised" ~ NA,
-                                  TRUE ~ white_flakes)) %>%
-  select(-c(sample_type, sample_method, collected, notes)) -> vizmetrics_full
+                                  TRUE ~ white_flakes),
+         notes = case_when(collected == FALSE ~ "sample not collected",
+                           TRUE ~ notes)) %>%
+  select(-c(sample_type, sample_method, collected)) -> vizmetrics_full
 
 # 6. Write cleaned data to drive -----------------------------------------------
 
+vizmetrics_full %>% filter(transect_location != "sediment") -> soil_viz_l1
 
-vizmetrics_full %>% write.csv(paste0("./ec1_soilsediment_visualmetrics_L1_", Sys.Date(), ".csv"), row.names = FALSE)
+vizmetrics_full %>% filter(transect_location == "sediment") -> sediment_viz_l1
 
-L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
+write_csv(soil_viz_l1, paste0("~/Documents/ec1_soil_visual_metrics_L1_", Sys.Date(), ".csv"))
 
-drive_upload(media = paste0("./ec1_soilsediment_visualmetrics_L1_", Sys.Date(), ".csv"), name = paste0("ec1_soilsediment_visualmetrics_L1_", Sys.Date(), ".csv"), path = L1directory)
+write_csv(sediment_viz_l1, paste0("~/Documents/ec1_sediment_visual_metrics_L1_", Sys.Date(), ".csv"))
 
-file.remove(paste0("./ec1_soilsediment_visualmetrics_L1_", Sys.Date(), ".csv"))
+#L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
+
+#drive_upload(media = paste0("./ec1_soilsediment_visualmetrics_L1_", Sys.Date(), ".csv"), name = paste0("ec1_soilsediment_visualmetrics_L1_", Sys.Date(), ".csv"), path = L1directory)
+
+#file.remove(paste0("./ec1_soilsediment_visualmetrics_L1_", Sys.Date(), ".csv"))
 
