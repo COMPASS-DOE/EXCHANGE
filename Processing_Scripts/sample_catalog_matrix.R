@@ -60,9 +60,10 @@ sample_catalog <- csvs_2 %>%
                                data_type =="ph" ~ "soilphspc",
                                data_type == "gwc" & transect_location == "sediment" ~ "sediment_gwc", #separate sediment and gwc columns
                                data_type == "gwc" & transect_location %in% c("upland", "transition", "wetland") ~ "soil_gwc",
+                               data_type == "visual" & transect_location != "sediment" ~ "soil_vizmetrics",
                                TRUE ~ data_type)) %>% 
-  select(data_type, campaign, kit_id, transect_location, note, contains("_flag")) %>% 
-  pivot_wider(id_cols=c(campaign, kit_id, transect_location), names_from = data_type, values_from = c(note, contains("_flag"))) %>%
+  select(data_type, campaign, kit_id, transect_location, note, contains("_flag"), notes_flags, notes) %>% 
+  pivot_wider(id_cols=c(campaign, kit_id, transect_location), names_from = data_type, values_from = c(note, contains("_flag"), notes_flags, notes)) %>%
   janitor::remove_empty(which = "cols") %>%
   rename(ec1_water_cdom_L2 = note_cdom,
          ec1_water_fticrms_L2 = note_fticrms,
