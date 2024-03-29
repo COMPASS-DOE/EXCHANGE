@@ -219,13 +219,14 @@ data_clean %>%
                            kit_id == "K048" & transect_location == "upland" ~ "not enough material for extraction",
                            kit_id == "K050" & transect_location == "upland" ~ "not enough material for extraction",
                            collected == TRUE & is.na(Fe_ug_g) & is.na(notes) ~ "not enough material for extraction",
+                           collected == FALSE & is.na(Fe_ug_g) ~ "sample not collected",
                            TRUE ~ notes),
          Fe_ug_g = case_when(!is.na(notes) ~ NA,
                              TRUE ~ Fe_ug_g)) %>% 
-  select(campaign, kit_id, transect_location, Fe_ug_g) -> soil_iron
+  select(campaign, kit_id, transect_location, Fe_ug_g, notes) -> soil_iron
 
 # 7. Export L0B data -----------------------------------------------------------
-write_csv(soil_iron, paste0("Data/Processed/EC1_Soil_iron_ferrozine_", Sys.Date(), ".csv"))
+write_csv(soil_iron, paste0("~/Documents/ec1_soil_iron_L1_", Sys.Date(), ".csv"))
 
 ## extras ----
 # load sample key

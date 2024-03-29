@@ -349,6 +349,7 @@ file.remove("ec1_sediment_visualmetrics_L2.csv")
 # Clean up and export L2 Soil Cations ------------------------------------------
 
 cations_l1 %>% 
+  select(-notes_flags) %>% 
   pivot_longer(cols = where(is.numeric)) %>% 
   filter(!is.na(value)) %>% 
   pivot_wider(names_from = name, values_from = value) -> cations_filtered
@@ -369,6 +370,7 @@ file.remove("ec1_sediment_cations_L2.csv")
 # Clean up and export L2 Soil Iron ---------------------------------------------
 
 soil_iron %>% 
+  select(-notes) %>% 
   filter(!is.na(Fe_ug_g)) -> soil_iron_final
 
 # Write out

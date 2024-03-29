@@ -192,16 +192,19 @@ data_clean %>%
   full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
   mutate(notes = case_when(kit_id == "K050" & transect_location == "upland" ~ "not enough material for extraction",
                            kit_id == "K024" & transect_location == "wetland" ~ "sample compromised",
-                  TRUE ~ notes)) -> full
+                           collected == FALSE ~ "sample not collected",
+                  TRUE ~ notes),
+         notes_flags = case_when(is.na(notes) ~ flag,
+                           TRUE ~ notes)) -> full
 
 nums <- sapply(full, is.numeric)           # identify numeric columns
 full[!is.na(full$notes), which(nums)] <- NA  # set compromised kits to NA
 
-full %>% select(campaign, kit_id, transect_location, contains("meq_100")) -> cations_l1
+full %>% select(campaign, kit_id, transect_location, contains("meq_100"), notes_flags) -> cations_l1
 
 #
 # 13. Write L0B data -----------------------------------------------------------
-write_csv(full, paste0("Data/Processed/EC1_soil_cations_L1", Sys.Date(), ".csv"))
+write_csv(cations_l1, paste0("~/Documents/ec1_soil_cations_L1_", Sys.Date(), ".csv"))
 
 ## extras ----
 # testing
