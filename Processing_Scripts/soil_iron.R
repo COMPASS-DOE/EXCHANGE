@@ -182,24 +182,51 @@ samples2 =
   dplyr::select(sample_label, ppm_corrected) %>% 
   separate(sample_label, sep = "_", into = c("kit_id", "transect_location")) %>% 
   mutate(transect_location = case_match(transect_location, "U" ~ "upland", "T" ~ "transition", "W" ~ "wetland")) %>% 
-  left_join(weights) %>% 
+  left_join(weights, by = c("kit_id", "transect_location")) %>% 
   mutate(ppm_corrected = as.numeric(ppm_corrected),
          weight_g = as.numeric(weight_g),
          HCl_mL = as.numeric(HCl_mL),
          Fe_ug_g = ppm_corrected * ((HCl_mL)/weight_g),
          Fe_ug_g = round(Fe_ug_g, 2)) %>% 
   dplyr::select(kit_id, transect_location, Fe_ug_g) %>% 
-  mutate(transect_location = factor(transect_location, levels = c("upland", "transition", "wetland"))) %>% 
-  arrange(kit_id, transect_location)
+  mutate(campaign = "EC1", 
+         transect_location = factor(transect_location, levels = c("upland", "transition", "wetland"))) %>% 
+  arrange(kit_id, transect_location) %>% 
+  select(campaign, kit_id, transect_location, Fe_ug_g)
 
-#
-# 5. Export L0B data ------------------------------------------------------
-write_csv(samples2, paste0("Data/Processed/EC1_Soil_iron_ferrozine_", Sys.Date(), ".csv"))
+# 5. Clean data ----------------------------------------------------------------
 
+samples2 %>% 
+  # switch wetland and transition names due to a...
+  # ...sampling error: wetland soil was sampled and put into a jar labeled "transition" incorrectly
+  mutate(transect_location = case_when(kit_id == "K046" & transect_location == "transition" ~ "wetland", 
+                                       kit_id == "K046" & transect_location == "wetland" ~ "transition", 
+                                       TRUE ~ transect_location)) -> data_clean
 
+# 6. Check with Metadata for missing samples -----------------------------------
 
+source("./Processing_Scripts/Metadata_kit_list.R")
 
+metadata_collected %>%
+  filter(sample_method == "jar") -> meta_filter
 
+data_clean %>% 
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
+  # 2024-03-13: need to split soil and sediments in this script because not all sediments have been ran yet
+  filter(sample_type == "soil") %>% 
+  mutate(notes = case_when(kit_id == "K018" & transect_location == "transition" ~ "not enough material for extraction",
+                           kit_id == "K044" & transect_location == "transition" ~ "not enough material for extraction",
+                           kit_id == "K048" & transect_location == "upland" ~ "not enough material for extraction",
+                           kit_id == "K050" & transect_location == "upland" ~ "not enough material for extraction",
+                           collected == TRUE & is.na(Fe_ug_g) & is.na(notes) ~ "not enough material for extraction",
+                           collected == FALSE & is.na(Fe_ug_g) ~ "sample not collected",
+                           TRUE ~ notes),
+         Fe_ug_g = case_when(!is.na(notes) ~ NA,
+                             TRUE ~ Fe_ug_g)) %>% 
+  select(campaign, kit_id, transect_location, Fe_ug_g, notes) -> soil_iron
+
+# 7. Export L0B data -----------------------------------------------------------
+write_csv(soil_iron, paste0("~/Documents/ec1_soil_iron_L1_", Sys.Date(), ".csv"))
 
 ## extras ----
 # load sample key

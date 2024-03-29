@@ -18,6 +18,9 @@ p_load(tidyverse)
 ## Set ggplot theme
 theme_set(theme_bw())
 
+L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
+L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
+
 
 # 2. Import datasets -----------------------------------------------------------
 
@@ -61,9 +64,6 @@ import_l1_bd_data = function(directory){
   dat
 }
 ## Remove flagged values then remove flag column
-
-L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
-
 bd_l1 = import_l1_bd_data(L1directory)
 
 bd_l2 <- 
@@ -76,8 +76,6 @@ bd_l2 <-
 
 #soil
 bd_l2 %>% write.csv("./ec1_soil_bulk_density_L2.csv", row.names = FALSE)
-
-L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
 
 drive_upload(media = "ec1_soil_bulk_density_L2.csv", name= "ec1_soil_bulk_density_L2.csv", path = L2directory )
 
@@ -104,8 +102,6 @@ import_l1_gwc_data = function(directory){
   dat
 }
 ## Remove flagged values then remove flag column
-
-L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
   
 gwc_l1 = import_l1_gwc_data(L1directory)
 
@@ -121,16 +117,12 @@ gwc_l2_soil <- gwc_l2 %>% filter(transect_location != "sediment") %>% arrange(ki
 ## Write out to drive
 gwc_l2_sed %>% write.csv("./ec1_sediment_gwc_L2.csv", row.names = FALSE)
 
-L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
-
 drive_upload(media = "ec1_sediment_gwc_L2.csv", name= "ec1_sediment_gwc_L2.csv", path = L2directory )
 
 file.remove("ec1_sediment_gwc_L2.csv")
 
  #soil
 gwc_l2_soil %>% write.csv("./ec1_soil_gwc_L2.csv", row.names = FALSE)
-
-L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
 
 drive_upload(media = "ec1_soil_gwc_L2.csv", name= "ec1_soil_gwc_L2.csv", path = L2directory )
 
@@ -176,8 +168,6 @@ import_l1_wq_data = function(directory){
 }
 ## Remove flagged values then remove flag column
 
-L1directory = "https://drive.google.com/drive/folders/1yhukHvW4kCp6mN2jvcqmtq3XA5niKVR3"
-
 wq_l1 = import_l1_wq_data(L1directory)
 
 #leaving all these together since they all do match. need to seperate if we have one indvidually though. We don't. 
@@ -197,8 +187,6 @@ wq_l2 %>% select(campaign, kit_id, transect_location, ph) %>% arrange(kit_id) %>
 wq_l2 %>% select(campaign, kit_id, transect_location, sal_psu) %>% arrange(kit_id) %>% write.csv("ec1_water_salinity_L2.csv", row.names = FALSE)
 wq_l2 %>% select(campaign, kit_id, transect_location, orp_mv) %>% arrange(kit_id) %>% write.csv("ec1_water_ORP_L2.csv", row.names = FALSE)
 wq_l2 %>% select(campaign, kit_id, transect_location, alk_mgl_caco3) %>% arrange(kit_id) %>% write.csv("ec1_water_alkalinity_L2.csv", row.names = FALSE)
-
-L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
 
 drive_upload(media = "ec1_water_ph_L2.csv", name= "ec1_water_pH_L2.csv", path = L2directory)
 drive_upload(media = "ec1_water_salinity_L2.csv", name=  "ec1_water_salinity_L2.csv", path = L2directory)
@@ -249,8 +237,6 @@ cond_L1 %>%
   arrange(kit_id) -> cond_L2
 
 ## Write out to drive
-L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
-
 ph_L2 %>% write.csv("./ec1_soil_ph_L2.csv", row.names = FALSE)
 cond_L2 %>% write.csv("./ec1_soil_cond_L2.csv", row.names = FALSE)
 
@@ -295,7 +281,6 @@ tn_full %>%
   select(-tn_flag) -> tn_L2
 
 # Write out
-L2directory = "https://drive.google.com/drive/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
 
 tc_L2 %>% write.csv("ec1_soil_tc_L2.csv", row.names = FALSE)
 tn_L2 %>% write.csv("ec1_soil_tn_L2.csv", row.names = FALSE)
@@ -317,8 +302,6 @@ tss_full %>%
 # Write out
 tss_l2 %>% write.csv("ec1_water_tss_L2.csv", row.names = FALSE)
 
-L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
-
 drive_upload(media = "ec1_water_tss_L2.csv", name= "ec1_water_tss_L2.csv", path = L2directory)
 
 file.remove("ec1_water_tss_L2.csv")
@@ -337,8 +320,6 @@ full_tdn %>%
 # Write out
 npoc_l2 %>% write_csv("ec1_water_doc_L2.csv")
 tdn_l2 %>% write_csv("ec1_water_tdn_L2.csv")
-
-L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
 
 drive_upload(media = "ec1_water_doc_L2.csv", name= "ec1_water_doc_L2.csv", path = L2directory)
 drive_upload(media = "ec1_water_tdn_L2.csv", name= "ec1_water_tdn_L2.csv", path = L2directory)
@@ -359,11 +340,42 @@ soil_sed_viz %>% filter(transect_location == "sediment") -> sediment_visualmetri
 soil_visualmetrics_l2 %>% write_csv("ec1_soil_visualmetrics_L2.csv")
 sediment_visualmetrics_l2 %>% write_csv("ec1_sediment_visualmetrics_L2.csv")
 
-L2directory = "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswiKbUWylWzoAyUmMPm367"
-
 drive_upload(media = "ec1_soil_visualmetrics_L2.csv", name= "ec1_soil_visualmetrics_L2.csv", path = L2directory)
 drive_upload(media = "ec1_sediment_visualmetrics_L2.csv", name= "ec1_sediment_visualmetrics_L2.csv", path = L2directory)
 
 file.remove("ec1_soil_visualmetrics_L2.csv")
 file.remove("ec1_sediment_visualmetrics_L2.csv")
 
+# Clean up and export L2 Soil Cations ------------------------------------------
+
+cations_l1 %>% 
+  select(-notes_flags) %>% 
+  pivot_longer(cols = where(is.numeric)) %>% 
+  filter(!is.na(value)) %>% 
+  pivot_wider(names_from = name, values_from = value) -> cations_filtered
+
+cations_filtered %>% filter(transect_location != "sediment") %>% arrange(kit_id) -> soil_cations_l2
+cations_filtered %>% filter(transect_location == "sediment") %>% arrange(kit_id) -> sediment_cations_l2
+
+# Write out
+soil_cations_l2 %>% write_csv("ec1_soil_cations_L2.csv")
+sediment_cations_l2 %>% write_csv("ec1_sediment_cations_L2.csv")
+
+drive_upload(media = "ec1_soil_cations_L2.csv", name= "ec1_soil_cations_L2.csv", path = L2directory)
+drive_upload(media = "ec1_sediment_cations_L2.csv", name= "ec1_sediment_cations_L2.csv", path = L2directory)
+
+file.remove("ec1_soil_cations_L2.csv")
+file.remove("ec1_sediment_cations_L2.csv")
+
+# Clean up and export L2 Soil Iron ---------------------------------------------
+
+soil_iron %>% 
+  select(-notes) %>% 
+  filter(!is.na(Fe_ug_g)) -> soil_iron_final
+
+# Write out
+soil_iron_final %>% write_csv("ec1_soil_iron_L2.csv")
+
+drive_upload(media = "ec1_soil_iron_L2.csv", name= "ec1_soil_iron_L2.csv", path = L2directory)
+
+file.remove("ec1_soil_iron_L2.csv")
