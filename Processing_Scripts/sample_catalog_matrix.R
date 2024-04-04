@@ -80,7 +80,10 @@ sample_catalog <- csvs_2 %>%
          ec1_soil_tc_L2.csv = tc_flag_tctn,
          ec1_soil_tn_L2.csv = tn_flag_tctn,
          ec1_soil_gwc_L2.csv = gwc_flag_soil_gwc,
-         ec1_sediment_gwc_L2.csv = gwc_flag_sediment_gwc) %>%
+         ec1_sediment_gwc_L2.csv = gwc_flag_sediment_gwc,
+         ec1_soil_iron_L2.csv = notes_iron,
+         ec1_soil_cations_L2.csv = notes_flags_cations,
+         ec1_soil_visual_metrics_L2.csv = notes_soil_vizmetrics) %>%
   pivot_longer(cols = starts_with("ec1"), names_to = "analyte", values_to = "status") %>%
   left_join(analyte_meta, by = "analyte") %>% 
   mutate(status = case_when(grepl("soil", analyte) & transect_location %in% c("water", "sediment") ~ "not applicable", #not sure what we want to call something like this
@@ -97,7 +100,8 @@ sample_catalog <- csvs_2 %>%
 
 sample_catalog %>% write.csv(paste0("./ec1_sample_catalog.csv"), row.names = FALSE)
 
-directory <- "https://drive.google.com/drive/u/1/folders/1xy9nsTpbiSk-KXrcDEeFQ7gg4350DuH-"
+# V2 Package Directory
+directory <- "https://drive.google.com/drive/u/1/folders/1MvCS-u6S47XbVLvTGZ-V7RXTwF6Nb98k"
 
 drive_upload("./ec1_sample_catalog.csv", name= "ec1_sample_catalog.csv", path = directory)
 
