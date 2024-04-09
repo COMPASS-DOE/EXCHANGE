@@ -83,7 +83,7 @@ cat("Applying flags to", var, "data...")
 ## manipulate a parameter and its flag together
 data_qc <- function(data) {
   data %>% 
-    select(-notes, -cohesion_post_lyopholization) %>% 
+    select(-notes, -cohesion_post_lyopholization, -white_flakes) %>% 
     mutate(
       # switch wetland and transition names due to a...
       # ...sampling error: wetland soil was sampled and put into a jar labeled "transition" incorrectly
@@ -128,12 +128,10 @@ data_clean %>%
          glass_plastic = case_when(notes == "kit compromised" ~ NA,
                                    notes == "sample compromised" ~ NA,
                                    TRUE ~ glass_plastic),
-         white_flakes = case_when(notes == "kit compromised" ~ NA,
-                                  notes == "sample compromised" ~ NA,
-                                  TRUE ~ white_flakes),
          notes = case_when(collected == FALSE ~ "sample not collected",
                            TRUE ~ notes)) %>%
-  select(-c(sample_type, sample_method, collected)) -> vizmetrics_full
+  select(-c(sample_type, sample_method, collected)) %>% 
+  arrange(kit_id) -> vizmetrics_full
 
 # 6. Write cleaned data to drive -----------------------------------------------
 
