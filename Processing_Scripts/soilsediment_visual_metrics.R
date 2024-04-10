@@ -64,15 +64,25 @@ data_processed <- data_raw %>%
          root_presence = root_mass) %>% 
   dplyr::select(-do_not_use_had_misclassified, -sand_content) %>% 
   mutate(campaign = "EC1",
-         root_thickness = tolower(root_thickness),
          pebbles_angular_rounded = case_match(pebbles_angular_rounded,
-                                              c("angular, rounded", "rounded, angular") ~ "both",
+                                              c("angular, rounded", "rounded, angular") ~ "angular and rounded",
                                               .default = pebbles_angular_rounded),
          root_presence = case_when(grepl("no roots", root_presence) ~ "none",
                                    grepl("few", root_presence) ~ "few",
                                    grepl("moderate", root_presence) ~ "moderate",
                                    grepl("root dominated", root_presence) ~ "many",
-                                   .default = root_presence)) %>% 
+                                   .default = root_presence),
+         uninhabited_shells = case_match(uninhabited_shells, 
+                                         "intact shells" ~ "intact",
+                                         c("intact, fragments", "intact, broken", "broken, intact") ~ "intact and fragments",
+                                         "broken" ~ "fragments",
+                                         .default = uninhabited_shells),
+         visible_minerals = case_match(visible_minerals,
+                                       "quarts" ~ "quartz",
+                                       .default = visible_minerals)) %>% 
+  mutate(root_thickness = case_when(root_presence == "none" ~ NA,
+                                    root_thickness == "Coarse" ~ "fine",
+                                    .default = root_thickness)) %>% 
   relocate(campaign)
 
 #
