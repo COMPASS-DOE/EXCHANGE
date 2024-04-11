@@ -114,7 +114,8 @@ metadata_collected %>%
 data_clean %>%
   full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
   # add rows for samples not collected, creating a "full" dataset of all possible samples
-  mutate(pebbles_angular_rounded = case_when(notes == "kit compromised" ~ NA,
+  mutate(transect_location = factor(transect_location, levels = c("upland", "transition", "wetland", "sediment")),
+         pebbles_angular_rounded = case_when(notes == "kit compromised" ~ NA,
                                              notes == "sample compromised" ~ NA,
                                              TRUE ~ pebbles_angular_rounded),
          root_presence = case_when(notes == "kit compromised" ~ NA,
@@ -141,7 +142,7 @@ data_clean %>%
          notes = case_when(collected == FALSE ~ "sample not collected",
                            TRUE ~ notes)) %>%
   select(-c(sample_type, sample_method, collected)) %>% 
-  arrange(kit_id) -> vizmetrics_full
+  arrange(kit_id, transect_location) -> vizmetrics_full
 
 # 6. Write cleaned data to drive -----------------------------------------------
 
