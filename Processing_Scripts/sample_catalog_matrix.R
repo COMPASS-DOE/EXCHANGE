@@ -92,7 +92,8 @@ sample_catalog <- csvs_2 %>%
                             TRUE ~ status)) %>% 
   left_join(metadata_collected, by = c("campaign", "kit_id", "transect_location", "sample_method")) %>% #we need to take into account sample_method, need to know which analytes used which method
   mutate(status = case_when(collected == TRUE & is.na(status) ~ "data available",
-                            TRUE ~ status)) %>% 
+                            TRUE ~ status),
+         transect_location = factor(transect_location, levels = c("upland", "transition", "wetland", "sediment", "water"))) %>% 
   select(-sample_type, -sample_method, -collected, -notes) %>% 
   distinct() %>% 
   pivot_wider(names_from = analyte, values_from = status) %>% 
