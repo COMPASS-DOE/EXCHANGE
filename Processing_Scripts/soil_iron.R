@@ -214,7 +214,8 @@ data_clean %>%
   full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
   # 2024-03-13: need to split soil and sediments in this script because not all sediments have been ran yet
   filter(sample_type == "soil") %>% 
-  mutate(notes = case_when(kit_id == "K018" & transect_location == "transition" ~ "not enough material for extraction",
+  mutate(transect_location = factor(transect_location, levels = c("upland", "transition", "wetland")),
+         notes = case_when(kit_id == "K018" & transect_location == "transition" ~ "not enough material for extraction",
                            kit_id == "K044" & transect_location == "transition" ~ "not enough material for extraction",
                            kit_id == "K048" & transect_location == "upland" ~ "not enough material for extraction",
                            kit_id == "K050" & transect_location == "upland" ~ "not enough material for extraction",
@@ -223,7 +224,8 @@ data_clean %>%
                            TRUE ~ notes),
          Fe_ug_g = case_when(!is.na(notes) ~ NA,
                              TRUE ~ Fe_ug_g)) %>% 
-  select(campaign, kit_id, transect_location, Fe_ug_g, notes) -> soil_iron
+  select(campaign, kit_id, transect_location, Fe_ug_g, notes) %>% 
+  arrange(kit_id, transect_location) -> soil_iron
 
 # 7. Export L0B data -----------------------------------------------------------
 write_csv(soil_iron, paste0("~/Documents/ec1_soil_iron_L1_", Sys.Date(), ".csv"))
