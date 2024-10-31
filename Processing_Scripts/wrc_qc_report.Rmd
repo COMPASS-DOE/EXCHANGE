@@ -1,8 +1,23 @@
-library(tidyverse)
+---
+title: "HYPROP results for EC1"
+output: html_document
+---
 
+**date modified: `r Sys.Date()`**
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F,
+                      error = F,
+                      message = F,
+                      warning = F)
+```
+
+```{r}
+library(tidyverse)
+theme_set(theme_bw())
 
 wrc_filepath = "Data/wrc/Excel_files"
-
 
 import_data = function(FILEPATH, SHEETNAME){
   
@@ -29,8 +44,10 @@ import_data = function(FILEPATH, SHEETNAME){
 wrc_fitted = import_data(FILEPATH = wrc_filepath, SHEETNAME = "Fitting-Retention Θ(pF)")
 wrc_evaluation = import_data(FILEPATH = wrc_filepath, SHEETNAME = "Evaluation-Retention Θ(pF)")
 wrc_measurements = import_data(FILEPATH = wrc_filepath, SHEETNAME = 2)
+wrc_parameters = import_data(FILEPATH = wrc_filepath, SHEETNAME = "Fitting-Parameter value")
 
-process_data = function(wrc_fitted, wrc_evaluation){
+
+#process_data = function(wrc_fitted, wrc_evaluation){
   wrc_fitted_processed = 
   wrc_fitted %>% 
     rename(pF = `pF [-]`,
@@ -61,8 +78,19 @@ process_data = function(wrc_fitted, wrc_evaluation){
     #mutate(source = str_remove(source, ".xlsx")) %>% 
     #separate(source, sep = "_", into = c("campaign", "kit_id", "transect_location")) %>% 
     force()
-}
+#}
 
+
+
+```
+
+
+## Results {.tabset}
+
+### WRCs
+
+
+```{r, fig.height=15, fig.width=12}
 
 
 wrc_fitted_processed %>% 
@@ -70,13 +98,59 @@ wrc_fitted_processed %>%
   geom_path()+
   geom_point(data = wrc_evaluation_procesed, size = 0.7)+
   xlim(0, 8)+
-  facet_wrap(~kit_id)
+  ylim(0, 100)+
+  facet_wrap(~kit_id)+
+  theme(legend.position = "top")
 
+
+```
+
+
+### Tensiometer
+
+
+```{r, fig.height=35, fig.width=15}
+library(scales)
 
 wrc_measurements_procesed %>% 
+  #mutate(datetime = as.Date(datetime)) %>% 
   ggplot(aes(x = datetime))+
   geom_path(aes(y = tension_top_hPa), color = "red")+
   geom_path(aes(y = tension_bottom_hPa), color = "blue")+
   facet_wrap(~kit_id+transect_location, scales = "free_x", ncol = 6)+
   #ylim(0, 810)+
-  labs(caption = "red = top, blue = bottom")
+  labs(subtitle = "red = top tensiometer, blue = bottom tensiometer")
+
+```
+
+
+### VG Parameters
+
+```{r}
+
+parameters_processed = 
+  wrc_parameters %>% 
+  filter(Parameter %in% c("alpha", "n", "th_r", "th_s")) %>% 
+  arrange(kit_id, transect_location) %>% 
+  dplyr::select(kit_id, transect_location, Parameter, Value) %>% 
+  mutate(Value = str_remove(Value, "\\*"),
+         Value = as.numeric(Value)) %>% 
+  pivot_wider(names_from = "Parameter", values_from = "Value")
+
+parameters_processed %>% knitr::kable()
+
+```
+
+### Completion
+
+```{r}
+
+completion = 
+  parameters_processed %>% 
+  dplyr::select(kit_id, transect_location) %>% 
+  mutate(value = "Y") %>% 
+  pivot_wider(names_from = "transect_location", values_from = "value")
+
+completion %>% knitr::kable()
+```
+
