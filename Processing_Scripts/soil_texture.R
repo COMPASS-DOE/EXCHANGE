@@ -79,4 +79,28 @@ data_processed =
   data_raw %>% 
   mutate_at(vars(-c(sample_id, date_started, skip, notes)), as.numeric) %>% 
   filter(is.na(skip)) %>% 
-  compute_soil_texture()
+  compute_soil_texture() %>% 
+  mutate(sample_id = paste0("EC1_", sample_id)) %>% 
+  separate(sample_id, into = c("campaign", "kit_id", "transect_location")) %>% 
+  mutate(transect_location = toupper(transect_location),
+         transect_location = recode(transect_location, "U" = "Upland", "T" = "Transition", "W" = "Wetland")) %>% 
+  arrange(kit_id, transect_location)
+
+#
+# 4. Apply QC flags ------------------------------------------------------------
+compute_flag_texture = function(dat){
+  dat %>% 
+    mutate(flag = case_when((percent_clay <= 0 | percent_clay >= 100 | 
+                                       percent_sand <= 0 | percent_sand >= 100 | 
+                                       percent_silt <= 0 | percent_silt >= 100) ~ "Out_of_Range"))
+}
+
+texture_with_flags = 
+  data_processed %>% compute_flag_texture(.) 
+
+texture_with_flags2 = 
+  texture_with_flags %>% 
+  filter(!is.na(flag)) %>% 
+  mutate(percent_sand = NA, percent_clay = NA, percent_silt = NA) %>% 
+  bind_rows(texture_with_flags %>% filter(is.na(flag))) %>% 
+  arrange(kit_id, transect_location)
