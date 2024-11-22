@@ -104,3 +104,26 @@ texture_with_flags2 =
   mutate(percent_sand = NA, percent_clay = NA, percent_silt = NA) %>% 
   bind_rows(texture_with_flags %>% filter(is.na(flag))) %>% 
   arrange(kit_id, transect_location)
+
+
+
+
+# COMPLETION --------------------------------------------------------------
+
+metadata = read.csv("metadata_collected.csv")
+metadata2 = 
+  metadata %>% 
+  filter(collected) %>% 
+  filter(sample_type == "soil") %>% 
+  distinct(kit_id, transect_location)
+
+texture_completion = 
+  texture_with_flags2 %>% 
+  mutate(completed = if_else(!is.na(percent_clay), TRUE, FALSE),
+         transect_location = tolower(transect_location)) %>% 
+  dplyr::select(kit_id, transect_location, completed) %>% 
+  drop_na() %>% 
+  full_join(metadata2) %>% 
+  mutate(completed = case_when(is.na(completed) ~ FALSE, TRUE ~ completed)) %>% 
+  pivot_wider(names_from = "transect_location", values_from = "completed") %>% 
+  force()
