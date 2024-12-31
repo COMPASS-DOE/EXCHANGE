@@ -41,7 +41,7 @@ F1_MAX <- 100
 var <- "TOC"
 
 #
-# 3. Import data ---------------------------------------------------------------
+# 2. Import data ---------------------------------------------------------------
 
 import_data = function(directory){
   
@@ -70,11 +70,6 @@ import_data = function(directory){
       df[["source"]] <- rep(path, nrow(df))
       df}))
   
-#  dat <- 
-#    dat %>% 
-#    filter(!is.na(aa)) %>% 
-#    filter(!is.na(carbon_element_name))
-  
   ## d. delete the temporary files
   file.remove(c(files$name))  
   
@@ -91,11 +86,13 @@ data_primitive =
   data_raw %>% 
   janitor::clean_names() %>% 
   mutate(
-    date_run = str_extract(source, "[0-9]{8}"),
-    date_run = ymd(date_run)) %>% 
+    #date_run = str_extract(source, "[0-9]{8}"),
+    date_run = mdy_hm(date_time)) %>% 
   rename(toc_percent = c) %>% 
-  filter(!grepl("skip", memo, ignore.case = T))
-
+  filter(!grepl("skip", memo, ignore.case = T)) %>% 
+  filter(!grepl("bl", info, ignore.case = T)) %>% 
+  filter(is.na(memo))
+  
 samples = 
   data_primitive %>% 
   filter(grepl("K", name)) %>% 
@@ -103,8 +100,7 @@ samples =
   separate(name, sep = "_", into = c("kit_id", "transect_location"), remove = F) %>% 
   mutate(transect_location = case_match(transect_location, "U" ~ "Upland", "T" ~ "Transition", "W" ~ "Wetland"))
 
-
-samples_clean =
+samples_cv =
   samples %>% 
   dplyr::select(kit_id, transect_location, toc_percent) %>% 
   group_by(kit_id, transect_location) %>% 
@@ -113,8 +109,76 @@ samples_clean =
                    sd = sd(toc_percent),
                    cv = 100 * sd/mean)
 
+library(outliers)
 
 
+remove_outliers = function(dat){
+  
+  fit_dixon = function(dat){
+    dixon.test(dat %>% pull(toc_percent), opposite = F, two.sided = F) %>% 
+      broom::tidy() %>% 
+      filter(`p.value` <= 0.1) %>% 
+      mutate(toc_percent = parse_number(alternative),
+             #toc_percent = round(toc_percent),
+             outlier = TRUE) %>% 
+      dplyr::select(toc_percent, outlier) %>% 
+      force()
+  }
+  
+  outliers =  
+    dat %>% 
+    group_by(kit_id, transect_location) %>% 
+    filter(n > 2) %>% 
+    filter(cv >= 15) %>% 
+    do(fit_dixon(.)) %>% 
+    ungroup()
+  
+  outliers2 = 
+    samples_cv %>% 
+    ungroup() %>% 
+    left_join(outliers, by = c("kit_id", "transect_location", "toc_percent"))
+  
+}
+
+outliers_removed = 
+  remove_outliers(samples_cv) %>% 
+  filter(!outlier %in% "TRUE") %>% 
+  rename(cv_old = cv) %>% 
+  group_by(kit_id, transect_location) %>% 
+  dplyr::mutate(
+    mean = mean(toc_percent, na.rm = T),
+    sd = round(sd(toc_percent, na.rm = T),3),
+    cv = round(100*sd/mean,3),
+    n = n()) %>% 
+  dplyr::select(kit_id, transect_location, toc_percent, cv_old, cv, n)
+
+
+toc_processed = 
+  outliers_removed %>% 
+  mutate(campaign = "EC1") %>% 
+  group_by(campaign, kit_id, transect_location) %>% 
+  dplyr::summarise(toc_percent = mean(toc_percent),
+                   toc_percent = round(toc_percent, 3)) %>% 
+  mutate(transect_location = tolower(transect_location))
+  
+
+#
+#####
+
+
+## compare with tc
+
+ec1_tc = read.csv("ec1_soil_tc_L2.csv")
+compare = 
+  ec1_tc %>% 
+  full_join(toc_processed)
+
+compare %>% 
+  ggplot(aes(x = carbon_weight_perc, y = toc_percent)) + 
+  geom_point()+
+  geom_abline(intercept = 0)+
+  theme_bw()
+  
 
 
 
