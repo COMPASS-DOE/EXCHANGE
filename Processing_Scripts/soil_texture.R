@@ -29,7 +29,7 @@ data_path = "https://docs.google.com/spreadsheets/d/1PSKKbnmr3jVhjv172mPynmkt3mV
 # 2. Import data ---------------------------------------------------------------
 cat("Importing", var, "data...")
 
-## read in raw data
+## read in raw data from Googlesheet
 data_raw <- googlesheets4::read_sheet(data_path, col_types = "c")
 
 #
@@ -37,6 +37,13 @@ data_raw <- googlesheets4::read_sheet(data_path, col_types = "c")
 
 # function to compute % sand-silt-clay from the hydrometer readings
 compute_soil_texture = function(dat){
+  
+  ## This function will use the equations provided in Gee & Bauder
+  ## to compute % sand, clay, silt
+  
+  ## % sand = fraction weight of material collected on the 53 μm sieve.
+  ## % clay = computed using 90 and 1440 minute hydrometer readings
+  ## % silt = 100 - (% sand + % clay)
   
   dat %>% 
     mutate(
@@ -84,11 +91,16 @@ data_processed =
   separate(sample_id, into = c("campaign", "kit_id", "transect_location")) %>% 
   mutate(transect_location = toupper(transect_location),
          transect_location = recode(transect_location, "U" = "Upland", "T" = "Transition", "W" = "Wetland")) %>% 
-  arrange(kit_id, transect_location)
+  arrange(kit_id, transect_location) %>% 
+  filter(!is.na(percent_clay))
 
 #
 # 4. Apply QC flags ------------------------------------------------------------
 compute_flag_texture = function(dat){
+  
+  # since all the values are %, they must be 0-100 %
+  # anything outside of this range is flagged
+  
   dat %>% 
     mutate(flag = case_when((percent_clay <= 0 | percent_clay >= 100 | 
                                        percent_sand <= 0 | percent_sand >= 100 | 
@@ -96,18 +108,14 @@ compute_flag_texture = function(dat){
 }
 
 texture_with_flags = 
-  data_processed %>% compute_flag_texture(.) 
-
-texture_with_flags2 = 
-  texture_with_flags %>% 
+  data_processed %>% compute_flag_texture(.) %>% 
   filter(!is.na(flag)) %>% 
   mutate(percent_sand = NA, percent_clay = NA, percent_silt = NA) %>% 
   bind_rows(texture_with_flags %>% filter(is.na(flag))) %>% 
-  arrange(kit_id, transect_location)
+  arrange(kit_id, transect_location) %>% 
+  dplyr::select(-notes)
 
-
-
-
+# 
 # COMPLETION --------------------------------------------------------------
 
 metadata = read.csv("metadata_collected.csv")
