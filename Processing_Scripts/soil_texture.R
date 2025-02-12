@@ -112,6 +112,8 @@ texture_with_flags =
   filter(!is.na(flag)) %>% 
   mutate(percent_sand = NA, percent_clay = NA, percent_silt = NA) %>% 
   bind_rows(texture_with_flags %>% filter(is.na(flag))) %>% 
+  mutate(campaign = "EC1") %>% 
+  dplyr::select(campaign, kit_id, transect_location, everything()) %>% 
   arrange(kit_id, transect_location) %>% 
   dplyr::select(-notes)
 
