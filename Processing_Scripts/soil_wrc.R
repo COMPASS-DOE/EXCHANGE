@@ -1,82 +1,78 @@
-library(tidyverse)
+## This script imports HYPROP processed data.
+## Data are read in from Google Drive
+## 
+## This script only collates and processes the Van Genuchten parameters to generate a single csv.
+## For QC of all samples, including water retention curves and graphs, see the corresponding QC report (https://github.com/COMPASS-DOE/EXCHANGE/blob/main/Processing_Scripts/soil_wrc_qc_report.Rmd)
+## 
+## Updated: 2025-02-12
+## Kaizad F. Patel
+##
 
+# 1. Setup ---------------------------------------------------------------------
 
-wrc_filepath = "Data/wrc/Excel_files"
+# load packages
+require(pacman)
+pacman::p_load(tidyverse, # keep things tidy
+               janitor, # useful for simplifying column names
+               googlesheets4, # read_sheet 
+               googledrive, # drive_ functions
+               readxl)
 
+## Set theme
+theme_set(theme_bw())
 
-import_data = function(FILEPATH, SHEETNAME){
+## Set GDrive URL for HYPROP data files
+directory = "https://drive.google.com/drive/folders/18vcnFCtMJA2CaqwLHKeLEFGKTp90_yQ0"
+
+#
+# 2. Download data -------------------------------------------------------------
+## download and import the Van Genuchten parameters
+
+import_data = function(directory){
   
-  # pull a list of file names in the target folder with the target pattern
-  # then read all files and combine
+  ## a. Create a list of files to download
+  files <- 
+    drive_ls(directory) %>% 
+    filter(grepl(".xlsx", name))
   
-  filePaths <- list.files(path = FILEPATH, pattern = ".xlsx", full.names = TRUE)
+  ## b. Download files to local (don't worry, we'll delete em in a sec)
+  lapply(files$id, drive_download, overwrite = TRUE)
   
-  # dat <- 
-  do.call(bind_rows, lapply(filePaths, function(path){
-    # then add a new column `source` to denote the file name
-    df <- readxl::read_excel(path, sheet = SHEETNAME)
-    #  df <- read.delim(path, skip = 2)
-    df[["source"]] <- basename(path)
-    
-    df = 
-      df %>% 
-      separate(source, into = c("EC", "kit_id", "transect_location"), sep = "_", remove = F) %>% 
-      mutate(transect_location = tolower(transect_location),
-             transect_location = factor(transect_location, levels = c("upland", "transition", "wetland")))
-    df}))
   
+  ## c. pull a list of file names
+  ## then read all files and combine
+  
+  filePaths <- files$name
+  dat = 
+    do.call(bind_rows, lapply(filePaths, function(path){
+      # then add a new column `source` to denote the file name
+      df <- readxl::read_xlsx(path, sheet = "Fitting-Parameter value")
+      df[["source"]] <- basename(path)
+      
+      df
+    }))
+  
+  ## d. delete the temporary files
+  file.remove(c(files$name))  
+  
+  ## e. output
+  dat
+   
 }
-wrc_fitted = import_data(FILEPATH = wrc_filepath, SHEETNAME = "Fitting-Retention Θ(pF)")
-wrc_evaluation = import_data(FILEPATH = wrc_filepath, SHEETNAME = "Evaluation-Retention Θ(pF)")
-wrc_measurements = import_data(FILEPATH = wrc_filepath, SHEETNAME = 2)
+wrc_parameters = import_data(directory)
 
-process_data = function(wrc_fitted, wrc_evaluation){
-  wrc_fitted_processed = 
-  wrc_fitted %>% 
-    rename(pF = `pF [-]`,
-           water_percent_vol = `Water Content [Vol%]`) %>% 
-    #mutate(source = str_remove(source, "[0-9]{6}_")) %>% 
-    #mutate(source = str_remove(source, ".xlsx")) %>% 
-    #separate(source, sep = "_", into = c("campaign", "kit_id", "transect_location")) %>% 
-    force()
-  
-  wrc_evaluation_procesed = 
-    wrc_evaluation %>% 
-    rename(pF = `pF [-]`,
-           water_percent_vol = `Water Content [Vol%]`) %>% 
-    #mutate(source = str_remove(source, "[0-9]{6}_")) %>% 
-    #mutate(source = str_remove(source, ".xlsx")) %>% 
-    #separate(source, sep = "_", into = c("campaign", "kit_id", "transect_location")) %>% 
-    force()
-  
-    
-  wrc_measurements_procesed = 
-    wrc_measurements %>% 
-    rename(datetime = `Date / Time`,
-           tension_bottom_hPa = `Tension Bottom [hPa]`,
-           tension_top_hPa = `Tension Top [hPa]`) %>% 
-    #dplyr::select(datetime, starts_with("tension"), source) %>% 
-    mutate(datetime = lubridate::ymd_hms(datetime)) %>% 
-    #mutate(source = str_remove(source, "[0-9]{6}_")) %>% 
-    #mutate(source = str_remove(source, ".xlsx")) %>% 
-    #separate(source, sep = "_", into = c("campaign", "kit_id", "transect_location")) %>% 
-    force()
-}
+#
+# 4. Process data ---------------------------------------------------------
 
-
-
-wrc_fitted_processed %>% 
-  ggplot(aes(x = pF, y = water_percent_vol, color = transect_location))+
-  geom_path()+
-  geom_point(data = wrc_evaluation_procesed, size = 0.7)+
-  xlim(0, 8)+
-  facet_wrap(~kit_id)
-
-
-wrc_measurements_procesed %>% 
-  ggplot(aes(x = datetime))+
-  geom_path(aes(y = tension_top_hPa), color = "red")+
-  geom_path(aes(y = tension_bottom_hPa), color = "blue")+
-  facet_wrap(~kit_id+transect_location, scales = "free_x", ncol = 6)+
-  #ylim(0, 810)+
-  labs(caption = "red = top, blue = bottom")
+wrc_processed = 
+  wrc_parameters %>% 
+  separate(source, into = c("campaign", "kit_id", "transect_location"), sep = "_", remove = F) %>% 
+  mutate(transect_location = str_remove(transect_location, ".xlsx"),
+         transect_location = tolower(transect_location),
+         transect_location = factor(transect_location, levels = c("upland", "transition", "wetland"))) %>% 
+  filter(Parameter %in% c("alpha", "n", "th_r", "th_s")) %>% 
+  arrange(kit_id, transect_location) %>% 
+  dplyr::select(campaign, kit_id, transect_location, Parameter, Value) %>% 
+  mutate(Value = str_remove(Value, "\\*"),
+         Value = as.numeric(Value)) %>% 
+  pivot_wider(names_from = "Parameter", values_from = "Value")
