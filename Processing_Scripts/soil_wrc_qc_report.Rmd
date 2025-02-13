@@ -36,7 +36,8 @@ import_data = function(FILEPATH, SHEETNAME){
     df = 
       df %>% 
       separate(source, into = c("EC", "kit_id", "transect_location"), sep = "_", remove = F) %>% 
-      mutate(transect_location = tolower(transect_location),
+      mutate(transect_location = str_remove(transect_location, ".xlsx"),
+             transect_location = tolower(transect_location),
              transect_location = factor(transect_location, levels = c("upland", "transition", "wetland")))
     df}))
   
