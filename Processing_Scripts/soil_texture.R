@@ -108,7 +108,10 @@ compute_flag_texture = function(dat){
 }
 
 texture_with_flags = 
-  data_processed %>% compute_flag_texture(.) %>% 
+  data_processed %>% compute_flag_texture(.) 
+
+texture_processed = 
+  texture_with_flags %>% 
   filter(!is.na(flag)) %>% 
   mutate(percent_sand = NA, percent_clay = NA, percent_silt = NA) %>% 
   bind_rows(texture_with_flags %>% filter(is.na(flag))) %>% 
@@ -117,6 +120,8 @@ texture_with_flags =
   arrange(kit_id, transect_location) %>% 
   dplyr::select(-notes)
 
+
+texture_processed %>% write.csv("Data/Processed/soil_texture_2025-02-19.csv", na = "", row.names = F)
 # 
 # COMPLETION --------------------------------------------------------------
 
