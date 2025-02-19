@@ -76,3 +76,5 @@ wrc_processed =
   mutate(Value = str_remove(Value, "\\*"),
          Value = as.numeric(Value)) %>% 
   pivot_wider(names_from = "Parameter", values_from = "Value")
+
+wrc_processed %>% write.csv("Data/Processed/EC1_soil_wrc_2025-02-19.csv", na = "", row.names = F)

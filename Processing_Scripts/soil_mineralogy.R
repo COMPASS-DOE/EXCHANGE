@@ -47,6 +47,8 @@ xrd_data = import_xrd(data_path)
 xrd_processed = 
   xrd_data %>% 
   mutate_all(as.character) %>% 
+  filter(is.na(skip)) %>% 
+  dplyr::select(-skip) %>% 
   pivot_longer(-c(File), names_to = "mineral", values_to = "percent") %>% 
   filter(!grepl("\\...", mineral)) %>% 
   mutate(percent = as.numeric(percent),
@@ -60,3 +62,5 @@ xrd_processed =
   dplyr::select(campaign, kit_id, transect_location, everything()) %>% 
   arrange(kit_id, transect_location) %>% 
   force()
+
+xrd_processed %>% write.csv("Data/Processed/EC1_soil_mineralogy_2025-02-19.csv", na = "", row.names = F)
