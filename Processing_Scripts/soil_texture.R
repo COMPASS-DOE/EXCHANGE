@@ -126,18 +126,20 @@ texture_processed =
 source("./Processing_Scripts/Metadata_kit_list.R")
 
 metadata_collected %>%
-  mutate(jar_used = case_when(sample_method == "jar" & kit_id == "K030" & transect_location == "upland" ~ TRUE,
-                              sample_method == "jar" & kit_id == "K036" & transect_location == "upland" ~ TRUE,
-                              sample_method == "jar" & kit_id == "K036" & transect_location == "transition" ~ TRUE,
-                              sample_method == "jar" & kit_id == "K039" & transect_location == "transition" ~ TRUE,
-                              sample_method == "jar" & kit_id == "K045" & transect_location == "transition" ~ TRUE,
-                              sample_method == "jar" & kit_id == "K047" & transect_location == "upland" ~ TRUE,
-                              sample_method == "jar" & kit_id == "K055" & transect_location == "upland" ~ TRUE,
-                              sample_method == "jar" & kit_id == "K058" & transect_location == "upland" ~ TRUE,
-                              sample_method == "jar" & kit_id == "K058" & transect_location == "transition" ~ TRUE,
-                              sample_method == "jar" & kit_id == "K062" & transect_location == "transition" ~ TRUE,
+  mutate(jar_used = case_when(sample_method == "hyprop" & kit_id == "K030" & transect_location == "upland" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K036" & transect_location == "upland" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K036" & transect_location == "transition" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K039" & transect_location == "transition" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K045" & transect_location == "transition" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K047" & transect_location == "upland" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K055" & transect_location == "upland" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K058" & transect_location == "upland" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K058" & transect_location == "transition" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K062" & transect_location == "transition" ~ TRUE,
                               .default = FALSE)) %>% 
-  filter(sample_method == "hyprop" & jar_used == FALSE | jar_used == TRUE) %>% 
+  filter(sample_method == "hyprop") %>% 
+  mutate(sample_method = case_when(jar_used == TRUE ~ "jar",
+                                   .default = sample_method)) %>% 
   select(-jar_used) -> meta_filter
 
 texture_processed %>% 
