@@ -381,7 +381,7 @@ drive_upload(media = "ec1_soil_iron_L2.csv", name= "ec1_soil_iron_L2.csv", path 
 
 file.remove("ec1_soil_iron_L2.csv")
 
-# Clean up and export L2 Soil Mineralogy ---------------------------------------------
+# Clean up and export L2 Soil Mineralogy ---------------------------------------
 xrd_full %>% 
   filter(is.na(notes)) %>% 
   select(-notes) -> xrd_final
@@ -393,7 +393,7 @@ drive_upload(media = "ec1_soil_mineralogy_L2.csv", name= "ec1_soil_mineralogy_L2
 
 file.remove("ec1_soil_mineralogy_L2.csv")
 
-# Clean up and export L2 Soil Mineralogy ---------------------------------------------
+# Clean up and export L2 Soil Texture ------------------------------------------
 texture_full %>% 
   filter(is.na(notes)) %>% 
   select(-c("notes", "flag")) -> texture_final
@@ -404,3 +404,16 @@ texture_final %>% write_csv("ec1_soil_texture_L2.csv")
 drive_upload(media = "ec1_soil_texture_L2.csv", name= "ec1_soil_texture_L2.csv", path = L2directory)
 
 file.remove("ec1_soil_texture_L2.csv")
+
+# Clean up and export L2 Soil Water Retention ----------------------------------
+
+wrc_full %>% 
+  filter(is.na(notes)) %>% 
+  select(-notes) -> wrc_final
+
+# Write out
+wrc_final %>% write_csv("ec1_soil_wrc_L2.csv")
+
+drive_upload(media = "ec1_soil_wrc_L2.csv", name= "ec1_soil_wrc_L2.csv", path = L2directory)
+
+file.remove("ec1_soil_wrc_L2.csv")
