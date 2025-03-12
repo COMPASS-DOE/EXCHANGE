@@ -21,8 +21,7 @@ pacman::p_load(cowsay,
 ## Welcome
 say("Welcome to EXCHANGE!", by = "random")
 
-## Load files
-sample_kit <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1eidz4hdJqOQYucTWFrDOwtQGXWfway9iZh-fmsElE1w/edit?usp=sharing", "sample_kit")
+## Load mapping files
 
 mapping <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1eidz4hdJqOQYucTWFrDOwtQGXWfway9iZh-fmsElE1w/edit?usp=sharing", "mapping")
 
@@ -34,10 +33,11 @@ download_directory <- "https://drive.google.com/drive/u/1/folders/1M-ASGuRoKqswi
 save_directory <- "./Data/IGSN/"
 
 ## Identify data files
-regex <- "^ec1_soil.*\\.csv$"
+regex <- "^ec1_(soil|sediment|water).*\\.csv$"
 
 files <- drive_ls(download_directory, recursive = TRUE) %>% 
   filter(grepl(regex, name)) %>% 
+  # filter out fticrms csv files that dont have the campaig, kid_id, transect_location format. we use the sample list file for this analyte
   filter(!name %in% c("ec1_water_fticrms_L2.csv", "ec1_water_fticrms_meta_L2.csv"))
 
 
@@ -48,7 +48,7 @@ add_igsn <- function(filename) {
     mutate(file_name = filename) %>% 
     left_join(mapping, by = "file_name") -> t
 
-  # need to figure out how to index into mapping based on filename
+  # check if analyte used multiple sample methods
   if(mapping$multiple_ids[mapping$file_name == filename] == TRUE) {
     multiple %>% 
       filter(file_name == filename) -> multiple_file
@@ -60,7 +60,10 @@ add_igsn <- function(filename) {
       select(-new_mapping_id) -> t
     
   }
+  
+  # join with IGSN file based on sample_name
   t %>% 
+    #create sample_name column in data file using metadata columns
     mutate(sample_name = toupper(paste(campaign, kit_id, transect_location, mapping_id, sep = "_"))) %>% 
     left_join(igsn, by = "sample_name") %>% 
     select(-c(file_name, multiple_ids, mapping_id, file_path, sample_name)) %>% 
