@@ -77,4 +77,42 @@ wrc_processed =
          Value = as.numeric(Value)) %>% 
   pivot_wider(names_from = "Parameter", values_from = "Value")
 
-wrc_processed %>% write.csv("Data/Processed/EC1_soil_wrc_2025-02-19.csv", na = "", row.names = F)
+# 
+# Missing sample check ---------------------------------------------------------
+
+source("./Processing_Scripts/Metadata_kit_list.R")
+
+metadata_collected %>% 
+  filter(sample_method == "hyprop") -> meta_filter
+
+wrc_processed %>% 
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
+  mutate(notes = case_when(kit_id == "K016" & transect_location == "upland" ~ "missing sample",
+                           kit_id == "K023" & transect_location == "wetland" ~ "missing sample",
+                           kit_id == "K023" & transect_location == "upland" ~ "missing sample",
+                           kit_id == "K030" & transect_location == "wetland" ~ "missing sample",
+                           kit_id == "K036" & transect_location == "upland" ~ "missing sample",
+                           kit_id == "K050" & transect_location == "upland" ~ "missing sample",
+                           kit_id == "K052" & transect_location == "upland" ~ "missing sample",
+                           kit_id == "K055" & transect_location == "upland" ~ "missing sample",
+                           kit_id == "K060" & transect_location == "wetland" ~ "missing sample",
+                           kit_id == "K061" & transect_location == "upland" ~ "missing sample",
+                           kit_id == "K047" & transect_location == "wetland" ~ "sample not run",
+                           kit_id == "K048" & transect_location == "wetland" ~ "sample not run",
+                           kit_id == "K052" & transect_location == "wetland" ~ "sample not run",
+                           kit_id == "K017" & transect_location == "upland" ~ "curve inconsistent",
+                           kit_id == "K034" & transect_location == "wetland" ~ "curve inconsistent",
+                           kit_id == "K037" & transect_location == "wetland" ~ "curve inconsistent",
+                           kit_id == "K039" & transect_location == "wetland" ~ "curve inconsistent",
+                           kit_id == "K041" & transect_location == "transition" ~ "curve inconsistent",
+                           kit_id == "K041" & transect_location == "upland" ~ "curve inconsistent",
+                           kit_id == "K042" & transect_location == "transition" ~ "curve inconsistent",
+                           kit_id == "K046" & transect_location == "upland" ~ "curve inconsistent",
+                           kit_id == "K048" & transect_location == "transition" ~ "curve inconsistent",
+                           kit_id == "K053" & transect_location == "transition" ~ "curve inconsistent",
+                           kit_id == "K058" & transect_location == "transition" ~ "curve inconsistent",
+                           collected == FALSE & is.na(alpha) ~ "sample not collected",
+                           .default = notes)) %>% 
+  select(-c("sample_type", "collected", "sample_method")) -> wrc_full
+
+wrc_full %>% write.csv("Data/Processed/EC1_soil_wrc_2025-02-10.csv", na = "", row.names = F)

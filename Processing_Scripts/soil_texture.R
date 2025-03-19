@@ -120,25 +120,55 @@ texture_processed =
   arrange(kit_id, transect_location) %>% 
   dplyr::select(-notes)
 
-
-texture_processed %>% write.csv("Data/Processed/soil_texture_2025-02-19.csv", na = "", row.names = F)
 # 
+# Missing sample check --------------------------------------------------------------
+
+source("./Processing_Scripts/Metadata_kit_list.R")
+
+metadata_collected %>%
+  mutate(jar_used = case_when(sample_method == "hyprop" & kit_id == "K030" & transect_location == "upland" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K036" & transect_location == "upland" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K036" & transect_location == "transition" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K039" & transect_location == "transition" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K045" & transect_location == "transition" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K047" & transect_location == "upland" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K055" & transect_location == "upland" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K058" & transect_location == "upland" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K058" & transect_location == "transition" ~ TRUE,
+                              sample_method == "hyprop" & kit_id == "K062" & transect_location == "transition" ~ TRUE,
+                              .default = FALSE)) %>% 
+  filter(sample_method == "hyprop") %>% 
+  mutate(sample_method = case_when(jar_used == TRUE ~ "jar",
+                                   .default = sample_method)) %>% 
+  select(-jar_used) -> meta_filter
+
+texture_processed %>% 
+  mutate(transect_location = tolower(transect_location)) %>% 
+  full_join(meta_filter, by = c("campaign", "kit_id", "transect_location")) %>% 
+  mutate(notes = case_when(collected == TRUE & is.na(notes) & is.na(flag) & is.na(percent_clay) ~ "sample not analyzed",
+                           collected == FALSE & is.na(percent_clay) ~ "sample not collected",
+                           collected == TRUE & is.na(notes) & !is.na(flag) ~ "value out of range",
+                           .default = notes)) %>% 
+  select(-c("sample_type", "collected", "sample_method")) -> texture_full
+
+texture_full %>% write.csv("Data/Processed/soil_texture_2025-02-28.csv", na = "", row.names = F)
+
 # COMPLETION --------------------------------------------------------------
-
-metadata = read.csv("metadata_collected.csv")
-metadata2 = 
-  metadata %>% 
-  filter(collected) %>% 
-  filter(sample_type == "soil") %>% 
-  distinct(kit_id, transect_location)
-
-texture_completion = 
-  texture_with_flags2 %>% 
-  mutate(completed = if_else(!is.na(percent_clay), TRUE, FALSE),
-         transect_location = tolower(transect_location)) %>% 
-  dplyr::select(kit_id, transect_location, completed) %>% 
-  drop_na() %>% 
-  full_join(metadata2) %>% 
-  mutate(completed = case_when(is.na(completed) ~ FALSE, TRUE ~ completed)) %>% 
-  pivot_wider(names_from = "transect_location", values_from = "completed") %>% 
-  force()
+# 
+# metadata = read.csv("metadata_collected.csv")
+# metadata2 = 
+#   metadata %>% 
+#   filter(collected) %>% 
+#   filter(sample_type == "soil") %>% 
+#   distinct(kit_id, transect_location)
+# 
+# texture_completion = 
+#   texture_with_flags2 %>% 
+#   mutate(completed = if_else(!is.na(percent_clay), TRUE, FALSE),
+#          transect_location = tolower(transect_location)) %>% 
+#   dplyr::select(kit_id, transect_location, completed) %>% 
+#   drop_na() %>% 
+#   full_join(metadata2) %>% 
+#   mutate(completed = case_when(is.na(completed) ~ FALSE, TRUE ~ completed)) %>% 
+#   pivot_wider(names_from = "transect_location", values_from = "completed") %>% 
+#   force()
