@@ -1,5 +1,9 @@
 # Welcome to the EXCHANGE Github Repository
 
+<!-- badges: start -->
+[![Static Badge](https://img.shields.io/badge/any_text-EC1_Data-31B2BB?label=ESS-DIVE)](https://doi.org/10.15485/1960313)
+<!-- badges: end -->
+
 ![](https://github.com/COMPASS-DOE/EXCHANGE/blob/main/Photos/exchange_cover_banner.jpg)
 
 ## About EXCHANGE
