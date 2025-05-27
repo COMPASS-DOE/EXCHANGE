@@ -63,7 +63,9 @@ sample_catalog <- csvs_2 %>%
                                data_type == "visual" & transect_location != "sediment" ~ "soil_vizmetrics",
                                TRUE ~ data_type)) %>% 
   select(data_type, campaign, kit_id, transect_location, note, contains("_flag"), notes_flags, notes) %>% 
-  pivot_wider(id_cols=c(campaign, kit_id, transect_location), names_from = data_type, values_from = c(note, contains("_flag"), notes_flags, notes)) %>%
+ # filter(!grepl("cations|viz|iron", data_type)) %>% 
+  filter(!(kit_id == "K021" & notes == "not enough material for extraction")) %>% 
+    pivot_wider(id_cols=c(campaign, kit_id, transect_location), names_from = data_type, values_from = c(note, contains("_flag"), notes_flags, notes)) %>% 
   janitor::remove_empty(which = "cols") %>%
   rename(ec1_water_cdom_L2 = note_cdom,
          ec1_water_fticrms_L2 = note_fticrms,

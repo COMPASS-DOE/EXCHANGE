@@ -19,7 +19,7 @@ import_data = function(FILEPATH){
 }
 
 # Now, run this function
-all_data <- import_data(FILEPATH = "Data/Processed/")
+all_data <- import_data(FILEPATH = "Data/Processed/L0B")
 
 all_data_processed = 
   all_data %>% 
@@ -45,4 +45,4 @@ all_data_processed =
 
 
 all_data_processed %>% 
-  write.csv("Data/00-EC1_Analysis_Completion_Matrix_2022-06-02.csv", row.names = FALSE, na = "")
+  write.csv("Data/00-EC1_Analysis_Completion_Matrix_2022-10-04.csv", row.names = FALSE, na = "")

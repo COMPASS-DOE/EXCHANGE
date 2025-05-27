@@ -526,6 +526,9 @@ disentangle_flags = function(){
     pivot_wider(names_from = "Dilution", values_from = "label") %>% 
     arrange(Name, Ion)
 
+  all_flags_wide %>% write.csv("EC1_water_ions_all_flags.csv", row.names = F, na = "")
+  
+  
   needs_rerun_at_no_dilution = 
     all_flags_wide %>% 
     filter(is.na(`1`)) %>% 
