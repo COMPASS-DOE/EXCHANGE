@@ -35,19 +35,19 @@ metadata_directory = "https://drive.google.com/drive/u/1/folders/1xy9nsTpbiSk-KX
 ## Next, list all files in the directory, filter out the Kit Level file and snag the file name
 metadata_file <- drive_ls(metadata_directory) %>%
   filter(grepl("kitlevel", name)) %>%
-  pull(name)
+  pull(id)
 
 
 ## Now download that file to your local (an annoying googledrive requirement, we will delete this in a minute)
 drive_download(metadata_file, overwrite = T)
 
 # make a dataframe
-metadata_collected_raw <- read_csv(metadata_file) 
+metadata_collected_raw <- read_csv("ec1_metadata_kitlevel.csv") 
 
 sample_kit <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/18JlGJzeQaqtkTPJyuzsAZWB8fuhcyDZ8ZekGUlanCQ8/edit#gid=549612035")
 
 #delete file on the local
-file.remove(metadata_file)
+file.remove("ec1_metadata_kitlevel.csv")
 
 # 2. Import metadata ----------------------------------------------------------
 
